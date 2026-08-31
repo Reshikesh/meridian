@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meridian</title>
+<!-- Inline, so a headed browser does not request /favicon.ico. No network. -->
+<link rel="icon" href="data:,">
+
+<!--
+  Pre-paint theme. Must run before the stylesheets so the first paint is already
+  in the right theme (QUALITY-BAR §3). Vanilla JS by decision 22; guarded because
+  localStorage can throw outright on a file:// origin, and an uncaught throw here
+  would leave a blank page.
+-->
+<script>
+(function () {
+  var theme = 'paper';
+  try {
+    var stored = localStorage.getItem('meridian:theme');
+    if (stored === 'paper' || stored === 'graphite' || stored === 'blueprint') theme = stored;
+  } catch (e) { /* keep the default */ }
+  document.documentElement.setAttribute('data-theme', theme);
+})();
+</script>
+
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/base.css">
+<link rel="stylesheet" href="styles/components.css">
+<link rel="stylesheet" href="styles/screens.css">
+</head>
+<body>
+
+<div id="app"></div>
+
+<!--
+  Vendored, loaded from disk. preact MUST precede hooks: hooks reads window.preact
+  at load time and throws without it, so window.preactHooks is never created and
+  the first hook call fails. See vendor/README.md.
+  vendor/xlsx.full.min.js is vendored but not loaded until Phase 1 needs it.
+-->
+<script src="vendor/preact.umd.js"></script>
+<script src="vendor/hooks.umd.js"></script>
+<script src="vendor/htm.umd.js"></script>
+
+<script src="src/core/dates.js"></script>
+<script src="src/ui/states.js"></script>
+<script src="src/ui/header.js"></script>
+<script src="src/ui/app.js"></script>
+
+</body>
+</html>

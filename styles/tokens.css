@@ -1,0 +1,76 @@
+/* Meridian — design tokens.
+   The three themes from spec §5, verbatim. Every colour in the app comes from
+   one of these; nothing is styled with a literal hex outside this file.
+
+   The theme attribute lives on <html> so the pre-paint script in index.html can
+   set it before any CSS applies. The mockup carries it on an inner <div>, which
+   cannot exist before Preact mounts — that placement guarantees a flash. */
+
+:root[data-theme="paper"] {
+  color-scheme: light;
+  --bg: #fbfaf8;
+  --strip: #fff;
+  --ink: #1a1614;
+  --ink2: #6b625c;
+  --line: #e4ded6;
+  --line2: #f0ebe4;
+  --brand: #8c1c2b;
+  --brandink: #ffffff;
+  --warn: #c8291a;
+  --warnbg: #f7ecea;
+  --good: #2b7d5d;
+  --navbg: #1a1614;
+  --navink: #f7f4ef;
+  --navdim: #b3aaa3;
+  --grid: #eae4dc;
+  --axis: #c9c0b6;
+  --axisink: #6b625c;
+  --pale: #f0ebe4;
+  --veil: rgba(26, 22, 20, .42);
+}
+
+:root[data-theme="graphite"] {
+  color-scheme: dark;
+  --bg: #16171a;
+  --strip: #1c1e22;
+  --ink: #f2f2ef;
+  --ink2: #9ca1a9;
+  --line: #2c2f35;
+  --line2: #26282d;
+  --brand: #c8f04a;
+  --brandink: #16171a;
+  --warn: #ff6b4a;
+  --warnbg: #241a17;
+  --good: #5fc98d;
+  --navbg: #16171a;
+  --navink: #f2f2ef;
+  --navdim: #9ca1a9;
+  --grid: #26282d;
+  --axis: #4a4e56;
+  --axisink: #9ca1a9;
+  --pale: #26282d;
+  --veil: rgba(0, 0, 0, .6);
+}
+
+:root[data-theme="blueprint"] {
+  color-scheme: light;
+  --bg: #eef1f4;
+  --strip: #f8fafb;
+  --ink: #14202e;
+  --ink2: #5a6b7d;
+  --line: #cdd6de;
+  --line2: #dfe6ec;
+  --brand: #2b4a7d;
+  --brandink: #ffffff;
+  --warn: #b4531f;
+  --warnbg: #f6ece5;
+  --good: #1f6b52;
+  --navbg: #f8fafb;
+  --navink: #14202e;
+  --navdim: #5a6b7d;
+  --grid: #dfe6ec;
+  --axis: #aebbc7;
+  --axisink: #5a6b7d;
+  --pale: #e3e9ef;
+  --veil: rgba(20, 32, 46, .42);
+}

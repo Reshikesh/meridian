@@ -1,0 +1,111 @@
+/* Meridian — screen layout and the responsive collapse.
+   Design width is the 1180px container (spec §5). The layout is fluid from
+   1024px up with no change of structure; below 1024px the header re-flows and
+   the gutter narrows (QUALITY-BAR §2). */
+
+.root {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+}
+
+.container {
+  max-width: var(--container);
+  margin: 0 auto;
+  background: var(--bg);
+  border-left: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Screen cross-fade (QUALITY-BAR §3: "content cross-fades 120 ms").
+   During a switch both screens occupy the same grid cell, so the outgoing one
+   fades out while the incoming one fades in. Outside a switch only one screen is
+   in the DOM. `display` cannot be transitioned, so the mockup's
+   show/hide-all-six approach cannot produce this. */
+.screens {
+  display: grid;
+}
+
+.screens > .screen {
+  grid-area: 1 / 1;
+}
+
+.screen--entering {
+  animation: screen-in var(--m-screen) var(--ease) both;
+}
+
+.screen--leaving {
+  animation: screen-out var(--m-screen) var(--ease) both;
+  /* Keeps the fading-out copy out of hit-testing while it is still painted. */
+  pointer-events: none;
+}
+
+@keyframes screen-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes screen-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+/* ---------- Below 1024px ----------
+   The mockup has no breakpoints ("flex-wrap only", spec §5) and its header has an
+   intrinsic width of about 930px, so without this it overlaps on a narrow window.
+   `display: contents` lifts the wordmark and nav out of their wrapper so the
+   header can wrap as three independent groups. */
+
+@media (max-width: 1023.98px) {
+  :root {
+    --gutter: 16px;
+  }
+
+  .header {
+    flex-wrap: wrap;
+    row-gap: var(--sp-4);
+  }
+
+  .header__left {
+    display: contents;
+  }
+
+  .wordmark {
+    order: 1;
+  }
+
+  .header__right {
+    order: 2;
+    margin-left: auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    row-gap: var(--sp-3);
+  }
+
+  /* The theme group's intrinsic width is ~241px, which overflows a layout
+     viewport narrower than ~273px — reachable at 360px and 150% zoom. Letting
+     its three buttons wrap is the only thing between that and a horizontal page
+     scrollbar (QUALITY-BAR §2 covers zoom as well as width). */
+  .themes {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .nav {
+    order: 3;
+    flex: 1 0 100%;
+    flex-wrap: wrap;
+    row-gap: 2px;
+  }
+
+  .empty__head {
+    padding: var(--sp-8) var(--gutter) var(--sp-6);
+  }
+
+  .t-h1 {
+    font-size: 30px;
+  }
+}

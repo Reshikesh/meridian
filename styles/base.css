@@ -1,0 +1,204 @@
+/* Meridian — reset, type scale, spacing, motion.
+   Loaded after tokens.css and before components.css. */
+
+/* ---------- Fonts ----------
+   Archivo is vendored (vendor/fonts/, OFL 1.1) and loaded from disk. There is no
+   network font in this app; see vendor/README.md. Google Fonts serves a variable
+   font to modern browsers, so these are static instances of each weight.
+
+   Every font declaration names the full stack. The mockup's inline styles use the
+   `font:` shorthand with `Archivo` alone, which would silently drop the whole app
+   to the browser's default serif if the face failed to load. */
+
+@font-face {
+  font-family: Archivo;
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../vendor/fonts/archivo-latin-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: Archivo;
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../vendor/fonts/archivo-latin-500.woff2") format("woff2");
+}
+@font-face {
+  font-family: Archivo;
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("../vendor/fonts/archivo-latin-600.woff2") format("woff2");
+}
+@font-face {
+  font-family: Archivo;
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../vendor/fonts/archivo-latin-700.woff2") format("woff2");
+}
+
+/* Metrics-matched fallback (QUALITY-BAR §3: "so text does not jump").
+   Measured against the vendored Archivo in Edge, not guessed.
+
+   What this face matches exactly, at every weight: the `line-height: normal` box
+   height. Archivo's ascent/descent at 1000px are 878/210 against Segoe UI's
+   1079/251, so without the overrides a line box is 4px taller and the whole page
+   reflows vertically on swap. With them the delta is 0.00px.
+
+   What it approximates: width. `size-adjust` was calibrated by layout
+   measurement at weight 400 on a representative line of the app's copy, where it
+   lands within 0.00px (raw system-ui is 4.97px wider). The ideal ratio is both
+   weight- and string-dependent — caps-heavy runs differ from lowercase — so a
+   single value cannot be exact everywhere; 700 at 40px is the worst case at
+   about 6%. One face is still the right trade: the fallback is only on screen
+   for the swap window, and these fonts load from local disk. */
+@font-face {
+  font-family: "Archivo Fallback";
+  font-style: normal;
+  font-weight: 100 900;
+  src: local("Segoe UI"), local("Helvetica Neue"), local("Arial");
+  size-adjust: 98.68%;
+  ascent-override: 88.97%;
+  descent-override: 21.28%;
+  line-gap-override: 0%;
+}
+
+:root {
+  /* Family stack. `Archivo Fallback` is the metrics-matched face declared above
+     so that the swap from system-ui to Archivo does not reflow text. */
+  --font: Archivo, "Archivo Fallback", system-ui, sans-serif;
+
+  /* Spacing. The mockup has no scale (spec §5: "no token scale"); these are its
+     recurring values, named, with no rendered value changed. */
+  --sp-1: 4px;
+  --sp-2: 6px;
+  --sp-3: 8px;
+  --sp-4: 12px;
+  --sp-5: 14px;
+  --sp-6: 16px;
+  --sp-7: 18px;
+  --sp-8: 20px;
+  --sp-9: 22px;
+  --sp-10: 26px;
+  --sp-11: 28px;
+
+  --gutter: 28px;          /* screen gutter; drops to 16px below --bp */
+  --container: 1180px;
+  --radius-sm: 2px;
+  --radius: 3px;
+  --radius-lg: 4px;
+
+  /* Motion. QUALITY-BAR §3: nothing over 200ms, no springs, no bounces. */
+  --m-hover: 80ms;
+  --m-screen: 120ms;
+  --m-veil: 160ms;
+  --m-chart: 160ms;
+  --m-sheet: 180ms;
+  --ease: ease-out;
+}
+
+/* ---------- Reset ---------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  /* Without border-box the 1180px container plus its two 1px side rules is
+     1182px of layout width, so dragging the window past ~1181px produces a
+     horizontal scrollbar. */
+  background: var(--bg);
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+  color: inherit;
+  margin: 0;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+/* ---------- Type scale ----------
+   Named for the role each shorthand plays in the mockup, not for its size. */
+
+.t-eyebrow {
+  font: 600 11px/1 var(--font);
+  letter-spacing: .18em;
+  color: var(--ink2);
+}
+
+.t-label {
+  font: 600 10.5px/1 var(--font);
+  letter-spacing: .14em;
+  color: var(--ink2);
+}
+
+.t-h1 {
+  font: 700 40px/1.03 var(--font);
+  letter-spacing: -.035em;
+}
+
+.t-body {
+  font: 400 15px/1.5 var(--font);
+}
+
+.t-meta {
+  font: 500 11.5px/1 var(--font);
+}
+
+.t-figure {
+  font: 600 15px/1.2 var(--font);
+  font-variant-numeric: tabular-nums;
+}
+
+.t-stat {
+  font: 600 30px/1 var(--font);
+  letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Focus ----------
+   One rule, not per component. `--brand` is #8c1c2b against a #1a1614 header —
+   1.98:1, an invisible ring — so header controls take --navink instead. */
+
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.header :focus-visible {
+  outline-color: var(--navink);
+}
+
+/* ---------- Reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}

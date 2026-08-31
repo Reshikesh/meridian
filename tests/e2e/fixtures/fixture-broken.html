@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>audit fixture — broken</title>
+<!-- One deliberate defect per audit check. If audit-selfcheck stops failing on
+     this file, the auditor has degraded into a no-op. -->
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; font:14px system-ui; }
+  .wide { width: 2000px; background:#fee; }                       /* -> check (i) horizontal page scroll */
+  .clip { width: 100px; overflow: hidden; white-space: nowrap; }  /* -> check (ii) clipped, no ellipsis */
+  .rel  { position: relative; height: 80px; }
+  .a { position:absolute; left:10px; top:10px; width:120px; height:40px; background:#cfc; }
+  .b { position:absolute; left:80px; top:20px; width:120px; height:40px; background:#ccf; }  /* -> check (iii) */
+</style></head><body>
+  <div class="wide">very wide block</div>
+  <p class="clip">this label is far too long for one hundred pixels and has no ellipsis</p>
+  <div class="rel"><span class="a">A overlaps</span><span class="b">B overlaps</span></div>
+</body></html>

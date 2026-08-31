@@ -1,0 +1,361 @@
+/* Meridian — components.
+   Every value here is taken from design/Meridian Redesign.dc.html. Where the
+   mockup has no state (focus, disabled) the token-derived state is added once,
+   here, and reused; nothing is styled ad hoc at the call site. */
+
+/* ---------- Header ---------- */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-8);
+  padding: 13px var(--gutter);
+  background: var(--navbg);
+  color: var(--navink);
+  border-bottom: 1px solid var(--line);
+}
+
+.header__left {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  min-width: 0;
+}
+
+.header__right {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5);
+}
+
+.wordmark {
+  font: 700 12px/1 var(--font);
+  letter-spacing: .2em;
+  flex: none;
+}
+
+/* ---------- Nav ---------- */
+
+.nav {
+  display: flex;
+  gap: 2px;
+}
+
+.nav__btn {
+  font: 500 11.5px/1 var(--font);
+  padding: 7px 11px;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--navdim);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--m-hover) var(--ease),
+              background-color var(--m-hover) var(--ease);
+}
+
+.nav__btn:hover {
+  color: var(--navink);
+}
+
+.nav__btn[data-active="1"] {
+  background: var(--brand);
+  color: var(--brandink);
+}
+
+/* ---------- Theme toggle ---------- */
+
+.themes {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  flex: none;
+}
+
+.themes__btn {
+  font: 600 10.5px/1 var(--font);
+  letter-spacing: .1em;
+  padding: 6px 9px;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--navdim);
+  cursor: pointer;
+  transition: color var(--m-hover) var(--ease),
+              background-color var(--m-hover) var(--ease);
+}
+
+.themes__btn:hover {
+  color: var(--navink);
+}
+
+.themes__btn[data-active="1"] {
+  background: var(--brand);
+  color: var(--brandink);
+}
+
+/* ---------- Date / week stamp ----------
+   The reference capture wraps this to two lines at its own width; kept on one
+   line here, which is the single logged deviation.
+
+   No reserved width: dates.js emits a fixed-width dd.mm.yyyy / W## (day, month
+   and week all padded) and the span is tabular-nums, so every possible value is
+   the same width already. Reserving more would push the theme toggle left of
+   where the reference has it. */
+
+.stamp {
+  font: 500 11.5px/1 var(--font);
+  color: var(--navdim);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex: none;
+}
+
+/* ---------- Buttons ---------- */
+
+.btn {
+  font: 600 12.5px/1 var(--font);
+  padding: 11px 15px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--ink2);
+  cursor: pointer;
+  transition: color var(--m-hover) var(--ease),
+              background-color var(--m-hover) var(--ease),
+              border-color var(--m-hover) var(--ease);
+}
+
+.btn:hover {
+  color: var(--ink);
+  border-color: var(--ink2);
+}
+
+.btn--brand {
+  padding: 11px 18px;
+  border: 0;
+  background: var(--brand);
+  color: var(--brandink);
+}
+
+.btn--brand:hover {
+  color: var(--brandink);
+  filter: brightness(1.08);
+}
+
+.btn--icon {
+  font: 600 12px/1 var(--font);
+  padding: 10px 13px;
+  color: var(--ink);
+}
+
+.btn:disabled {
+  opacity: .45;
+  cursor: default;
+}
+
+.btn:disabled:hover {
+  color: var(--ink2);
+  border-color: var(--line);
+  filter: none;
+}
+
+/* ---------- Tables ---------- */
+
+.table {
+  padding: 0 var(--gutter) var(--sp-3);
+}
+
+.table__head {
+  padding: var(--sp-4) var(--gutter) var(--sp-3);
+  font: 600 10.5px/1 var(--font);
+  letter-spacing: .14em;
+  color: var(--ink2);
+}
+
+.table__row {
+  align-items: center;
+  padding: 13px 0;
+  border-top: 1px solid var(--line);
+}
+
+.table__cell {
+  min-width: 0;
+}
+
+/* ---------- Stat blocks ---------- */
+
+.stat {
+  padding: 17px 24px;
+  border-right: 1px solid var(--line);
+}
+
+.stat:last-child {
+  border-right: 0;
+}
+
+.stat__label {
+  margin-bottom: 9px;
+}
+
+.stat__value {
+  font: 600 30px/1 var(--font);
+  letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat__unit {
+  font-size: 15px;
+  color: var(--ink2);
+}
+
+.stat--brand .stat__value {
+  color: var(--brand);
+}
+
+.stat--warn {
+  background: var(--warnbg);
+}
+
+.stat--warn .stat__value {
+  color: var(--warn);
+}
+
+/* ---------- Sheet frame ----------
+   Frame only in Phase 0; the sheets themselves arrive in Phase 2. */
+
+.sheet {
+  position: fixed;
+  inset: 0;
+  background: var(--veil);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 60px var(--sp-8);
+  z-index: 40;
+  animation: veil-in var(--m-veil) var(--ease);
+}
+
+.sheet--wide {
+  padding: 48px var(--sp-8);
+}
+
+.sheet__card {
+  width: 100%;
+  max-width: 560px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  /* spec §5: the sheet shadow is hard-coded in the mockup, not tokenised. */
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .28);
+  animation: card-in var(--m-sheet) var(--ease);
+}
+
+.sheet--wide .sheet__card {
+  max-width: 760px;
+}
+
+.sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-5);
+  padding: var(--sp-6) var(--sp-9);
+  border-bottom: 1px solid var(--line);
+}
+
+.sheet__title {
+  font: 600 11px/1 var(--font);
+  letter-spacing: .16em;
+  color: var(--ink2);
+}
+
+.sheet__close {
+  font: 500 17px/1 var(--font);
+  border: 0;
+  background: transparent;
+  color: var(--ink2);
+  cursor: pointer;
+}
+
+.sheet__body {
+  padding: var(--sp-8) var(--sp-9) var(--sp-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-7);
+}
+
+.sheet__foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-3);
+  padding: 0 var(--sp-9) var(--sp-8);
+}
+
+@keyframes veil-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ---------- Inputs ---------- */
+
+.input {
+  box-sizing: border-box;
+  min-width: 0;
+  background: var(--strip);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 7px var(--sp-3);
+  font: 600 12px/1.1 var(--font);
+  color: var(--ink);
+  outline: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.input:focus {
+  border-color: var(--brand);
+  background: var(--bg);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---------- Empty state ----------
+   Built from the mockup's own screen-header recipe (eyebrow + h1) followed by a
+   full-bleed --strip band, the same treatment as its stat strips. An empty
+   screen therefore reads as a finished page containing nothing, not as a hole. */
+
+.empty__head {
+  padding: var(--sp-11) var(--gutter) var(--sp-8);
+}
+
+.empty__eyebrow {
+  margin-bottom: var(--sp-4);
+}
+
+.empty__panel {
+  padding: 40px var(--gutter);
+  background: var(--strip);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.empty__note {
+  font: 400 15px/1.5 var(--font);
+  color: var(--ink2);
+  max-width: 58ch;
+}

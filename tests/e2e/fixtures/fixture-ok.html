@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>audit fixture — legitimate patterns</title>
+<!-- Every pattern Meridian actually uses that a naive auditor would flag:
+     sticky header over rows, ellipsis, line clamp, a horizontally scrolling
+     table, an input scrolling its own value, a pointer-events:none rule under
+     a tab, a hidden (inactive) screen, and a fixed veil + sheet over the page.
+     The auditor must report this file CLEAN. -->
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; font:14px system-ui; }
+  header { position: sticky; top:0; background:#fff; border-bottom:1px solid #ddd; padding:12px; z-index:5; }
+  .ellipsis { width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .clamp { width:160px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .scroller { overflow-x:auto; max-width:300px; border:1px solid #ddd; }
+  table { border-collapse:collapse; min-width:700px; }
+  td,th { border:1px solid #ddd; padding:6px 10px; }
+  input { width:120px; }
+  .veil { position:fixed; inset:0; background:rgba(0,0,0,.4); }
+  .sheet { position:fixed; right:0; top:0; bottom:0; width:420px; background:#fff; padding:24px; }
+  .rule { position:absolute; left:0; right:0; bottom:0; height:2px; background:#c4562e; pointer-events:none; }
+  .tabwrap { position:relative; padding-bottom:8px; }
+  .hidden-screen { display:none; }
+</style></head><body>
+  <header>Header that sticks over the rows below it</header>
+  <div class="tabwrap"><button>Log</button><span class="rule"></span></div>
+  <p class="ellipsis">A truncated activity name that ellipses</p>
+  <p class="clamp">A two line clamped description that keeps going well past the second line and gets cut</p>
+  <div class="scroller"><table><tr><th>Duration</th><th>Activity</th><th>Category</th><th>Goal</th></tr>
+    <tr><td>2.0 h</td><td>Deep work</td><td>Learning</td><td>Ship v1</td></tr></table></div>
+  <label>Value <input value="a value far longer than one hundred and twenty pixels of input box"></label>
+  <div style="height:1200px">tall filler so the sticky header overlaps content when scrolled</div>
+  <div class="hidden-screen"><p style="width:60px;overflow:hidden;white-space:nowrap">hidden and clipped, must be ignored</p></div>
+  <div class="veil"></div>
+  <div class="sheet"><h2>New entry</h2><p>Sheet content over the page</p></div>
+</body></html>

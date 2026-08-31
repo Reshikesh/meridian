@@ -1,0 +1,13 @@
+{
+  "name": "meridian-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "description": "Playwright end-to-end suite for Meridian. Installed here only, so the app stays dependency-free.",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1"
+  }
+}
