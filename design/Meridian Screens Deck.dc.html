@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#d9d5cd;font-family:Archivo,system-ui,sans-serif}a{color:#8c1c2b}a:hover{color:#c8291a}</style>
+</helmet>
+<x-import component-from-global-scope="deck-stage" from="./deck-stage.js" width="1920" height="1080" hint-size="100%,100%">
+
+  <section data-label="Cover" data-speaker-notes="Ten screens captured from the Meridian Redesign mockup, 7 June 2026 sample data, paper theme." style="background:#1a1614;color:#f7f4ef;display:flex;flex-direction:column;justify-content:space-between;padding:96px 110px;box-sizing:border-box">
+    <div style="font:700 26px/1 Archivo;letter-spacing:.28em">MERIDIAN</div>
+    <div>
+      <h1 style="font:700 132px/.98 Archivo;letter-spacing:-.04em;margin:0 0 34px;text-wrap:pretty">Redesign screens</h1>
+      <p style="font:400 34px/1.45 Archivo;color:#b3aaa3;margin:0;max-width:34ch">Six screens and four sheets, captured from the mockup. Paper theme, 7 June 2026 sample data.</p>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;font:600 24px/1 Archivo;letter-spacing:.14em;color:#b3aaa3">
+      <span>10 SCREENS</span><span>07.06.2026 / W23</span>
+    </div>
+  </section>
+
+  <section data-label="Log" data-speaker-notes="The day's entries, quick-add strip, and the seven-day bar strip. 9.5 h accounted for of 24." style="background:#fbfaf8;color:#1a1614;display:grid;grid-template-rows:auto 1fr;padding:60px 80px 64px;box-sizing:border-box;gap:34px">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:40px">
+      <h2 style="font:700 60px/1 Archivo;letter-spacing:-.035em;margin:0">Log</h2>
+      <span style="font:600 24px/1 Archivo;letter-spacing:.16em;color:#6b625c">SCREEN 01 / 06</span>
+    </div>
+    <div style="min-height:0;display:flex;align-items:center;justify-content:center">
+      <img src="shots/deck-01-log.png" alt="Log screen" style="max-width:100%;max-height:100%;object-fit:contain;border:1px solid #e4ded6">
+    </div>
+  </section>
+
+  <section data-label="Where it went" data-speaker-notes="Range picker calendar, coverage donut, direction split, and the category ribbon chart." style="background:#fbfaf8;color:#1a1614;display:grid;grid-template-rows:auto 1fr;padding:60px 80px 64px;box-sizing:border-box;gap:34px">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:40px">
+      <h2 style="font:700 60px/1 Archivo;letter-spacing:-.035em;margin:0">Where it went</h2>
+      <span style="font:600 24px/1 Archivo;letter-spacing:.16em;color:#6b625c">SCREEN 02 / 06</span>
+    </div>
+    <div style="min-height:0;display:flex;align-items:center;justify-content:center">
+      <img src="shots/deck-02-went.png" alt="Where it went screen" style="max-width:100%;max-height:100%;object-fit:contain;border:1px solid #e4ded6">
+    </div>
+  </section>
+
+  <section data-label="Progress" data-speaker-notes="Straight-line projection for one goal, plus the levers panel and all-goals list." style="background:#fbfaf8;color:#1a1614;display:grid;grid-template-rows:auto 1fr;padding:60px 80px 64px;box-sizing:border-box;gap:34px">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:40px">
+      <h2 style="font:700 60px/1 Archivo;letter-spacing:-.035em;margin:0">Progress</h2>
+      <span style="font:600 24px/1 Archivo;letter-spacing:.16em;color:#6b625c">SCREEN 03 / 06</span>
+    </div>
+    <div style="min-height:0;display:flex;align-items:center;justify-content:center">
+      <img src="shots/deck-03-progress.png" alt="Progress screen" style="max-width:100%;max-height:100%;object-fit:contain;border:1px solid #e4ded6">
+    </div>
+  </section>
+
+  <section data-label="Goals" data-speaker-notes="Goal table with identity statements, target, progress and projected landing date." style="background:#fbfaf8;color:#1a1614;display:grid;grid-template-rows:auto 1fr;padding:60px 80px 64px;box-sizing:border-box;gap:34px">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:40px">
+      <h2 style="font:700 60px/1 Archivo;letter-spacing:-.035em;margin:0">Goals</h2>
+      <span style="font:600 24px/1 Archivo;letter-spacing:.16em;color:#6b625c">SCREEN 04 / 06</span>
+    </div>
+    <div style="min-height:0;display:flex;align-items:center;justify-content:center">
+      <img src="shots/deck-04-goals.png" alt="Goals screen" style="max-width:100%;max-height:100%;object-fit:contain;border:1px solid #e4ded6">
+    </div>
+  </section>
+
+  <section data-label="Plan" data-speaker-notes="The 52 discretionary hours, planned versus lived per category on one 16-hour scale." style="background:#fbfaf8;color:#1a1614;display:grid;grid-template-rows:auto 1fr;padding:60px 80px 64px;box-sizing:border-box;gap:34px">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:40px">
+      <h2 style="font:700 60px/1 Archivo;letter-spacing:-.035em;margin:0">Plan</h2>
+      <span style="font:600 24px/1 Archivo;letter-spacing:.16em;color:#6b625c">SCREEN 05 / 06</span>
+    </div>
+    <div style="min-height:0;display:flex;align-items:center;justify-content:center">
+      <img src="shots/deck-05-plan.png" alt="Plan screen" style="max-width:100%;max-height:100%;object-fit:contain;border:1px solid #e4ded6">
+    </div>
+  </section>
+
+  <section data-label="Lessons" data-speaker-notes="Weekly close-out prompt and the history of lessons, tagged by category or goal." style="background:#fbfaf8;color:#1a1614;display:grid;grid-template-rows:auto 1fr;padding:60px 80px 64px;box-sizing:border-box;gap:34px">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:40px">
+      <h2 style="font:700 60px/1 Archivo;letter-spacing:-.035em;margin:0">Lessons</h2>
+      <span style="font:600 24px/1 Archivo;letter-spacing:.16em;color:#6b625c">SCREEN 06 / 06</span>
+    </div>
+    <div style="min-height:0;display:flex;align-items:center;justify-content:center">
+      <img src="shots/deck-06-lessons.png" alt="Lessons screen" style="max-width:100%;max-height:100%;object-fit:contain;border:1px solid #e4ded6">
+    </div>
+  </section>
+
+  <section data-label="Sheet — New entry" data-speaker-notes="Duration presets, goal picker that fills the category, and the saving-this-moves preview." style="background:#efece6;color:#1a1614;display:grid;grid-template-rows:auto 1fr;padding:60px 80px 64px;box-sizing:border-box;gap:34px">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:40px">
+      <h2 style="font:700 60px/1 Archivo;letter-spacing:-.035em;margin:0">New entry</h2>
+      <span style="font:600 24px/1 Archivo;letter-spacing:.16em;color:#6b625c">SHEET 01 / 04</span>
+    </div>
+    <div style="min-height:0;display:flex;align-items:center;justify-content:center">
+      <img src="shots/deck-07-sheet-entry.png" alt="New entry sheet" style="max-width:100%;max-height:100%;object-fit:contain;border:1px solid #e4ded6">
+    </div>
+  </section>
+
+  <section data-label="Sheet — New goal" data-speaker-notes="Identity statement first, then target and date, with the reachability check underneath." style="background:#efece6;color:#1a1614;display:grid;grid-template-rows:auto 1fr;padding:60px 80px 64px;box-sizing:border-box;gap:34px">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:40px">
+      <h2 style="font:700 60px/1 Archivo;letter-spacing:-.035em;margin:0">New goal</h2>
+      <span style="font:600 24px/1 Archivo;letter-spacing:.16em;color:#6b625c">SHEET 02 / 04</span>
+    </div>
+    <div style="min-height:0;display:flex;align-items:center;justify-content:center">
+      <img src="shots/deck-08-sheet-goal.png" alt="New goal sheet" style="max-width:100%;max-height:100%;object-fit:contain;border:1px solid #e4ded6">
+    </div>
+  </section>
+
+  <section data-label="Sheet — New category" data-speaker-notes="Name, colour, and the More / Less / Upkeep direction choice that drives all scoring." style="background:#efece6;color:#1a1614;display:grid;grid-template-rows:auto 1fr;padding:60px 80px 64px;box-sizing:border-box;gap:34px">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:40px">
+      <h2 style="font:700 60px/1 Archivo;letter-spacing:-.035em;margin:0">New category</h2>
+      <span style="font:600 24px/1 Archivo;letter-spacing:.16em;color:#6b625c">SHEET 03 / 04</span>
+    </div>
+    <div style="min-height:0;display:flex;align-items:center;justify-content:center">
+      <img src="shots/deck-09-sheet-category.png" alt="New category sheet" style="max-width:100%;max-height:100%;object-fit:contain;border:1px solid #e4ded6">
+    </div>
+  </section>
+
+  <section data-label="Sheet — Categories" data-speaker-notes="Archive-not-delete: archived rows keep their hours, only zero-hour categories can be deleted." style="background:#efece6;color:#1a1614;display:grid;grid-template-rows:auto 1fr;padding:60px 80px 64px;box-sizing:border-box;gap:34px">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:40px">
+      <h2 style="font:700 60px/1 Archivo;letter-spacing:-.035em;margin:0">Manage categories</h2>
+      <span style="font:600 24px/1 Archivo;letter-spacing:.16em;color:#6b625c">SHEET 04 / 04</span>
+    </div>
+    <div style="min-height:0;display:flex;align-items:center;justify-content:center">
+      <img src="shots/deck-10-sheet-manage.png" alt="Manage categories sheet" style="max-width:100%;max-height:100%;object-fit:contain;border:1px solid #e4ded6">
+    </div>
+  </section>
+
+</x-import>
+</x-dc>
+</body>
+</html>

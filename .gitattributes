@@ -1,0 +1,12 @@
+# Normalise line endings in our own source, so the repository is consistent when
+# it moves to GitHub.
+* text=auto eol=lf
+
+# Vendored third-party files must stay byte-identical to upstream, or the sha256
+# checksums recorded in vendor/README.md will not verify after a fresh clone.
+vendor/** -text
+
+# Binary assets.
+*.png binary
+*.woff2 binary
+*.pptx binary

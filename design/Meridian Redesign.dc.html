@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#d9d5cd;font-family:Archivo,system-ui,sans-serif}
+a{color:#8c1c2b}a:hover{color:#c8291a}
+[data-theme="paper"]{--bg:#fbfaf8;--strip:#fff;--ink:#1a1614;--ink2:#6b625c;--line:#e4ded6;--line2:#f0ebe4;--brand:#8c1c2b;--brandink:#ffffff;--warn:#c8291a;--warnbg:#f7ecea;--good:#2b7d5d;--navbg:#1a1614;--navink:#f7f4ef;--navdim:#b3aaa3;--grid:#eae4dc;--axis:#c9c0b6;--axisink:#6b625c;--pale:#f0ebe4;--veil:rgba(26,22,20,.42)}
+[data-theme="graphite"]{--bg:#16171a;--strip:#1c1e22;--ink:#f2f2ef;--ink2:#9ca1a9;--line:#2c2f35;--line2:#26282d;--brand:#c8f04a;--brandink:#16171a;--warn:#ff6b4a;--warnbg:#241a17;--good:#5fc98d;--navbg:#16171a;--navink:#f2f2ef;--navdim:#9ca1a9;--grid:#26282d;--axis:#4a4e56;--axisink:#9ca1a9;--pale:#26282d;--veil:rgba(0,0,0,.6)}
+[data-theme="blueprint"]{--bg:#eef1f4;--strip:#f8fafb;--ink:#14202e;--ink2:#5a6b7d;--line:#cdd6de;--line2:#dfe6ec;--brand:#2b4a7d;--brandink:#ffffff;--warn:#b4531f;--warnbg:#f6ece5;--good:#1f6b52;--navbg:#f8fafb;--navink:#14202e;--navdim:#5a6b7d;--grid:#dfe6ec;--axis:#aebbc7;--axisink:#5a6b7d;--pale:#e3e9ef;--veil:rgba(20,32,46,.42)}
+[data-tbtn]{background:transparent;color:var(--navdim)}
+[data-tbtn]:hover{color:var(--navink)}
+[data-tbtn][data-active="1"]{background:var(--brand);color:var(--brandink)}
+[data-navbtn]{background:transparent;color:var(--navdim);border:0;cursor:pointer}
+[data-navbtn]:hover{color:var(--navink)}
+[data-navbtn][data-active="1"]{background:var(--brand);color:var(--brandink)}
+[data-s]{display:none}
+[data-screen="log"] [data-s="log"],[data-screen="went"] [data-s="went"],[data-screen="progress"] [data-s="progress"],[data-screen="goals"] [data-s="goals"],[data-screen="plan"] [data-s="plan"],[data-screen="lessons"] [data-s="lessons"]{display:block}
+[data-sheet-id]{display:none}
+[data-sheet="log"] [data-sheet-id="log"],[data-sheet="goal"] [data-sheet-id="goal"],[data-sheet="category"] [data-sheet-id="category"],[data-sheet="manage"] [data-sheet-id="manage"]{display:flex}
+[data-fld]{border-bottom:1px dashed var(--line);padding:2px 0;cursor:text}
+[data-fld]:hover{border-bottom-color:var(--brand)}
+[data-seg]{background:transparent;color:var(--ink2);border:1px solid var(--line);cursor:pointer}
+[data-seg][data-active="1"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+[data-dir]{cursor:pointer;border:1px solid var(--line);background:transparent}
+[data-dir][data-active="1"]{border-color:var(--ink);background:var(--pale)}
+</style>
+</helmet>
+
+<div ref="{{ rootRef }}" data-theme="paper" data-screen="went" data-sheet="" style="min-height:100vh;background:var(--bg);color:var(--ink);font-family:Archivo,system-ui,sans-serif;-webkit-font-smoothing:antialiased">
+<div style="max-width:1180px;margin:0 auto;background:var(--bg);border-left:1px solid var(--line);border-right:1px solid var(--line);min-height:100vh;position:relative">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;padding:13px 28px;background:var(--navbg);color:var(--navink);border-bottom:1px solid var(--line)">
+    <div style="display:flex;align-items:center;gap:24px;min-width:0">
+      <span style="font:700 12px/1 Archivo;letter-spacing:.2em">MERIDIAN</span>
+      <nav style="display:flex;gap:2px">
+        <button type="button" data-navbtn data-nav="log" data-active="0" onClick="{{ go }}" style="font:500 11.5px/1 Archivo;padding:7px 11px;border-radius:3px">Log</button>
+        <button type="button" data-navbtn data-nav="went" data-active="1" onClick="{{ go }}" style="font:500 11.5px/1 Archivo;padding:7px 11px;border-radius:3px">Where it went</button>
+        <button type="button" data-navbtn data-nav="progress" data-active="0" onClick="{{ go }}" style="font:500 11.5px/1 Archivo;padding:7px 11px;border-radius:3px">Progress</button>
+        <button type="button" data-navbtn data-nav="goals" data-active="0" onClick="{{ go }}" style="font:500 11.5px/1 Archivo;padding:7px 11px;border-radius:3px">Goals</button>
+        <button type="button" data-navbtn data-nav="plan" data-active="0" onClick="{{ go }}" style="font:500 11.5px/1 Archivo;padding:7px 11px;border-radius:3px">Plan</button>
+        <button type="button" data-navbtn data-nav="lessons" data-active="0" onClick="{{ go }}" style="font:500 11.5px/1 Archivo;padding:7px 11px;border-radius:3px">Lessons</button>
+      </nav>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px">
+      <div style="display:flex;gap:3px;padding:3px;border:1px solid var(--line);border-radius:4px">
+        <button type="button" data-tbtn data-theme-btn="paper" data-active="1" onClick="{{ pick }}" style="font:600 10.5px/1 Archivo;letter-spacing:.1em;padding:6px 9px;border:0;border-radius:3px;cursor:pointer">PAPER</button>
+        <button type="button" data-tbtn data-theme-btn="graphite" data-active="0" onClick="{{ pick }}" style="font:600 10.5px/1 Archivo;letter-spacing:.1em;padding:6px 9px;border:0;border-radius:3px;cursor:pointer">GRAPHITE</button>
+        <button type="button" data-tbtn data-theme-btn="blueprint" data-active="0" onClick="{{ pick }}" style="font:600 10.5px/1 Archivo;letter-spacing:.1em;padding:6px 9px;border:0;border-radius:3px;cursor:pointer">BLUEPRINT</button>
+      </div>
+      <span style="font:500 11.5px/1 Archivo;color:var(--navdim);font-variant-numeric:tabular-nums">07.06.2026 / W23</span>
+    </div>
+  </div>
+
+  <div data-s="went" data-screen-label="Where it went">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;padding:26px 28px 16px;flex-wrap:wrap">
+      <div style="min-width:0;display:flex;align-items:center;gap:15px">
+        <span title="{{ covLabel }}" style="flex:none;display:block">
+          <svg width="38" height="38" role="img" aria-label="{{ covLabel }}" style="display:block;transform:rotate(-90deg)">
+            <circle cx="19" cy="19" r="19" fill="var(--pale)"></circle>
+            <circle cx="19" cy="19" r="9.5" fill="none" stroke="var(--ink)" stroke-width="19" stroke-dasharray="{{ covArc }}"></circle>
+            <circle cx="19" cy="19" r="18.5" fill="none" stroke="var(--line)" stroke-width="1"></circle>
+          </svg>
+        </span>
+        <h1 style="font:700 40px/1.03 Archivo;letter-spacing:-.035em;margin:0;text-wrap:pretty">{{ loggedH }} hours logged</h1>
+      </div>
+      <div style="flex:1 1 300px;max-width:440px;min-width:250px">
+        <div style="font:600 10.5px/1 Archivo;letter-spacing:.14em;color:var(--ink2);margin-bottom:7px">OF LOGGED TIME</div>
+        <div style="display:flex;height:30px;border-radius:3px;overflow:hidden;border:1px solid var(--line)">
+          <div style="width:{{ moreW }};background:var(--good);display:flex;align-items:center;justify-content:center;overflow:hidden">
+            <span style="font:600 11px/1 Archivo;color:var(--brandink);white-space:nowrap">{{ upPct }}%</span>
+          </div>
+          <div style="width:{{ lessW }};background:var(--warn);display:flex;align-items:center;justify-content:center;overflow:hidden">
+            <span style="font:600 11px/1 Archivo;color:var(--brandink);white-space:nowrap">{{ downPct }}%</span>
+          </div>
+          <div style="width:{{ keepW }};position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden">
+            <span style="position:absolute;inset:0;background:var(--axis);opacity:.26"></span>
+            <span style="position:relative;font:600 11px/1 Archivo;color:var(--ink2);white-space:nowrap">{{ keepPct }}%</span>
+          </div>
+        </div>
+        <div style="font:400 11px/1.3 Archivo;color:var(--ink2);margin-top:7px">{{ dirHours }}</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:264px 1fr;align-items:start;border-top:1px solid var(--line)">
+      <div style="border-right:1px solid var(--line);padding:15px 14px 20px;max-height:660px;display:flex;flex-direction:column;overflow:hidden">
+        <div style="flex:none">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px;padding:0 4px">
+            <sc-if value="{{ showUndo }}" hint-placeholder-val="{{ false }}">
+              <button type="button" onClick="{{ undoRange }}" style="font:600 10px/1 Archivo;letter-spacing:.09em;color:var(--brand);background:transparent;border:0;padding:0;cursor:pointer;flex:none" style-hover="text-decoration:underline">&#8617; UNDO</button>
+            </sc-if>
+            <sc-if value="{{ showDays }}" hint-placeholder-val="{{ true }}">
+              <span style="font:600 10.5px/1 Archivo;letter-spacing:.1em;color:var(--ink);font-variant-numeric:tabular-nums;flex:none">{{ rangeStatus }}</span>
+            </sc-if>
+            <span style="flex:1 1 auto"></span>
+            <div style="display:flex;gap:4px;flex:none">
+              <button type="button" data-preset="30" data-active="0" onClick="{{ setPreset }}" style="box-sizing:border-box;font:600 9.5px/1 Archivo;letter-spacing:.05em;padding:6px 5px;border:1px solid var(--line);background:transparent;color:var(--ink2);border-radius:2px;cursor:pointer" style-hover="border-color:var(--ink2);color:var(--ink)">30D</button>
+              <button type="button" data-preset="90" data-active="0" onClick="{{ setPreset }}" style="box-sizing:border-box;font:600 9.5px/1 Archivo;letter-spacing:.05em;padding:6px 5px;border:1px solid var(--line);background:transparent;color:var(--ink2);border-radius:2px;cursor:pointer" style-hover="border-color:var(--ink2);color:var(--ink)">90D</button>
+              <button type="button" data-preset="ytd" data-active="0" onClick="{{ setPreset }}" style="box-sizing:border-box;font:600 9.5px/1 Archivo;letter-spacing:.05em;padding:6px 5px;border:1px solid var(--line);background:transparent;color:var(--ink2);border-radius:2px;cursor:pointer" style-hover="border-color:var(--ink2);color:var(--ink)">YTD</button>
+              <button type="button" data-preset="all" data-active="0" onClick="{{ setPreset }}" style="box-sizing:border-box;font:600 9.5px/1 Archivo;letter-spacing:.05em;padding:6px 5px;border:1px solid var(--line);background:transparent;color:var(--ink2);border-radius:2px;cursor:pointer" style-hover="border-color:var(--ink2);color:var(--ink)">ALL</button>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;padding:0 4px;margin-bottom:11px">
+            <label for="rangeStart" style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)">Start date</label>
+            <input id="rangeStart" type="text" spellcheck="false" autocomplete="off" value="{{ startText }}" onChange="{{ onStartInput }}" onFocus="{{ onStartFocus }}" onBlur="{{ onStartCommit }}" onKeyDown="{{ onDateKey }}" style="flex:1 1 0;min-width:0;box-sizing:border-box;background:var(--strip);border:1px solid var(--line);border-radius:2px;padding:7px 8px;font:600 12px/1.1 Archivo;color:var(--ink);outline:none;font-variant-numeric:tabular-nums;text-align:center" style-focus="border-color:var(--brand);background:var(--bg)">
+            <span style="font:600 12px/1 Archivo;color:var(--ink2);flex:none">&ndash;</span>
+            <label for="rangeEnd" style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)">End date</label>
+            <input id="rangeEnd" type="text" spellcheck="false" autocomplete="off" value="{{ endText }}" onChange="{{ onEndInput }}" onFocus="{{ onEndFocus }}" onBlur="{{ onEndCommit }}" onKeyDown="{{ onDateKey }}" style="flex:1 1 0;min-width:0;box-sizing:border-box;background:var(--strip);border:1px solid var(--line);border-radius:2px;padding:7px 8px;font:600 12px/1.1 Archivo;color:var(--ink);outline:none;font-variant-numeric:tabular-nums;text-align:center" style-focus="border-color:var(--brand);background:var(--bg)">
+          </div>
+        </div>
+        <div ref="{{ calScrollRef }}" style="flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden">{{ calendar }}</div>
+      </div>
+      <div style="padding:14px 18px 6px;min-width:0">
+        <div style="display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap;margin-bottom:9px">
+          <div style="margin-right:auto;min-width:0;display:flex;flex-direction:column;gap:5px">
+            <span style="font:600 10.5px/1 Archivo;letter-spacing:.14em;color:var(--ink2)">{{ rangeCaption }}</span>
+            <span style="font:400 11.5px/1 Archivo;color:var(--ink2)">{{ coverageNote }}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:9px">
+            <span style="font:600 10.5px/1 Archivo;letter-spacing:.14em;color:var(--ink2)">SPLIT</span>
+            <div style="display:flex;gap:4px">
+              <button type="button" data-seg data-dimbtn data-dim="cat" data-active="1" onClick="{{ setDim }}" style="font:600 11.5px/1 Archivo;padding:7px 11px;border-radius:3px">Category</button>
+              <button type="button" data-seg data-dimbtn data-dim="goal" data-active="0" onClick="{{ setDim }}" style="font:600 11.5px/1 Archivo;padding:7px 11px;border-radius:3px">Goal</button>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:9px">
+            <span style="font:600 10.5px/1 Archivo;letter-spacing:.14em;color:var(--ink2)">SORT</span>
+            <div style="display:flex;gap:4px">
+              <button type="button" data-seg data-sortbtn data-sort="desc" data-active="0" onClick="{{ setSort }}" style="font:600 11.5px/1 Archivo;padding:7px 11px;border-radius:3px">Descending</button>
+              <button type="button" data-seg data-sortbtn data-sort="asc" data-active="1" onClick="{{ setSort }}" style="font:600 11.5px/1 Archivo;padding:7px 11px;border-radius:3px">Ascending</button>
+            </div>
+          </div>
+        </div>
+        <div style="text-align:right;font:600 9.5px/1 Archivo;letter-spacing:.14em;color:var(--ink2);margin-bottom:5px">% OF LOGGED</div>
+        {{ chart }}
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:20px;padding:14px 28px 26px;flex-wrap:wrap;font:500 12px/1 Archivo;color:var(--ink2);border-top:1px solid var(--line)">
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:13px;height:13px;background:var(--good);border-radius:2px"></span>More is better</span>
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:13px;height:13px;background:var(--warn);border-radius:2px"></span>Less is better</span>
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:13px;height:13px;background:var(--axis);border-radius:2px"></span>Upkeep &mdash; neither</span>
+      <span style="color:var(--ink);font-weight:600">Click any band to shade the days it happened.</span>
+    </div>
+  </div>
+
+  <div data-s="progress" data-screen-label="Progress">
+    <div style="padding:28px 28px 22px">
+      <div style="font:600 11px/1 Archivo;letter-spacing:.18em;color:var(--ink2);margin-bottom:12px">LEARN PYTHON</div>
+      <h1 style="font:700 44px/1.03 Archivo;letter-spacing:-.035em;margin:0 0 8px;text-wrap:pretty">Finishing 14 Oct. <span style="color:var(--warn)">25 days late.</span></h1>
+      <p style="font:400 15px/1.5 Archivo;color:var(--ink2);margin:0;max-width:58ch">Seven hours a week gets you October. Ten gets you September.</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--strip)">
+      <div style="padding:17px 24px;border-right:1px solid var(--line)">
+        <div style="font:600 10.5px/1 Archivo;letter-spacing:.14em;color:var(--ink2);margin-bottom:9px">BANKED</div>
+        <div style="font:600 30px/1 Archivo;font-variant-numeric:tabular-nums;letter-spacing:-.02em">42<span style="font-size:15px;color:var(--ink2)">/130 h</span></div>
+      </div>
+      <div style="padding:17px 24px;border-right:1px solid var(--line)">
+        <div style="font:600 10.5px/1 Archivo;letter-spacing:.14em;color:var(--ink2);margin-bottom:9px">PACE</div>
+        <div style="font:600 30px/1 Archivo;font-variant-numeric:tabular-nums;letter-spacing:-.02em">7.0<span style="font-size:15px;color:var(--ink2)"> h/wk</span></div>
+      </div>
+      <div style="padding:17px 24px;border-right:1px solid var(--line)">
+        <div style="font:600 10.5px/1 Archivo;letter-spacing:.14em;color:var(--ink2);margin-bottom:9px">REQUIRED</div>
+        <div style="font:600 30px/1 Archivo;font-variant-numeric:tabular-nums;letter-spacing:-.02em;color:var(--brand)">10.0<span style="font-size:15px;color:var(--ink2)"> h/wk</span></div>
+      </div>
+      <div style="padding:17px 24px;background:var(--warnbg)">
+        <div style="font:600 10.5px/1 Archivo;letter-spacing:.14em;color:var(--ink2);margin-bottom:9px">SLIPPAGE</div>
+        <div style="font:600 30px/1 Archivo;font-variant-numeric:tabular-nums;letter-spacing:-.02em;color:var(--warn)">+25<span style="font-size:15px;color:var(--ink2)"> days</span></div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 272px">
+      <div style="padding:22px 26px 26px;border-right:1px solid var(--line)">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:10px;flex-wrap:wrap">
+          <div style="font:600 11px/1 Archivo;letter-spacing:.14em;color:var(--ink2)">HOURS BANKED &mdash; PROJECTED</div>
+          <div style="display:flex;gap:16px;font:500 11px/1 Archivo;color:var(--ink2)">
+            <span style="display:flex;align-items:center;gap:5px"><span style="width:16px;height:3px;background:var(--ink)"></span>logged</span>
+            <span style="display:flex;align-items:center;gap:5px"><span style="width:16px;height:3px;background:var(--brand)"></span>your pace</span>
+            <span style="display:flex;align-items:center;gap:5px"><span style="width:16px;height:3px;background:repeating-linear-gradient(90deg,var(--axisink) 0 4px,transparent 4px 7px)"></span>needed</span>
+          </div>
+        </div>
+        <svg viewBox="0 0 880 330" style="width:100%;display:block">
+          <rect x="556" y="24" width="119" height="266" style="fill:var(--warn);opacity:.08"></rect>
+          <g style="stroke:var(--grid);stroke-width:1">
+            <line x1="56" y1="86" x2="856" y2="86"></line>
+            <line x1="56" y1="158" x2="856" y2="158"></line>
+            <line x1="56" y1="224" x2="856" y2="224"></line>
+          </g>
+          <g font-family="Archivo" font-size="16" style="fill:var(--axisink)">
+            <text x="46" y="49" text-anchor="end">130</text><text x="46" y="164" text-anchor="end">65</text><text x="46" y="296" text-anchor="end">0</text>
+          </g>
+          <line x1="56" y1="43" x2="856" y2="43" style="stroke:var(--axis);stroke-width:1;stroke-dasharray:4 4"></line>
+          <line x1="56" y1="290" x2="856" y2="290" style="stroke:var(--axis);stroke-width:1"></line>
+          <line x1="556" y1="24" x2="556" y2="290" style="stroke:var(--ink);stroke-width:1"></line>
+          <text x="551" y="36" text-anchor="end" font-family="Archivo" font-size="16" font-weight="600" style="fill:var(--ink)">TARGET 30 SEP</text>
+          <line x1="675" y1="43" x2="675" y2="290" style="stroke:var(--warn);stroke-width:1"></line>
+          <text x="681" y="36" font-family="Archivo" font-size="16" font-weight="600" style="fill:var(--warn)">14 OCT</text>
+          <path d="M256,210 L556,43" style="fill:none;stroke:var(--axisink);stroke-width:1.6;stroke-dasharray:6 5"></path>
+          <path d="M256,210 L675,43" style="fill:none;stroke:var(--brand);stroke-width:2.6"></path>
+          <circle cx="675" cy="43" r="4" style="fill:var(--warn)"></circle>
+          <path d="M56,290 L89,280 L123,269 L156,263 L189,248 L223,227 L256,210" style="fill:none;stroke:var(--ink);stroke-width:3"></path>
+          <circle cx="256" cy="210" r="4" style="fill:var(--ink)"></circle>
+          <text x="248" y="200" text-anchor="end" font-family="Archivo" font-size="17" font-weight="600" style="fill:var(--ink)">42 h</text>
+          <g font-family="Archivo" font-size="16" text-anchor="middle" style="fill:var(--axisink)">
+            <text x="56" y="308">W17</text><text x="256" y="308">W23</text><text x="456" y="308">W29</text><text x="656" y="308">W35</text><text x="856" y="308">W41</text>
+          </g>
+        </svg>
+        <sc-if value="{{ showExplainer }}" hint-placeholder-val="{{ true }}">
+          <div style="font:400 11.5px/1.5 Archivo;color:var(--ink2);margin-top:10px">Projected from logged hours, not from your plan.</div>
+        </sc-if>
+      </div>
+
+      <div style="padding:22px 26px 26px">
+        <div style="font:600 11px/1 Archivo;letter-spacing:.14em;color:var(--ink2);margin-bottom:15px">LEVERS</div>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;font:500 13px/1.2 Archivo;margin-bottom:7px"><span>Scrolling &minus;30 m/d</span><span style="font-weight:700;color:var(--brand);font-variant-numeric:tabular-nums">&minus;25 d</span></div>
+            <div style="height:5px;background:var(--pale);border-radius:3px"><div style="width:100%;height:100%;background:var(--brand);border-radius:3px"></div></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;font:500 13px/1.2 Archivo;margin-bottom:7px"><span>Weekend block +2 h</span><span style="font-weight:700;color:var(--brand);font-variant-numeric:tabular-nums">&minus;15 d</span></div>
+            <div style="height:5px;background:var(--pale);border-radius:3px"><div style="width:60%;height:100%;background:var(--brand);border-radius:3px"></div></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;font:500 13px/1.2 Archivo;margin-bottom:7px"><span>Idle TV &minus;1 h/wk</span><span style="font-weight:700;color:var(--brand);font-variant-numeric:tabular-nums">&minus;7 d</span></div>
+            <div style="height:5px;background:var(--pale);border-radius:3px"><div style="width:28%;height:100%;background:var(--brand);border-radius:3px"></div></div>
+          </div>
+        </div>
+        <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--line);font:600 11px/1 Archivo;letter-spacing:.14em;color:var(--ink2);margin-bottom:6px">ALL GOALS</div>
+        <div style="display:flex;flex-direction:column">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:10px 0;font:500 12.5px/1 Archivo;font-variant-numeric:tabular-nums"><span style="color:var(--brand);font-weight:600">Learn Python</span><span style="color:var(--warn)">+25 d</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:10px 0;border-top:1px solid var(--line2);font:500 12.5px/1 Archivo;font-variant-numeric:tabular-nums"><span>Read 12 books</span><span style="color:var(--ink2)">on time</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:10px 0;border-top:1px solid var(--line2);font:500 12.5px/1 Archivo;font-variant-numeric:tabular-nums"><span>Run 200 km</span><span style="color:var(--ink2)">&minus;12 d</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div data-s="log" data-screen-label="Log">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding:28px 28px 20px;flex-wrap:wrap">
+      <div>
+        <div style="font:600 11px/1 Archivo;letter-spacing:.18em;color:var(--ink2);margin-bottom:12px">SUNDAY 7 JUNE</div>
+        <h1 style="font:700 40px/1.03 Archivo;letter-spacing:-.035em;margin:0">9.5 h accounted for<span style="color:var(--ink2)">, 14.5 to go</span></h1>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button type="button" style="font:600 12px/1 Archivo;padding:10px 13px;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:3px;cursor:pointer">&larr;</button>
+        <button type="button" style="font:600 12px/1 Archivo;padding:10px 13px;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:3px;cursor:pointer">&rarr;</button>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:84px 1fr 128px 152px 92px 40px;gap:12px;align-items:center;padding:14px 28px;background:var(--strip);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+      <div data-fld style="font:600 15px/1.2 Archivo;font-variant-numeric:tabular-nums;color:var(--ink2)">1.5 h</div>
+      <div data-fld style="font:400 15px/1.2 Archivo;color:var(--ink2)">What did you do?</div>
+      <div style="font:500 12.5px/1 Archivo;color:var(--ink2);border:1px solid var(--line);border-radius:3px;padding:8px 10px;display:flex;justify-content:space-between;gap:8px"><span>Category</span><span>&#9662;</span></div>
+      <div style="display:flex;gap:5px">
+        <span style="width:11px;height:11px;border-radius:50%;border:1.5px solid var(--axis)"></span>
+        <span style="width:11px;height:11px;border-radius:50%;border:1.5px solid var(--axis)"></span>
+        <span style="width:11px;height:11px;border-radius:50%;border:1.5px solid var(--axis)"></span>
+        <span style="width:11px;height:11px;border-radius:50%;border:1.5px solid var(--axis)"></span>
+        <span style="width:11px;height:11px;border-radius:50%;border:1.5px solid var(--axis)"></span>
+      </div>
+      <button type="button" data-open="log" onClick="{{ open }}" style="font:700 15px/1 Archivo;padding:9px 0;border:0;border-radius:3px;background:var(--brand);color:var(--brandink);cursor:pointer">+</button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:84px 1fr 128px 152px 92px 40px;gap:12px;padding:12px 28px 8px;font:600 10.5px/1 Archivo;letter-spacing:.14em;color:var(--ink2)">
+      <div>HOURS</div><div>ACTIVITY</div><div>CATEGORY</div><div>COUNTS TOWARD</div><div>VALUE</div><div></div>
+    </div>
+
+    <div style="padding:0 28px 8px">
+      <div style="display:grid;grid-template-columns:84px 1fr 128px 152px 92px 40px;gap:12px;align-items:center;padding:13px 0;border-top:1px solid var(--line)">
+        <div style="font:600 15px/1.2 Archivo;font-variant-numeric:tabular-nums">2.0 h</div>
+        <div data-fld style="font:400 15px/1.3 Archivo">Python &mdash; async chapter</div>
+        <div><span style="font:500 12px/1 Archivo;padding:5px 9px;border-radius:3px;background:var(--pale);color:var(--ink)">Learning</span></div>
+        <div style="font:500 12.5px/1.3 Archivo;color:var(--brand)">Learn Python</div>
+        <div style="display:flex;gap:5px"><span style="width:11px;height:11px;border-radius:50%;background:var(--brand)"></span><span style="width:11px;height:11px;border-radius:50%;background:var(--brand)"></span><span style="width:11px;height:11px;border-radius:50%;background:var(--brand)"></span><span style="width:11px;height:11px;border-radius:50%;background:var(--brand)"></span><span style="width:11px;height:11px;border-radius:50%;border:1.5px solid var(--axis)"></span></div>
+        <div style="font:500 13px/1 Archivo;color:var(--ink2);text-align:center;cursor:pointer">&hellip;</div>
+      </div>
+      <div style="display:grid;grid-template-columns:84px 1fr 128px 152px 92px 40px;gap:12px;align-items:center;padding:13px 0;border-top:1px solid var(--line)">
+        <div style="font:600 15px/1.2 Archivo;font-variant-numeric:tabular-nums">1.0 h</div>
+        <div data-fld style="font:400 15px/1.3 Archivo">Dinner with Priya</div>
+        <div><span style="font:500 12px/1 Archivo;padding:5px 9px;border-radius:3px;background:var(--pale);color:var(--ink)">Family</span></div>
+        <div style="font:500 12.5px/1.3 Archivo;color:var(--axis)">&mdash;</div>
+        <div style="display:flex;gap:5px"><span style="width:11px;height:11px;border-radius:50%;background:var(--brand)"></span><span style="width:11px;height:11px;border-radius:50%;background:var(--brand)"></span><span style="width:11px;height:11px;border-radius:50%;background:var(--brand)"></span><span style="width:11px;height:11px;border-radius:50%;background:var(--brand)"></span><span style="width:11px;height:11px;border-radius:50%;background:var(--brand)"></span></div>
+        <div style="font:500 13px/1 Archivo;color:var(--ink2);text-align:center;cursor:pointer">&hellip;</div>
+      </div>
+      <div style="display:grid;grid-template-columns:84px 1fr 128px 152px 92px 40px;gap:12px;align-items:center;padding:13px 0;border-top:1px solid var(--line)">
+        <div style="font:600 15px/1.2 Archivo;font-variant-numeric:tabular-nums">4.5 h</div>
+        <div data-fld style="font:400 15px/1.3 Archivo">Client review &amp; follow-ups</div>
+        <div><span style="font:500 12px/1 Archivo;padding:5px 9px;border-radius:3px;background:var(--pale);color:var(--ink)">Work</span></div>
+        <div style="font:500 12.5px/1.3 Archivo;color:var(--axis)">&mdash;</div>
+        <div style="display:flex;gap:5px"><span style="width:11px;height:11px;border-radius:50%;background:var(--brand)"></span><span style="width:11px;height:11px;border-radius:50%;background:var(--brand)"></span><span style="width:11px;height:11px;border-radius:50%;background:var(--brand)"></span><span style="width:11px;height:11px;border-radius:50%;border:1.5px solid var(--axis)"></span><span style="width:11px;height:11px;border-radius:50%;border:1.5px solid var(--axis)"></span></div>
+        <div style="font:500 13px/1 Archivo;color:var(--ink2);text-align:center;cursor:pointer">&hellip;</div>
+      </div>
+      <div style="display:grid;grid-template-columns:84px 1fr 128px 152px 92px 40px;gap:12px;align-items:center;padding:13px 0;border-top:1px solid var(--line)">
+        <div style="font:600 15px/1.2 Archivo;font-variant-numeric:tabular-nums">1.5 h</div>
+        <div data-fld style="font:400 15px/1.3 Archivo">Phone, no reason</div>
+        <div><span style="font:500 12px/1 Archivo;padding:5px 9px;border-radius:3px;background:var(--warnbg);color:var(--warn)">Scrolling</span></div>
+        <div style="font:500 12.5px/1.3 Archivo;color:var(--axis)">&mdash;</div>
+        <div style="display:flex;gap:5px"><span style="width:11px;height:11px;border-radius:50%;background:var(--axis)"></span><span style="width:11px;height:11px;border-radius:50%;border:1.5px solid var(--axis)"></span><span style="width:11px;height:11px;border-radius:50%;border:1.5px solid var(--axis)"></span><span style="width:11px;height:11px;border-radius:50%;border:1.5px solid var(--axis)"></span><span style="width:11px;height:11px;border-radius:50%;border:1.5px solid var(--axis)"></span></div>
+        <div style="font:500 13px/1 Archivo;color:var(--ink2);text-align:center;cursor:pointer">&hellip;</div>
+      </div>
+      <div style="display:grid;grid-template-columns:84px 1fr 128px 152px 92px 40px;gap:12px;align-items:center;padding:13px 0;border-top:1px solid var(--line)">
+        <div style="font:600 15px/1.2 Archivo;font-variant-numeric:tabular-nums">0.5 h</div>
+        <div data-fld style="font:400 15px/1.3 Archivo">Walk after lunch</div>
+        <div><span style="font:500 12px/1 Archivo;padding:5px 9px;border-radius:3px;background:var(--pale);color:var(--ink)">Exercise</span></div>
+        <div style="font:500 12.5px/1.3 Archivo;color:var(--brand)">Half marathon</div>
+        <div style="display:flex;gap:5px"><span style="width:11px;height:11px;border-radius:50%;background:var(--brand)"></span><span style="width:11px;height:11px;border-radius:50%;background:var(--brand)"></span><span style="width:11px;height:11px;border-radius:50%;background:var(--brand)"></span><span style="width:11px;height:11px;border-radius:50%;border:1.5px solid var(--axis)"></span><span style="width:11px;height:11px;border-radius:50%;border:1.5px solid var(--axis)"></span></div>
+        <div style="font:500 13px/1 Archivo;color:var(--ink2);text-align:center;cursor:pointer">&hellip;</div>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:flex-end;gap:8px;padding:22px 28px 28px;border-top:1px solid var(--line);margin-top:14px">
+      <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+        <div style="font:600 11px/1 Archivo;font-variant-numeric:tabular-nums;text-align:center;color:var(--ink2)">15.0</div>
+        <div style="height:52px;display:flex;align-items:flex-end"><div style="width:100%;height:83.3%;background:var(--pale)"></div></div>
+        <div style="font:500 11px/1 Archivo;color:var(--ink2);text-align:center">Mon</div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+        <div style="font:600 11px/1 Archivo;font-variant-numeric:tabular-nums;text-align:center;color:var(--ink2)">12.0</div>
+        <div style="height:52px;display:flex;align-items:flex-end"><div style="width:100%;height:66.7%;background:var(--pale)"></div></div>
+        <div style="font:500 11px/1 Archivo;color:var(--ink2);text-align:center">Tue</div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+        <div style="font:600 11px/1 Archivo;font-variant-numeric:tabular-nums;text-align:center;color:var(--ink2)">16.0</div>
+        <div style="height:52px;display:flex;align-items:flex-end"><div style="width:100%;height:88.9%;background:var(--pale)"></div></div>
+        <div style="font:500 11px/1 Archivo;color:var(--ink2);text-align:center">Wed</div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+        <div style="font:600 11px/1 Archivo;font-variant-numeric:tabular-nums;text-align:center;color:var(--ink2)">14.0</div>
+        <div style="height:52px;display:flex;align-items:flex-end"><div style="width:100%;height:77.8%;background:var(--pale)"></div></div>
+        <div style="font:500 11px/1 Archivo;color:var(--ink2);text-align:center">Thu</div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+        <div style="font:600 11px/1 Archivo;font-variant-numeric:tabular-nums;text-align:center;color:var(--ink2)">17.0</div>
+        <div style="height:52px;display:flex;align-items:flex-end"><div style="width:100%;height:94.4%;background:var(--pale)"></div></div>
+        <div style="font:500 11px/1 Archivo;color:var(--ink2);text-align:center">Fri</div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+        <div style="font:600 11px/1 Archivo;font-variant-numeric:tabular-nums;text-align:center;color:var(--ink2)">13.5</div>
+        <div style="height:52px;display:flex;align-items:flex-end"><div style="width:100%;height:75%;background:var(--pale)"></div></div>
+        <div style="font:500 11px/1 Archivo;color:var(--ink2);text-align:center">Sat</div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+        <div style="font:600 11px/1 Archivo;font-variant-numeric:tabular-nums;text-align:center;color:var(--ink)">9.5</div>
+        <div style="height:52px;display:flex;align-items:flex-end"><div style="width:100%;height:52.8%;background:var(--brand)"></div></div>
+        <div style="font:500 11px/1 Archivo;color:var(--ink2);text-align:center">Sun</div>
+      </div>
+      <div style="width:150px;padding-left:16px;border-left:1px solid var(--line);align-self:stretch;display:flex;flex-direction:column;justify-content:flex-end">
+        <div style="font:600 10.5px/1 Archivo;letter-spacing:.14em;color:var(--ink2);margin-bottom:7px">LOGGED THIS WEEK</div>
+        <div style="font:600 22px/1 Archivo;font-variant-numeric:tabular-nums">97<span style="font-size:13px;color:var(--ink2)">/168 h</span></div>
+        <div style="font:400 11px/1.4 Archivo;color:var(--ink2);margin-top:7px">Bars are hours per day, 18 h scale.</div>
+      </div>
+    </div>
+  </div>
+
+  <div data-s="goals" data-screen-label="Goals">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding:28px 28px 20px;flex-wrap:wrap">
+      <div>
+        <div style="font:600 11px/1 Archivo;letter-spacing:.18em;color:var(--ink2);margin-bottom:12px">GOALS</div>
+        <h1 style="font:700 40px/1.03 Archivo;letter-spacing:-.035em;margin:0">Three open. <span style="color:var(--warn)">One slipping.</span></h1>
+      </div>
+      <button type="button" data-open="goal" onClick="{{ open }}" style="font:600 12.5px/1 Archivo;padding:11px 15px;border:0;border-radius:3px;background:var(--brand);color:var(--brandink);cursor:pointer">+ New goal</button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 96px 118px 1fr 118px;gap:14px;padding:12px 28px;font:600 10.5px/1 Archivo;letter-spacing:.14em;color:var(--ink2);border-bottom:1px solid var(--line)">
+      <div>GOAL</div><div>TARGET</div><div>BY</div><div>PROGRESS</div><div style="text-align:right">LANDS</div>
+    </div>
+
+    <div style="padding:0 28px">
+      <div style="display:grid;grid-template-columns:1fr 96px 118px 1fr 118px;gap:14px;align-items:center;padding:18px 0;border-bottom:1px solid var(--line)">
+        <div><div data-fld style="font:600 17px/1.2 Archivo">Learn Python</div><div style="font:400 12px/1.4 Archivo;color:var(--ink2);margin-top:5px">someone who can build their own tools</div></div>
+        <div data-fld style="font:500 14px/1.2 Archivo;font-variant-numeric:tabular-nums">130 h</div>
+        <div data-fld style="font:500 14px/1.2 Archivo;font-variant-numeric:tabular-nums">30 Sep</div>
+        <div>
+          <div style="height:7px;background:var(--pale);border-radius:4px;margin-bottom:6px"><div style="width:32%;height:100%;background:var(--brand);border-radius:4px"></div></div>
+          <div style="font:500 11.5px/1 Archivo;color:var(--ink2);font-variant-numeric:tabular-nums">42 h &middot; 11 weeks running</div>
+        </div>
+        <div style="text-align:right"><div style="font:600 15px/1.2 Archivo;color:var(--warn);font-variant-numeric:tabular-nums">14 Oct</div><div style="font:500 11.5px/1 Archivo;color:var(--warn)">+25 days</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 96px 118px 1fr 118px;gap:14px;align-items:center;padding:18px 0;border-bottom:1px solid var(--line)">
+        <div><div data-fld style="font:600 17px/1.2 Archivo">Read 12 books</div><div style="font:400 12px/1.4 Archivo;color:var(--ink2);margin-top:5px">someone who reads instead of scrolls</div></div>
+        <div data-fld style="font:500 14px/1.2 Archivo;font-variant-numeric:tabular-nums">12</div>
+        <div data-fld style="font:500 14px/1.2 Archivo;font-variant-numeric:tabular-nums">31 Dec</div>
+        <div>
+          <div style="height:7px;background:var(--pale);border-radius:4px;margin-bottom:6px"><div style="width:58%;height:100%;background:var(--brand);border-radius:4px"></div></div>
+          <div style="font:500 11.5px/1 Archivo;color:var(--ink2);font-variant-numeric:tabular-nums">7 read &middot; 4 weeks running</div>
+        </div>
+        <div style="text-align:right"><div style="font:600 15px/1.2 Archivo;font-variant-numeric:tabular-nums">18 Dec</div><div style="font:500 11.5px/1 Archivo;color:var(--ink2)">on time</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 96px 118px 1fr 118px;gap:14px;align-items:center;padding:18px 0;border-bottom:1px solid var(--line)">
+        <div><div data-fld style="font:600 17px/1.2 Archivo">Run 200 km</div><div style="font:400 12px/1.4 Archivo;color:var(--ink2);margin-top:5px">someone who runs in the mornings</div></div>
+        <div data-fld style="font:500 14px/1.2 Archivo;font-variant-numeric:tabular-nums">200 km</div>
+        <div data-fld style="font:500 14px/1.2 Archivo;font-variant-numeric:tabular-nums">31 Oct</div>
+        <div>
+          <div style="height:7px;background:var(--pale);border-radius:4px;margin-bottom:6px"><div style="width:78%;height:100%;background:var(--brand);border-radius:4px"></div></div>
+          <div style="font:500 11.5px/1 Archivo;color:var(--ink2);font-variant-numeric:tabular-nums">156 km &middot; 19 weeks running</div>
+        </div>
+        <div style="text-align:right"><div style="font:600 15px/1.2 Archivo;font-variant-numeric:tabular-nums">19 Oct</div><div style="font:500 11.5px/1 Archivo;color:var(--ink2)">&minus;12 days</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 96px 118px 1fr 118px;gap:14px;align-items:center;padding:18px 0;border-bottom:1px solid var(--line)">
+        <div style="font:600 17px/1.2 Archivo;color:var(--ink2)">Name it</div>
+        <div style="font:500 14px/1.2 Archivo;color:var(--ink2)">hours</div>
+        <div style="font:500 14px/1.2 Archivo;color:var(--ink2)">date</div>
+        <div style="font:500 11.5px/1 Archivo;color:var(--ink2)">Meridian fills this from your log</div>
+        <div></div>
+      </div>
+    </div>
+
+    <div style="padding:22px 28px 30px;font:400 12.5px/1.5 Archivo;color:var(--ink2)">Archived goals keep their hours. Nothing is deleted.</div>
+  </div>
+
+  <div data-s="plan" data-screen-label="Plan">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding:28px 28px 20px;flex-wrap:wrap">
+      <div>
+        <div style="font:600 11px/1 Archivo;letter-spacing:.18em;color:var(--ink2);margin-bottom:12px">PLAN &mdash; A WEEK</div>
+        <h1 style="font:700 40px/1.03 Archivo;letter-spacing:-.035em;margin:0 0 8px">52 hours are actually yours</h1>
+        <p style="font:400 15px/1.5 Archivo;color:var(--ink2);margin:0;max-width:60ch">Sleep, work and errands take 116. Plan the rest &mdash; every hour you add here comes out of another row.</p>
+      </div>
+      <button type="button" data-open="manage" onClick="{{ open }}" style="font:600 12.5px/1 Archivo;padding:11px 15px;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:3px;cursor:pointer">Manage categories</button>
+    </div>
+
+    <div style="padding:0 28px 22px">
+      <div style="display:flex;height:34px;border-radius:3px;overflow:hidden;border:1px solid var(--line)">
+        <div style="width:33.3%;background:var(--pale);display:flex;align-items:center;padding-left:11px;font:600 11.5px/1 Archivo;color:var(--ink2)">SLEEP 56</div>
+        <div style="width:26.8%;background:var(--pale);display:flex;align-items:center;padding-left:11px;font:600 11.5px/1 Archivo;color:var(--ink2);border-left:1px solid var(--line)">WORK 45</div>
+        <div style="width:8.9%;background:var(--pale);display:flex;align-items:center;padding-left:11px;font:600 11.5px/1 Archivo;color:var(--ink2);border-left:1px solid var(--line)">15</div>
+        <div style="width:31%;background:var(--brand);display:flex;align-items:center;padding-left:11px;font:600 11.5px/1 Archivo;color:var(--brandink)">YOURS 52</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 92px 82px 82px 96px;gap:14px;padding:12px 28px;font:600 10.5px/1 Archivo;letter-spacing:.14em;color:var(--ink2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+      <div>WHERE THE 52 GO &mdash; PLANNED vs LIVED, SAME SCALE</div><div>DIRECTION</div><div style="text-align:right">PLAN</div><div style="text-align:right">LIVED</div><div style="text-align:right">READING</div>
+    </div>
+
+    <div style="padding:6px 28px 0">
+      <div style="display:grid;grid-template-columns:1fr 92px 82px 82px 96px;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line2)">
+        <div>
+          <div style="font:600 14px/1.2 Archivo;margin-bottom:8px">Family</div>
+          <div style="position:relative;height:12px;background:var(--pale);border-radius:2px">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:75%;background:var(--good);border-radius:2px"></div>
+            <div style="position:absolute;left:87.5%;top:-3px;bottom:-3px;width:2px;background:var(--ink)"></div>
+          </div>
+        </div>
+        <div style="font:600 10.5px/1 Archivo;letter-spacing:.1em;color:var(--good)">&#9650; MORE</div>
+        <div data-fld style="font:600 15px/1.2 Archivo;font-variant-numeric:tabular-nums;text-align:right">14.0</div>
+        <div style="font:500 15px/1.2 Archivo;font-variant-numeric:tabular-nums;text-align:right">12.0</div>
+        <div style="font:600 12.5px/1.3 Archivo;text-align:right;color:var(--warn)">2 h short</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 92px 82px 82px 96px;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line2)">
+        <div>
+          <div style="font:600 14px/1.2 Archivo;margin-bottom:8px">Learning &mdash; Python</div>
+          <div style="position:relative;height:12px;background:var(--pale);border-radius:2px">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:43.75%;background:var(--brand);border-radius:2px"></div>
+            <div style="position:absolute;left:62.5%;top:-3px;bottom:-3px;width:2px;background:var(--ink)"></div>
+          </div>
+        </div>
+        <div style="font:600 10.5px/1 Archivo;letter-spacing:.1em;color:var(--good)">&#9650; MORE</div>
+        <div data-fld style="font:600 15px/1.2 Archivo;font-variant-numeric:tabular-nums;text-align:right">10.0</div>
+        <div style="font:500 15px/1.2 Archivo;font-variant-numeric:tabular-nums;text-align:right">7.0</div>
+        <div style="font:600 12.5px/1.3 Archivo;text-align:right;color:var(--warn)">3 h short<br><span style="font-weight:500;color:var(--ink2)">= 25 days late</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 92px 82px 82px 96px;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line2)">
+        <div>
+          <div style="font:600 14px/1.2 Archivo;margin-bottom:8px">Scrolling</div>
+          <div style="position:relative;height:12px;background:var(--pale);border-radius:2px">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:87.5%;background:var(--warn);border-radius:2px"></div>
+            <div style="position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;background:var(--ink)"></div>
+          </div>
+        </div>
+        <div style="font:600 10.5px/1 Archivo;letter-spacing:.1em;color:var(--warn)">&#9660; LESS</div>
+        <div data-fld style="font:600 15px/1.2 Archivo;font-variant-numeric:tabular-nums;text-align:right">8.0</div>
+        <div style="font:500 15px/1.2 Archivo;font-variant-numeric:tabular-nums;text-align:right;color:var(--warn)">14.0</div>
+        <div style="font:600 12.5px/1.3 Archivo;text-align:right;color:var(--warn)">6 h over cap</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 92px 82px 82px 96px;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line2)">
+        <div>
+          <div style="font:600 14px/1.2 Archivo;margin-bottom:8px">Exercise</div>
+          <div style="position:relative;height:12px;background:var(--pale);border-radius:2px">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:31.25%;background:var(--good);border-radius:2px"></div>
+            <div style="position:absolute;left:37.5%;top:-3px;bottom:-3px;width:2px;background:var(--ink)"></div>
+          </div>
+        </div>
+        <div style="font:600 10.5px/1 Archivo;letter-spacing:.1em;color:var(--good)">&#9650; MORE</div>
+        <div data-fld style="font:600 15px/1.2 Archivo;font-variant-numeric:tabular-nums;text-align:right">6.0</div>
+        <div style="font:500 15px/1.2 Archivo;font-variant-numeric:tabular-nums;text-align:right">5.0</div>
+        <div style="font:600 12.5px/1.3 Archivo;text-align:right;color:var(--ink2)">1 h short</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 92px 82px 82px 96px;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line2)">
+        <div>
+          <div style="font:600 14px/1.2 Archivo;margin-bottom:8px">Reading</div>
+          <div style="position:relative;height:12px;background:var(--pale);border-radius:2px">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:18.75%;background:var(--brand);border-radius:2px"></div>
+            <div style="position:absolute;left:31.25%;top:-3px;bottom:-3px;width:2px;background:var(--ink)"></div>
+          </div>
+        </div>
+        <div style="font:600 10.5px/1 Archivo;letter-spacing:.1em;color:var(--good)">&#9650; MORE</div>
+        <div data-fld style="font:600 15px/1.2 Archivo;font-variant-numeric:tabular-nums;text-align:right">5.0</div>
+        <div style="font:500 15px/1.2 Archivo;font-variant-numeric:tabular-nums;text-align:right">3.0</div>
+        <div style="font:600 12.5px/1.3 Archivo;text-align:right;color:var(--warn)">2 h short</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 92px 82px 82px 96px;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line2)">
+        <div>
+          <div style="font:600 14px/1.2 Archivo;margin-bottom:8px">Idle TV</div>
+          <div style="position:relative;height:12px;background:var(--pale);border-radius:2px">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:50%;background:var(--warn);border-radius:2px"></div>
+            <div style="position:absolute;left:31.25%;top:-3px;bottom:-3px;width:2px;background:var(--ink)"></div>
+          </div>
+        </div>
+        <div style="font:600 10.5px/1 Archivo;letter-spacing:.1em;color:var(--warn)">&#9660; LESS</div>
+        <div data-fld style="font:600 15px/1.2 Archivo;font-variant-numeric:tabular-nums;text-align:right">5.0</div>
+        <div style="font:500 15px/1.2 Archivo;font-variant-numeric:tabular-nums;text-align:right;color:var(--warn)">8.0</div>
+        <div style="font:600 12.5px/1.3 Archivo;text-align:right;color:var(--warn)">3 h over cap</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 92px 82px 82px 96px;gap:14px;align-items:center;padding:12px 0">
+        <div>
+          <div style="font:600 14px/1.2 Archivo;margin-bottom:8px">Everything else</div>
+          <div style="position:relative;height:12px;background:var(--pale);border-radius:2px">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:18.75%;background:var(--axis);border-radius:2px"></div>
+            <div style="position:absolute;left:25%;top:-3px;bottom:-3px;width:2px;background:var(--ink)"></div>
+          </div>
+        </div>
+        <div style="font:600 10.5px/1 Archivo;letter-spacing:.1em;color:var(--ink2)">UPKEEP</div>
+        <div data-fld style="font:600 15px/1.2 Archivo;font-variant-numeric:tabular-nums;text-align:right">4.0</div>
+        <div style="font:500 15px/1.2 Archivo;font-variant-numeric:tabular-nums;text-align:right">3.0</div>
+        <div style="font:500 12.5px/1.3 Archivo;text-align:right;color:var(--ink2)">fine</div>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;padding:18px 28px;margin:14px 0 0;border-top:1px solid var(--line);background:var(--strip);flex-wrap:wrap">
+      <div style="display:flex;gap:26px;flex-wrap:wrap">
+        <div><div style="font:600 10.5px/1 Archivo;letter-spacing:.14em;color:var(--ink2);margin-bottom:7px">PLANNED</div><div style="font:600 20px/1 Archivo;font-variant-numeric:tabular-nums">52.0 <span style="font-size:13px;color:var(--ink2)">of 52</span></div></div>
+        <div><div style="font:600 10.5px/1 Archivo;letter-spacing:.14em;color:var(--ink2);margin-bottom:7px">AT THIS PLAN, PYTHON LANDS</div><div style="font:600 20px/1 Archivo;font-variant-numeric:tabular-nums;color:var(--brand)">12 Sep</div></div>
+        <div><div style="font:600 10.5px/1 Archivo;letter-spacing:.14em;color:var(--ink2);margin-bottom:7px">AT LAST WEEK&rsquo;S PACE</div><div style="font:600 20px/1 Archivo;font-variant-numeric:tabular-nums;color:var(--warn)">14 Oct</div></div>
+      </div>
+      <button type="button" style="font:600 12.5px/1 Archivo;padding:11px 16px;border:0;border-radius:3px;background:var(--brand);color:var(--brandink);cursor:pointer">Save plan</button>
+    </div>
+    <div style="padding:18px 28px 30px;font:400 12.5px/1.5 Archivo;color:var(--ink2)">Bars are lived hours, ticks are your plan. Colour follows the category&rsquo;s direction &mdash; over a cap is red, over a protected floor is not.</div>
+  </div>
+
+  <div data-s="lessons" data-screen-label="Lessons">
+    <div style="padding:28px 28px 20px">
+      <div style="font:600 11px/1 Archivo;letter-spacing:.18em;color:var(--ink2);margin-bottom:12px">LESSONS</div>
+      <h1 style="font:700 40px/1.03 Archivo;letter-spacing:-.035em;margin:0">What the weeks taught you</h1>
+    </div>
+
+    <div style="margin:0 28px 26px;border:1px solid var(--line);border-radius:4px;background:var(--strip)">
+      <div style="padding:14px 20px 0;font:600 11px/1 Archivo;letter-spacing:.14em;color:var(--ink2)">W23 CLOSE-OUT &mdash; 1 OF 3</div>
+      <div data-fld style="margin:12px 20px;font:400 17px/1.5 Archivo;color:var(--ink2)">Scrolling took 6 h more than you planned, mostly Thursday and Friday nights. What happened?</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 20px;border-top:1px solid var(--line);flex-wrap:wrap">
+        <div style="display:flex;gap:7px">
+          <span style="font:500 12px/1 Archivo;padding:7px 11px;border-radius:3px;background:var(--pale);color:var(--ink)">Scrolling</span>
+          <span style="font:500 12px/1 Archivo;padding:7px 11px;border:1px dashed var(--axis);border-radius:3px;color:var(--ink2)">+ tag</span>
+        </div>
+        <div style="display:flex;gap:7px">
+          <button type="button" style="font:600 12.5px/1 Archivo;padding:10px 14px;border:1px solid var(--line);background:transparent;color:var(--ink2);border-radius:3px;cursor:pointer">Skip</button>
+          <button type="button" style="font:600 12.5px/1 Archivo;padding:10px 16px;border:0;border-radius:3px;background:var(--brand);color:var(--brandink);cursor:pointer">Save &amp; next</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:0 28px 30px">
+      <div style="display:grid;grid-template-columns:96px 1fr 168px;gap:18px;align-items:start;padding:20px 0;border-top:1px solid var(--line)">
+        <div style="font:600 12px/1.3 Archivo;color:var(--ink2);font-variant-numeric:tabular-nums">W22<br>31 May</div>
+        <div data-fld style="font:400 18px/1.45 Archivo;text-wrap:pretty">Python only happens before 8am. Every evening attempt this month became scrolling.</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end"><span style="font:500 11.5px/1 Archivo;padding:6px 9px;border-radius:3px;background:var(--pale)">Learn Python</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:96px 1fr 168px;gap:18px;align-items:start;padding:20px 0;border-top:1px solid var(--line)">
+        <div style="font:600 12px/1.3 Archivo;color:var(--ink2);font-variant-numeric:tabular-nums">W20<br>17 May</div>
+        <div data-fld style="font:400 18px/1.45 Archivo;text-wrap:pretty">Two hours with family beat six hours of &ldquo;available&rdquo;. Presence is not duration.</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end"><span style="font:500 11.5px/1 Archivo;padding:6px 9px;border-radius:3px;background:var(--pale)">Family</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:96px 1fr 168px;gap:18px;align-items:start;padding:20px 0;border-top:1px solid var(--line)">
+        <div style="font:600 12px/1.3 Archivo;color:var(--ink2);font-variant-numeric:tabular-nums">W17<br>26 Apr</div>
+        <div data-fld style="font:400 18px/1.45 Archivo;text-wrap:pretty">Side project archived without guilt. The 38 hours were not wasted, the deadline was invented.</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end"><span style="font:500 11.5px/1 Archivo;padding:6px 9px;border-radius:3px;background:var(--pale)">Side project</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:96px 1fr 168px;gap:18px;align-items:start;padding:20px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+        <div style="font:600 12px/1.3 Archivo;color:var(--ink2);font-variant-numeric:tabular-nums">W14<br>5 Apr</div>
+        <div data-fld style="font:400 18px/1.45 Archivo;text-wrap:pretty">Logging at night is guesswork. Log it when it ends or don&rsquo;t log it.</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end"><span style="font:500 11.5px/1 Archivo;padding:6px 9px;border-radius:3px;background:var(--pale)">Habit</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div data-sheet-id="log" style="position:fixed;inset:0;background:var(--veil);align-items:flex-start;justify-content:center;padding:60px 20px;z-index:40">
+    <div style="width:100%;max-width:560px;background:var(--bg);border:1px solid var(--line);border-radius:4px;box-shadow:0 18px 50px rgba(0,0,0,.28)">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 22px;border-bottom:1px solid var(--line)">
+        <div style="font:600 11px/1 Archivo;letter-spacing:.16em;color:var(--ink2)">NEW ENTRY &mdash; SUN 7 JUNE</div>
+        <button type="button" data-open="" onClick="{{ open }}" style="font:500 17px/1 Archivo;border:0;background:transparent;color:var(--ink2);cursor:pointer">&times;</button>
+      </div>
+      <div style="padding:20px 22px 8px;display:flex;flex-direction:column;gap:18px">
+        <div>
+          <div style="font:600 10.5px/1 Archivo;letter-spacing:.14em;color:var(--ink2);margin-bottom:9px">HOW LONG</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button type="button" data-seg data-active="0" style="font:600 13px/1 Archivo;padding:10px 14px;border-radius:3px">30 m</button>
+            <button type="button" data-seg data-active="0" style="font:600 13px/1 Archivo;padding:10px 14px;border-radius:3px">1 h</button>
+            <button type="button" data-seg data-active="1" style="font:600 13px/1 Archivo;padding:10px 14px;border-radius:3px">2 h</button>
+            <button type="button" data-seg data-active="0" style="font:600 13px/1 Archivo;padding:10px 14px;border-radius:3px">3 h</button>
+            <button type="button" data-seg data-active="0" style="font:600 13px/1 Archivo;padding:10px 14px;border-radius:3px">Other</button>
+          </div>
+        </div>
+        <div>
+          <div style="font:600 10.5px/1 Archivo;letter-spacing:.14em;color:var(--ink2);margin-bottom:9px">ACTIVITY &mdash; OPTIONAL</div>
+          <div data-fld style="font:400 16px/1.4 Archivo;color:var(--ink2)">Async chapter + exercises</div>
+        </div>
+        <div>
+          <div style="font:600 10.5px/1 Archivo;letter-spacing:.14em;color:var(--ink2);margin-bottom:9px">COUNTS TOWARD</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button type="button" data-seg data-active="1" style="font:600 13px/1 Archivo;padding:10px 14px;border-radius:3px">Learn Python</button>
+            <button type="button" data-seg data-active="0" style="font:600 13px/1 Archivo;padding:10px 14px;border-radius:3px">Learn Postgres</button>
+            <button type="button" data-seg data-active="0" style="font:600 13px/1 Archivo;padding:10px 14px;border-radius:3px">Half marathon</button>
+            <button type="button" data-seg data-active="0" style="font:600 13px/1 Archivo;padding:10px 14px;border-radius:3px">Nothing yet</button>
+          </div>
+          <div style="font:400 11.5px/1.45 Archivo;color:var(--ink2);margin-top:9px;text-wrap:pretty">A goal lives inside one category, so picking it fills the category below. Two hours of Postgres would never touch Python.</div>
+        </div>
+        <div>
+          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:9px">
+            <span style="font:600 10.5px/1 Archivo;letter-spacing:.14em;color:var(--ink2)">CATEGORY</span>
+            <span style="font:500 10.5px/1 Archivo;letter-spacing:.06em;color:var(--brand)">FILLED FROM THE GOAL</span>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+            <span style="font:600 13px/1 Archivo;padding:10px 14px;border-radius:3px;background:var(--ink);color:var(--bg);display:flex;align-items:center;gap:7px">Learning<span style="opacity:.55;font-weight:500">locked</span></span>
+            <button type="button" style="font:500 12px/1 Archivo;padding:10px 12px;border:1px solid var(--line);background:transparent;color:var(--ink2);border-radius:3px;cursor:pointer">Change</button>
+          </div>
+        </div>
+      </div>
+      <div style="margin:18px 22px;padding:16px 18px;background:var(--strip);border:1px solid var(--line);border-radius:3px">
+        <div style="font:600 10.5px/1 Archivo;letter-spacing:.14em;color:var(--ink2);margin-bottom:12px">SAVING THIS MOVES</div>
+        <div style="display:flex;align-items:baseline;gap:10px;font:600 17px/1.2 Archivo;font-variant-numeric:tabular-nums;margin-bottom:8px">
+          <span style="color:var(--ink2)">Learn Python 42.0</span><span style="color:var(--ink2)">&rarr;</span><span>44.0 h</span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:10px;font:600 22px/1.2 Archivo;font-variant-numeric:tabular-nums">
+          <span style="color:var(--ink2);font-size:17px">Lands 14 Oct</span><span style="color:var(--ink2);font-size:17px">&rarr;</span><span style="color:var(--good)">11 Oct</span>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;padding:0 22px 20px">
+        <button type="button" data-open="" onClick="{{ open }}" style="font:600 12.5px/1 Archivo;padding:11px 15px;border:1px solid var(--line);background:transparent;color:var(--ink2);border-radius:3px;cursor:pointer">Cancel</button>
+        <button type="button" data-open="" onClick="{{ open }}" style="font:600 12.5px/1 Archivo;padding:11px 18px;border:0;border-radius:3px;background:var(--brand);color:var(--brandink);cursor:pointer">Save entry</button>
+      </div>
+    </div>
+  </div>
+
+  <div data-sheet-id="goal" style="position:fixed;inset:0;background:var(--veil);align-items:flex-start;justify-content:center;padding:60px 20px;z-index:40">
+    <div style="width:100%;max-width:560px;background:var(--bg);border:1px solid var(--line);border-radius:4px;box-shadow:0 18px 50px rgba(0,0,0,.28)">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 22px;border-bottom:1px solid var(--line)">
+        <div style="font:600 11px/1 Archivo;letter-spacing:.16em;color:var(--ink2)">NEW GOAL</div>
+        <button type="button" data-open="" onClick="{{ open }}" style="font:500 17px/1 Archivo;border:0;background:transparent;color:var(--ink2);cursor:pointer">&times;</button>
+      </div>
+      <div style="padding:20px 22px 8px;display:flex;flex-direction:column;gap:18px">
+        <div>
+          <div style="font:600 10.5px/1 Archivo;letter-spacing:.14em;color:var(--ink2);margin-bottom:9px">I WANT TO BECOME</div>
+          <div data-fld style="font:400 20px/1.35 Archivo;color:var(--ink2)">someone who&hellip;</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div>
+            <div style="font:600 10.5px/1 Archivo;letter-spacing:.14em;color:var(--ink2);margin-bottom:9px">SHORT NAME</div>
+            <div data-fld style="font:600 16px/1.3 Archivo;color:var(--ink2)">Learn Python</div>
+          </div>
+          <div>
+            <div style="font:600 10.5px/1 Archivo;letter-spacing:.14em;color:var(--ink2);margin-bottom:9px">FED BY</div>
+            <div style="font:500 13px/1 Archivo;color:var(--ink);border:1px solid var(--line);border-radius:3px;padding:10px 11px;display:flex;justify-content:space-between;gap:8px"><span>Learning</span><span style="color:var(--ink2)">&#9662;</span></div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div>
+            <div style="font:600 10.5px/1 Archivo;letter-spacing:.14em;color:var(--ink2);margin-bottom:9px">HOURS NEEDED</div>
+            <div data-fld style="font:600 16px/1.3 Archivo;font-variant-numeric:tabular-nums">130</div>
+          </div>
+          <div>
+            <div style="font:600 10.5px/1 Archivo;letter-spacing:.14em;color:var(--ink2);margin-bottom:9px">BY</div>
+            <div data-fld style="font:600 16px/1.3 Archivo;font-variant-numeric:tabular-nums">30 Sep 2026</div>
+          </div>
+        </div>
+      </div>
+      <div style="margin:18px 22px;padding:16px 18px;background:var(--strip);border:1px solid var(--line);border-radius:3px">
+        <div style="font:600 10.5px/1 Archivo;letter-spacing:.14em;color:var(--ink2);margin-bottom:12px">IS THAT REACHABLE</div>
+        <div style="font:600 17px/1.35 Archivo;margin-bottom:8px">You&rsquo;ve given Learning <span style="font-variant-numeric:tabular-nums">7.0 h</span> a week for 11 weeks. This needs <span style="color:var(--brand);font-variant-numeric:tabular-nums">10.0 h</span>.</div>
+        <div style="font:400 13px/1.5 Archivo;color:var(--ink2)">At 7 h it lands 14 Oct. Meridian will keep both dates in view instead of just the one you typed.</div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 22px 20px;flex-wrap:wrap">
+        <div style="font:400 11.5px/1.4 Archivo;color:var(--ink2);max-width:44ch">Date changes take effect next week, not today.</div>
+        <div style="display:flex;gap:8px">
+          <button type="button" data-open="" onClick="{{ open }}" style="font:600 12.5px/1 Archivo;padding:11px 15px;border:1px solid var(--line);background:transparent;color:var(--ink2);border-radius:3px;cursor:pointer">Cancel</button>
+          <button type="button" data-open="" onClick="{{ open }}" style="font:600 12.5px/1 Archivo;padding:11px 18px;border:0;border-radius:3px;background:var(--brand);color:var(--brandink);cursor:pointer">Create goal</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div data-sheet-id="category" style="position:fixed;inset:0;background:var(--veil);align-items:flex-start;justify-content:center;padding:60px 20px;z-index:41">
+    <div style="width:100%;max-width:560px;background:var(--bg);border:1px solid var(--line);border-radius:4px;box-shadow:0 18px 50px rgba(0,0,0,.28)">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 22px;border-bottom:1px solid var(--line)">
+        <div style="font:600 11px/1 Archivo;letter-spacing:.16em;color:var(--ink2)">NEW CATEGORY</div>
+        <button type="button" data-open="back" onClick="{{ open }}" style="font:500 17px/1 Archivo;border:0;background:transparent;color:var(--ink2);cursor:pointer">&times;</button>
+      </div>
+      <div style="padding:20px 22px 8px;display:flex;flex-direction:column;gap:18px">
+        <div style="display:grid;grid-template-columns:1fr 132px;gap:16px">
+          <div>
+            <div style="font:600 10.5px/1 Archivo;letter-spacing:.14em;color:var(--ink2);margin-bottom:9px">NAME</div>
+            <div data-fld style="font:600 18px/1.3 Archivo;color:var(--ink2)">Volunteering</div>
+          </div>
+          <div>
+            <div style="font:600 10.5px/1 Archivo;letter-spacing:.14em;color:var(--ink2);margin-bottom:9px">COLOUR</div>
+            <div style="display:flex;gap:6px">
+              <span style="width:22px;height:22px;border-radius:3px;background:#2b7d5d;outline:2px solid var(--ink);outline-offset:2px"></span>
+              <span style="width:22px;height:22px;border-radius:3px;background:#2b4a7d"></span>
+              <span style="width:22px;height:22px;border-radius:3px;background:#a8641d"></span>
+              <span style="width:22px;height:22px;border-radius:3px;background:#6b4a7d"></span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div style="font:600 10.5px/1 Archivo;letter-spacing:.14em;color:var(--ink2);margin-bottom:9px">DIRECTION &mdash; WHAT DOES MORE OF THIS MEAN</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+            <div data-dir data-active="1" style="padding:13px 14px;border-radius:3px">
+              <div style="font:600 13px/1 Archivo;color:var(--good);margin-bottom:6px">&#9650; More</div>
+              <div style="font:400 11.5px/1.4 Archivo;color:var(--ink2)">More is better. Can carry goals.</div>
+            </div>
+            <div data-dir data-active="0" style="padding:13px 14px;border-radius:3px">
+              <div style="font:600 13px/1 Archivo;color:var(--warn);margin-bottom:6px">&#9660; Less</div>
+              <div style="font:400 11.5px/1.4 Archivo;color:var(--ink2)">Less is better. Has a weekly cap.</div>
+            </div>
+            <div data-dir data-active="0" style="padding:13px 14px;border-radius:3px">
+              <div style="font:600 13px/1 Archivo;color:var(--ink2);margin-bottom:6px">&mdash; Upkeep</div>
+              <div style="font:400 11.5px/1.4 Archivo;color:var(--ink2)">The cost of running a life. Never scored.</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div style="font:600 10.5px/1 Archivo;letter-spacing:.14em;color:var(--ink2);margin-bottom:9px">COUNTS TOWARD</div>
+          <div style="font:500 13px/1 Archivo;color:var(--ink2);border:1px solid var(--line);border-radius:3px;padding:11px 12px;display:flex;justify-content:space-between;gap:8px"><span>No goal &mdash; logged, never scored</span><span>&#9662;</span></div>
+        </div>
+      </div>
+      <div style="margin:18px 22px;padding:14px 18px;background:var(--strip);border:1px solid var(--line);border-radius:3px;font:400 13px/1.5 Archivo;color:var(--ink2)">Upkeep is logged but never scored or ranked &mdash; haircuts, laundry, commutes. You&rsquo;ll see the hours, never a verdict.</div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;padding:0 22px 20px">
+        <button type="button" data-open="back" onClick="{{ open }}" style="font:600 12.5px/1 Archivo;padding:11px 15px;border:1px solid var(--line);background:transparent;color:var(--ink2);border-radius:3px;cursor:pointer">Cancel</button>
+        <button type="button" data-open="back" onClick="{{ open }}" style="font:600 12.5px/1 Archivo;padding:11px 18px;border:0;border-radius:3px;background:var(--brand);color:var(--brandink);cursor:pointer">Add category</button>
+      </div>
+    </div>
+  </div>
+
+  <div data-sheet-id="manage" style="position:fixed;inset:0;background:var(--veil);align-items:flex-start;justify-content:center;padding:48px 20px;z-index:40">
+    <div style="width:100%;max-width:760px;background:var(--bg);border:1px solid var(--line);border-radius:4px;box-shadow:0 18px 50px rgba(0,0,0,.28)">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 22px;border-bottom:1px solid var(--line)">
+        <div style="font:600 11px/1 Archivo;letter-spacing:.16em;color:var(--ink2)">CATEGORIES &mdash; 97 H THIS WEEK</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button type="button" data-open="category" onClick="{{ open }}" style="font:600 12px/1 Archivo;padding:9px 13px;border:0;border-radius:3px;background:var(--brand);color:var(--brandink);cursor:pointer">+ New</button>
+          <button type="button" data-open="" onClick="{{ open }}" style="font:500 17px/1 Archivo;border:0;background:transparent;color:var(--ink2);cursor:pointer">&times;</button>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 84px 92px 1fr 118px;gap:14px;padding:11px 22px;font:600 10.5px/1 Archivo;letter-spacing:.14em;color:var(--ink2);border-bottom:1px solid var(--line)">
+        <div>CATEGORY</div><div>DIRECTION</div><div style="text-align:right">THIS WEEK</div><div>SHARE OF 168 H</div><div style="text-align:right">ACTIONS</div>
+      </div>
+
+      <div style="padding:0 22px;max-height:52vh;overflow:auto">
+        <div style="display:grid;grid-template-columns:1fr 84px 92px 1fr 118px;gap:14px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line2)">
+          <div style="display:flex;align-items:center;gap:10px"><span style="width:11px;height:11px;border-radius:2px;background:#2b7d5d;flex:none"></span><span data-fld style="font:600 15px/1.2 Archivo">Work</span></div>
+          <div style="font:600 10px/1 Archivo;letter-spacing:.1em;color:var(--ink2)">UPKEEP</div>
+          <div style="font:600 14px/1.2 Archivo;font-variant-numeric:tabular-nums;text-align:right">45.0 h</div>
+          <div><div style="height:6px;background:var(--pale);border-radius:3px"><div style="width:26.8%;height:100%;background:#2b7d5d;border-radius:3px"></div></div></div>
+          <div style="font:500 12px/1 Archivo;color:var(--ink2);text-align:right">edit &middot; archive</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 84px 92px 1fr 118px;gap:14px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line2)">
+          <div style="display:flex;align-items:center;gap:10px"><span style="width:11px;height:11px;border-radius:2px;background:#2b4a7d;flex:none"></span><span data-fld style="font:600 15px/1.2 Archivo">Learning</span></div>
+          <div style="font:600 10px/1 Archivo;letter-spacing:.1em;color:var(--good)">&#9650; MORE</div>
+          <div style="font:600 14px/1.2 Archivo;font-variant-numeric:tabular-nums;text-align:right">7.0 h</div>
+          <div><div style="height:6px;background:var(--pale);border-radius:3px"><div style="width:4.2%;height:100%;background:#2b4a7d;border-radius:3px"></div></div></div>
+          <div style="font:500 12px/1 Archivo;color:var(--ink2);text-align:right">edit &middot; archive</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 84px 92px 1fr 118px;gap:14px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line2)">
+          <div style="display:flex;align-items:center;gap:10px"><span style="width:11px;height:11px;border-radius:2px;background:#a8641d;flex:none"></span><span data-fld style="font:600 15px/1.2 Archivo">Family</span></div>
+          <div style="font:600 10px/1 Archivo;letter-spacing:.1em;color:var(--good)">&#9650; MORE</div>
+          <div style="font:600 14px/1.2 Archivo;font-variant-numeric:tabular-nums;text-align:right">12.0 h</div>
+          <div><div style="height:6px;background:var(--pale);border-radius:3px"><div style="width:7.1%;height:100%;background:#a8641d;border-radius:3px"></div></div></div>
+          <div style="font:500 12px/1 Archivo;color:var(--ink2);text-align:right">edit &middot; archive</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 84px 92px 1fr 118px;gap:14px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line2)">
+          <div style="display:flex;align-items:center;gap:10px"><span style="width:11px;height:11px;border-radius:2px;background:#6b4a7d;flex:none"></span><span data-fld style="font:600 15px/1.2 Archivo">Exercise</span></div>
+          <div style="font:600 10px/1 Archivo;letter-spacing:.1em;color:var(--good)">&#9650; MORE</div>
+          <div style="font:600 14px/1.2 Archivo;font-variant-numeric:tabular-nums;text-align:right">5.0 h</div>
+          <div><div style="height:6px;background:var(--pale);border-radius:3px"><div style="width:3%;height:100%;background:#6b4a7d;border-radius:3px"></div></div></div>
+          <div style="font:500 12px/1 Archivo;color:var(--ink2);text-align:right">edit &middot; archive</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 84px 92px 1fr 118px;gap:14px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line2)">
+          <div style="display:flex;align-items:center;gap:10px"><span style="width:11px;height:11px;border-radius:2px;background:#5a6b7d;flex:none"></span><span data-fld style="font:600 15px/1.2 Archivo">Reading</span></div>
+          <div style="font:600 10px/1 Archivo;letter-spacing:.1em;color:var(--good)">&#9650; MORE</div>
+          <div style="font:600 14px/1.2 Archivo;font-variant-numeric:tabular-nums;text-align:right">3.0 h</div>
+          <div><div style="height:6px;background:var(--pale);border-radius:3px"><div style="width:1.8%;height:100%;background:#5a6b7d;border-radius:3px"></div></div></div>
+          <div style="font:500 12px/1 Archivo;color:var(--ink2);text-align:right">edit &middot; archive</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 84px 92px 1fr 118px;gap:14px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line2)">
+          <div style="display:flex;align-items:center;gap:10px"><span style="width:11px;height:11px;border-radius:2px;background:#c8291a;flex:none"></span><span data-fld style="font:600 15px/1.2 Archivo">Scrolling</span></div>
+          <div style="font:600 10px/1 Archivo;letter-spacing:.1em;color:var(--warn)">&#9660; LESS</div>
+          <div style="font:600 14px/1.2 Archivo;font-variant-numeric:tabular-nums;text-align:right;color:var(--warn)">14.0 h</div>
+          <div><div style="height:6px;background:var(--pale);border-radius:3px"><div style="width:8.3%;height:100%;background:#c8291a;border-radius:3px"></div></div></div>
+          <div style="font:500 12px/1 Archivo;color:var(--ink2);text-align:right">edit &middot; archive</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 84px 92px 1fr 118px;gap:14px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line2)">
+          <div style="display:flex;align-items:center;gap:10px"><span style="width:11px;height:11px;border-radius:2px;background:#7d2b5d;flex:none"></span><span data-fld style="font:600 15px/1.2 Archivo">Idle TV</span></div>
+          <div style="font:600 10px/1 Archivo;letter-spacing:.1em;color:var(--warn)">&#9660; LESS</div>
+          <div style="font:600 14px/1.2 Archivo;font-variant-numeric:tabular-nums;text-align:right;color:var(--warn)">8.0 h</div>
+          <div><div style="height:6px;background:var(--pale);border-radius:3px"><div style="width:4.8%;height:100%;background:#7d2b5d;border-radius:3px"></div></div></div>
+          <div style="font:500 12px/1 Archivo;color:var(--ink2);text-align:right">edit &middot; archive</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 84px 92px 1fr 118px;gap:14px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line2)">
+          <div style="display:flex;align-items:center;gap:10px"><span style="width:11px;height:11px;border-radius:2px;background:#6b6b5a;flex:none"></span><span data-fld style="font:600 15px/1.2 Archivo">Everything else</span></div>
+          <div style="font:600 10px/1 Archivo;letter-spacing:.1em;color:var(--ink2)">UPKEEP</div>
+          <div style="font:600 14px/1.2 Archivo;font-variant-numeric:tabular-nums;text-align:right">3.0 h</div>
+          <div><div style="height:6px;background:var(--pale);border-radius:3px"><div style="width:1.8%;height:100%;background:#6b6b5a;border-radius:3px"></div></div></div>
+          <div style="font:500 12px/1 Archivo;color:var(--ink2);text-align:right">edit &middot; archive</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 84px 92px 1fr 118px;gap:14px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line2)">
+          <div style="display:flex;align-items:center;gap:10px"><span style="width:11px;height:11px;border-radius:2px;background:var(--axis);flex:none"></span><span style="font:600 15px/1.2 Archivo;color:var(--ink2)">Side project</span></div>
+          <div style="font:600 10px/1 Archivo;letter-spacing:.1em;color:var(--ink2)">ARCHIVED</div>
+          <div style="font:500 12.5px/1.3 Archivo;color:var(--ink2);text-align:right">38 h kept<br>to 26 Apr</div>
+          <div style="font:400 11.5px/1.4 Archivo;color:var(--ink2)">Out of the plan, still in the history</div>
+          <div style="font:600 12px/1 Archivo;color:var(--brand);text-align:right;cursor:pointer">restore</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 84px 92px 1fr 118px;gap:14px;align-items:center;padding:13px 0">
+          <div style="display:flex;align-items:center;gap:10px"><span style="width:11px;height:11px;border-radius:2px;background:#4a6b8a;flex:none"></span><span style="font:600 15px/1.2 Archivo;color:var(--ink2)">Language app</span></div>
+          <div style="font:600 10px/1 Archivo;letter-spacing:.1em;color:var(--good)">&#9650; MORE</div>
+          <div style="font:600 14px/1.2 Archivo;font-variant-numeric:tabular-nums;text-align:right;color:var(--ink2)">0.0 h</div>
+          <div style="font:400 11.5px/1.4 Archivo;color:var(--ink2)">Never used &mdash; safe to delete</div>
+          <div style="font:600 12px/1 Archivo;color:var(--warn);text-align:right;cursor:pointer">delete</div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 22px;border-top:1px solid var(--line);background:var(--strip);flex-wrap:wrap">
+        <div style="font:400 12px/1.5 Archivo;color:var(--ink2);max-width:58ch">Delete only clears categories with no hours. Anything you&rsquo;ve lived gets archived, so past weeks keep adding up to 168.</div>
+        <button type="button" data-open="" onClick="{{ open }}" style="font:600 12.5px/1 Archivo;padding:11px 18px;border:0;border-radius:3px;background:var(--brand);color:var(--brandink);cursor:pointer">Done</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;paper&quot;,&quot;graphite&quot;,&quot;blueprint&quot;],&quot;default&quot;:&quot;paper&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;log&quot;,&quot;went&quot;,&quot;progress&quot;,&quot;goals&quot;,&quot;plan&quot;,&quot;lessons&quot;],&quot;default&quot;:&quot;went&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;showExplainer&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Content&quot;}}">
+class Component extends DCLogic {
+  rootRef = React.createRef();
+  themes = ['paper', 'graphite', 'blueprint'];
+  screens = ['log', 'went', 'progress', 'goals', 'plan', 'lessons'];
+  sheets = ['', 'log', 'goal', 'category', 'manage'];
+
+  CATS = [
+    {id:'work',   n:'Work',            dir:'keep', wk:45, we:0.25},
+    {id:'scroll', n:'Scrolling',       dir:'down', wk:14, we:1.35},
+    {id:'family', n:'Family',          dir:'up',   wk:12, we:2.10},
+    {id:'tv',     n:'Idle TV',         dir:'down', wk:8,  we:1.50},
+    {id:'learn',  n:'Learning',        dir:'up',   wk:7,  we:1.20},
+    {id:'ex',     n:'Exercise',        dir:'up',   wk:5,  we:1.30},
+    {id:'read',   n:'Reading',         dir:'up',   wk:3,  we:1.40},
+    {id:'else',   n:'Everything else', dir:'keep', wk:3,  we:1.00}
+  ];
+  GOALS = [
+    {id:'py', n:'Learn Python',   cat:'learn', share:0.55},
+    {id:'pg', n:'Learn Postgres', cat:'learn', share:0.22},
+    {id:'hm', n:'Half marathon',  cat:'ex',    share:0.72},
+    {id:'bk', n:'Read 24 books',  cat:'read',  share:0.78}
+  ];
+  MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  DOW = ['S','M','T','W','T','F','S'];
+
+  dnum(y, m, d) { return Math.floor(Date.UTC(y, m, d) / 86400000); }
+
+  TODAY = this.dnum(2026, 5, 7);
+  DEFSTART = this.dnum(2026, 0, 15);
+  state = { src:'logged', dim:'cat', sort:'asc', start:this.dnum(2026, 0, 15), end:this.dnum(2026, 5, 7), focus:null, pend:0, hov:null, dstart:null, dend:null, efield:null, undo:null };
+  MINDAY = this.dnum(2025, 6, 1);
+  calScroll = React.createRef();
+
+  hash(n) { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
+
+  dayCat(dn, c, i) {
+    const wd = new Date(dn * 86400000).getUTCDay();
+    const weekend = wd === 0 || wd === 6;
+    const f = weekend ? c.we : (7 - 2 * c.we) / 5;
+    return (c.wk / 7) * f * (0.45 + 1.1 * this.hash(dn * 9.7 + i * 57.3));
+  }
+
+  totals() {
+    const st = this.state.start, en = this.state.end;
+    const cat = {}, goal = {}, dir = {up:0, down:0, keep:0};
+    this.CATS.forEach(c => { cat[c.id] = 0; });
+    this.GOALS.forEach(g => { goal[g.id] = 0; });
+    let logged = 0;
+    for (let dn = st; dn <= en; dn++) {
+      this.CATS.forEach((c, i) => {
+        const v = this.dayCat(dn, c, i);
+        cat[c.id] += v; dir[c.dir] += v; logged += v;
+        const gs = [];
+        this.GOALS.forEach((g, j) => {
+          if (g.cat === c.id) gs.push({ g: g, s: g.share * (0.6 + 0.8 * this.hash(dn * 3.7 + j * 41.3)) });
+        });
+        let ss = 0; gs.forEach(x => { ss += x.s; });
+        const k = ss > 0.92 ? 0.92 / ss : 1;
+        gs.forEach(x => { goal[x.g.id] += v * x.s * k; });
+      });
+    }
+    const days = en - st + 1;
+    return { days: days, total: days * 24, logged: logged, cat: cat, goal: goal, dir: dir };
+  }
+
+  dayFocus(dn) {
+    const f = this.state.focus;
+    if (!f) return 0;
+    if (f === 'unacc') {
+      let sum = 0; this.CATS.forEach((c, i) => { sum += this.dayCat(dn, c, i); });
+      return Math.max(0, 24 - sum);
+    }
+    const p = f.indexOf(':'), kind = f.slice(0, p), id = f.slice(p + 1);
+    if (kind === 'cat') {
+      const i = this.CATS.findIndex(c => c.id === id);
+      return i < 0 ? 0 : this.dayCat(dn, this.CATS[i], i);
+    }
+    if (kind === 'dir') {
+      let sum = 0; this.CATS.forEach((c, i) => { if (c.dir === id) sum += this.dayCat(dn, c, i); });
+      return sum;
+    }
+    if (kind === 'goal') {
+      let att = 0, tot = 0;
+      this.CATS.forEach((c, i) => {
+        const v = this.dayCat(dn, c, i); tot += v;
+        const gs = [];
+        this.GOALS.forEach((g, j) => {
+          if (g.cat === c.id) gs.push({ g: g, s: g.share * (0.6 + 0.8 * this.hash(dn * 3.7 + j * 41.3)) });
+        });
+        let ss = 0; gs.forEach(x => { ss += x.s; });
+        const k = ss > 0.92 ? 0.92 / ss : 1;
+        gs.forEach(x => { const h = v * x.s * k; att += h; if (x.g.id === id) att = att; if (x.g.id === id) this._hit = h; });
+      });
+      if (id === 'none') return Math.max(0, tot - att);
+      let out = 0;
+      this.CATS.forEach((c, i) => {
+        const g = this.GOALS.find(x => x.id === id);
+        if (!g || g.cat !== c.id) return;
+        const j = this.GOALS.indexOf(g);
+        const v = this.dayCat(dn, c, i);
+        const gs = [];
+        this.GOALS.forEach((gg, jj) => {
+          if (gg.cat === c.id) gs.push({ id: gg.id, s: gg.share * (0.6 + 0.8 * this.hash(dn * 3.7 + jj * 41.3)) });
+        });
+        let ss = 0; gs.forEach(x => { ss += x.s; });
+        const k = ss > 0.92 ? 0.92 / ss : 1;
+        gs.forEach(x => { if (x.id === id) out = v * x.s * k; });
+      });
+      return out;
+    }
+    return 0;
+  }
+
+  colOf(d) { return d === 'up' ? 'var(--good)' : d === 'down' ? 'var(--warn)' : 'var(--axis)'; }
+  fmt(n) { return Math.round(n).toLocaleString('en-US'); }
+  dlabel(dn) {
+    const d = new Date(dn * 86400000);
+    return d.getUTCDate() + ' ' + this.MON[d.getUTCMonth()] + ' ' + d.getUTCFullYear();
+  }
+
+  buildNodes(t) {
+    const dim = this.state.dim;
+    let nodes = [];
+    if (dim === 'cat') {
+      nodes = this.CATS.map(c => ({ id:'cat:' + c.id, n:c.n, dir:c.dir, h:t.cat[c.id] }));
+    } else {
+      let att = 0;
+      nodes = this.GOALS.map(g => { att += t.goal[g.id]; return { id:'goal:' + g.id, n:g.n, dir:'up', h:t.goal[g.id], sub:this.CATS.find(c => c.id === g.cat).n }; });
+      nodes.push({ id:'goal:none', n:'No goal', dir:'keep', h:Math.max(0, t.logged - att), sub:'across every category' });
+    }
+    if (this.state.src === 'all') nodes.push({ id:'unacc', n:'Unaccounted', dir:'gap', h:Math.max(0, t.total - t.logged), sub:'never logged' });
+    const s = this.state.sort === 'asc' ? -1 : 1;
+    nodes.sort((a, b) => s * (b.h - a.h));
+    return nodes;
+  }
+
+  layout(vals, space, minH) {
+    let sum = 0; vals.forEach(v => { sum += v; });
+    if (sum <= 0) return vals.map(() => space / vals.length);
+    let hs = vals.map(v => v / sum * space);
+    let fixed = 0, free = 0;
+    hs.forEach(h => { if (h < minH) fixed += minH; else free += h; });
+    if (fixed > 0 && free > 0) {
+      const rem = Math.max(0, space - fixed);
+      hs = hs.map(h => h < minH ? minH : h / free * rem);
+    }
+    return hs;
+  }
+
+  chart(t) {
+    const e = React.createElement;
+    const nodes = this.buildNodes(t);
+    const total = this.state.src === 'all' ? t.total : t.logged;
+    const focus = this.state.focus;
+    const n = nodes.length;
+    const PAD = 24, GAP = 9, MINH = 34, xL = 176, xR = 628, bw = 26, W = 900;
+    const nameX = xR + bw + 16;
+    const H = Math.max(420, n * 56 + PAD * 2);
+    const avail = H - PAD * 2;
+    const space = avail - GAP * (n - 1);
+    const hs = this.layout(nodes.map(d => d.h), space, MINH);
+    const mid = (xL + xR) / 2;
+
+    let ty = (H - space) / 2;
+    const trunk = hs.map(h => { const y = ty; ty += h; return { y0:y, y1:y + h }; });
+    let ry = PAD;
+    const right = hs.map(h => { const y = ry; ry += h + GAP; return { y0:y, y1:y + h }; });
+
+    const groups = nodes.map((d, i) => {
+      const col = d.dir === 'gap' ? 'var(--axis)' : this.colOf(d.dir);
+      const on = focus === d.id;
+      const dim = focus && !on;
+      const a = trunk[i], b = right[i];
+      const path = 'M ' + xL + ',' + a.y0 +
+        ' C ' + mid + ',' + a.y0 + ' ' + mid + ',' + b.y0 + ' ' + xR + ',' + b.y0 +
+        ' L ' + xR + ',' + b.y1 +
+        ' C ' + mid + ',' + b.y1 + ' ' + mid + ',' + a.y1 + ' ' + xL + ',' + a.y1 + ' Z';
+      const pct = total > 0 ? (d.h / total * 100) : 0;
+      const lc = (b.y0 + b.y1) / 2;
+      return e('g', {
+        key: d.id,
+        style: { cursor: 'pointer' },
+        onClick: () => this.setState(st => ({ focus: st.focus === d.id ? null : d.id }))
+      }, [
+        e('path', { key:'p', d:path, fill:col,
+          fillOpacity: dim ? 0.08 : (on ? 0.72 : (d.dir === 'gap' ? 0.22 : 0.42)),
+          stroke: d.dir === 'gap' ? col : 'none',
+          strokeDasharray: d.dir === 'gap' ? '3 3' : null,
+          strokeOpacity: dim ? 0.2 : 0.85 }),
+        e('rect', { key:'r', x:xR, y:b.y0, width:bw, height:Math.max(1, b.y1 - b.y0), fill:col,
+          fillOpacity: dim ? 0.18 : 1,
+          stroke: d.dir === 'gap' ? col : 'none', strokeDasharray: d.dir === 'gap' ? '3 3' : null }),
+        e('rect', { key:'t', x:xL - bw, y:a.y0, width:bw, height:Math.max(1, a.y1 - a.y0), fill:col,
+          fillOpacity: dim ? 0.18 : (d.dir === 'gap' ? 0.35 : 0.85) }),
+        e('line', { key:'ld', x1:xR + bw + 3, x2:nameX - 8, y1:lc, y2:lc,
+          stroke:'var(--line)', strokeWidth:1, strokeOpacity: dim ? 0.3 : 1 }),
+        e('text', { key:'n', x:nameX, y: d.sub ? lc - 4 : lc + 3, fontFamily:'Archivo', fontSize:14.5, fontWeight:600,
+          fill:'var(--ink)', fillOpacity: dim ? 0.4 : 1 }, d.n),
+        d.sub ? e('text', { key:'s', x:nameX, y:lc + 12, fontFamily:'Archivo', fontSize:11,
+          fill:'var(--ink2)', fillOpacity: dim ? 0.4 : 1 }, d.sub) : null,
+        e('text', { key:'p', x:W, y:lc - 1, textAnchor:'end', fontFamily:'Archivo',
+          style:{ fontVariantNumeric:'tabular-nums' }, fillOpacity: dim ? 0.4 : 1 }, [
+          e('tspan', { key:'v', fontSize:20, fontWeight:700, fill:'var(--ink)', letterSpacing:'-.02em' },
+            pct.toFixed(pct < 10 ? 1 : 0)),
+          e('tspan', { key:'u', fontSize:11.5, fontWeight:600, fill:'var(--ink2)' }, '%')
+        ]),
+        e('text', { key:'h', x:W, y:lc + 15, textAnchor:'end', fontFamily:'Archivo', fontSize:12, fontWeight:500,
+          style:{ fontVariantNumeric:'tabular-nums' }, fill:'var(--ink2)', fillOpacity: dim ? 0.4 : 1 },
+          this.fmt(d.h) + ' h')
+      ]);
+    });
+
+    const tc = (H - space) / 2 + space / 2;
+    return e('svg', { viewBox:'0 0 ' + W + ' ' + H, style:{ width:'100%', display:'block', overflow:'visible' } }, [
+      e('g', { key:'lbl', textAnchor:'end', fontFamily:'Archivo' }, [
+        e('text', { key:'a', x:xL - bw - 14, y:tc - 12, fontSize:10.5, fontWeight:600, letterSpacing:'.14em', fill:'var(--ink2)' },
+          'LOGGED HOURS'),
+        e('text', { key:'b', x:xL - bw - 14, y:tc + 14, fontSize:26, fontWeight:700, fill:'var(--ink)' }, this.fmt(total))
+      ]),
+      e('g', { key:'g' }, groups)
+    ]);
+  }
+
+  nbr(dn, first, fdow, dim) {
+    const h = this.state.hov;
+    if (h === null || h < first || h > first + dim - 1) return false;
+    const a = fdow + (h - first), b = fdow + (dn - first);
+    return Math.abs(Math.floor(a / 7) - Math.floor(b / 7)) <= 1;
+  }
+
+  calendar() {
+    const e = React.createElement;
+    const st = this.state.start, en = this.state.end, focus = this.state.focus, ef = this.state.efield;
+    let max = 0;
+    if (focus) {
+      for (let dn = this.dnum(2025, 6, 1); dn <= this.TODAY; dn++) {
+        const v = this.dayFocus(dn); if (v > max) max = v;
+      }
+    }
+    const fcol = (function (self) {
+      if (!focus) return 'var(--axis)';
+      if (focus === 'unacc') return 'var(--axis)';
+      const nodes = self.buildNodes(self.totals());
+      const nd = nodes.find(x => x.id === focus);
+      return nd ? (nd.dir === 'gap' ? 'var(--axis)' : self.colOf(nd.dir)) : 'var(--axis)';
+    })(this);
+
+    const head = e('div', { key:'h', style:{ display:'grid', gridTemplateColumns:'32px 1fr', gap:'6px', marginBottom:'7px', position:'sticky', top:0, background:'var(--bg)', zIndex:4, paddingBottom:'4px' } }, [
+      e('div', { key:'s' }),
+      e('div', { key:'d', style:{ display:'grid', gridTemplateColumns:'repeat(7,1fr)' } },
+        this.DOW.map((d, i) => e('div', { key:i, style:{ font:'600 9.5px/1 Archivo', color:'var(--ink2)', textAlign:'center' } }, d)))
+    ]);
+
+    const bands = [];
+    for (let k = 0; k < 12; k++) {
+      const y = 2025 + Math.floor((6 + k) / 12);
+      const m = (6 + k) % 12;
+      const first = this.dnum(y, m, 1);
+      const fdow = new Date(first * 86400000).getUTCDay();
+      const dim = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+      const cells = [];
+      for (let b = 0; b < fdow; b++) cells.push(e('div', { key:'b' + b, style:{ height:'17px' } }));
+      for (let d = 1; d <= dim; d++) {
+        const dn = first + d - 1;
+        const future = dn > this.TODAY;
+        const inR = dn >= st && dn <= en;
+        const isS = dn === st, isE = dn === en;
+        let bg = 'var(--pale)', op = 1, bd = 'none';
+        if (future) { bg = 'transparent'; bd = '1px dashed var(--line2)'; }
+        else if (inR && focus) { bg = fcol; op = max > 0 ? 0.10 + 0.90 * Math.min(1, this.dayFocus(dn) / max) : 0.2; }
+        else if (inR) { bg = 'var(--axis)'; }
+        const isH = dn === this.state.hov;
+        if (isH) { bg = 'var(--brand)'; op = 1; bd = 'none'; }
+        const kids = [ e('div', { key:'f', style:{ position:'absolute', inset:'0 1px 2px 1px', borderRadius:'1px', background:bg, opacity:op, border:bd } }) ];
+        if (this.nbr(dn, first, fdow, dim)) {
+          kids.push(e('div', { key:'n', style:{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center',
+            font:'600 9px/1 Archivo', fontVariantNumeric:'tabular-nums', letterSpacing:'-.01em', pointerEvents:'none', zIndex:2,
+            color: isH ? 'var(--brandink)' : 'var(--ink)' } }, String(d)));
+        }
+        if (isS || isE) {
+          const isFoc = (ef === 'start' && isS) || (ef === 'end' && isE);
+          kids.push(e('div', { key:'k', style:{ position:'absolute', inset:'-2px -1px 0 -1px', pointerEvents:'none',
+            boxShadow: isS ? 'inset 3px 3px 0 0 var(--brand)' : 'inset -3px -3px 0 0 var(--brand)' } }));
+          if (isFoc) kids.push(e('div', { key:'r', style:{ position:'absolute', inset:'-3px -2px -1px -2px', pointerEvents:'none',
+            border:'1.5px solid var(--brand)', borderRadius:'2px', zIndex:3 } }));
+          kids.push(e('div', { key:'l', style:{ position:'absolute', left:'50%', transform:'translateX(-50%)',
+            bottom: isS ? '100%' : 'auto', top: isS ? 'auto' : '100%',
+            marginBottom: isS ? '6px' : 0, marginTop: isS ? 0 : '5px',
+            font:'600 9.5px/1 Archivo', whiteSpace:'nowrap', background:'var(--brand)', color:'var(--brandink)',
+            opacity: ef && !isFoc ? 0.4 : 1,
+            padding:'4px 6px', borderRadius:'2px', zIndex:3, pointerEvents:'none' } }, this.dlabel(dn)));
+        }
+        cells.push(e('div', {
+          key:'d' + d,
+          onClick: future ? null : () => this.onDay(dn),
+          onMouseEnter: () => this.setState({ hov: dn }),
+          style:{ position:'relative', height:'17px', cursor: future ? 'default' : 'pointer' }
+        }, kids));
+      }
+      bands.push(e('div', { key:'m' + k, 'data-mon': k, style:{ display:'grid', gridTemplateColumns:'32px 1fr', gap:'6px', alignItems:'start', marginBottom:'7px' } }, [
+        e('div', { key:'l', style:{ font:'600 10px/1 Archivo', color:'var(--ink2)', paddingTop:'3px', letterSpacing:'.04em' } },
+          this.MON[m] + (m === 0 || k === 0 ? ' ' + String(y).slice(2) : '')),
+        e('div', { key:'c', style:{ display:'grid', gridTemplateColumns:'repeat(7,1fr)' } }, cells)
+      ]));
+    }
+    return e('div', { onMouseLeave: () => this.setState({ hov:null }), style:{ padding:'0 4px' } }, [head].concat(bands));
+  }
+
+  onDay(dn) {
+    if (dn > this.TODAY) return;
+    if (this.state.pend === 0) {
+      this._pre = { s:this.state.start, e:this.state.end };
+      this.setState({ start:dn, end:dn, pend:1 });
+      return;
+    }
+    const s0 = this.state.start;
+    const a = dn < s0 ? dn : s0, b = dn < s0 ? s0 : dn;
+    this.landRange(a, b, this._pre);
+  }
+
+  landRange(start, end, prev) {
+    const p = prev || { s:this.state.start, e:this.state.end };
+    const changed = p.s !== start || p.e !== end;
+    clearTimeout(this._undoT);
+    if (changed) this._undoT = setTimeout(() => this.setState({ undo:null }), 6000);
+    this.saveRange(start, end);
+    this.setState({ start, end, pend:0, dstart:null, dend:null, efield:null, undo: changed ? p : null });
+  }
+
+  componentWillUnmount() { clearTimeout(this._undoT); clearTimeout(this._reassertT); }
+
+  parseDate(str) {
+    if (str === null || str === undefined) return null;
+    const t = String(str).trim().toLowerCase().replace(/,/g, ' ').replace(/\s+/g, ' ');
+    if (!t) return null;
+    const mi = n => this.MON.findIndex(x => x.toLowerCase() === n.slice(0, 3));
+    const yr = v => { if (!v) return null; const n = +v; return n < 100 ? 2000 + n : n; };
+    let m, Y = null, M = null, D = null;
+    if (m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/)) { Y = +m[1]; M = +m[2] - 1; D = +m[3]; }
+    else if (m = t.match(/^(\d{1,2}) ([a-z]{3,})\.? ?(\d{2,4})?$/)) { D = +m[1]; M = mi(m[2]); Y = yr(m[3]); }
+    else if (m = t.match(/^([a-z]{3,})\.? (\d{1,2}) ?(\d{2,4})?$/)) { D = +m[2]; M = mi(m[1]); Y = yr(m[3]); }
+    else if (m = t.match(/^(\d{1,2})[\/.\-](\d{1,2})(?:[\/.\-](\d{2,4}))?$/)) { D = +m[1]; M = +m[2] - 1; Y = yr(m[3]); }
+    else return null;
+    if (M === null || M < 0 || M > 11 || !D) return null;
+    if (Y === null) { Y = 2026; if (this.dnum(Y, M, D) > this.TODAY) Y = 2025; }
+    const dn = this.dnum(Y, M, D);
+    const chk = new Date(dn * 86400000);
+    if (chk.getUTCDate() !== D || chk.getUTCMonth() !== M) return null;
+    return dn;
+  }
+
+  monKey(dn) {
+    const d = new Date(dn * 86400000);
+    return (d.getUTCFullYear() - 2025) * 12 + d.getUTCMonth() - 6;
+  }
+
+  scrollToDay(dn) {
+    const sc = this.calScroll.current;
+    if (!sc) return false;
+    const el = sc.querySelector('[data-mon="' + this.monKey(dn) + '"]');
+    if (!el) return false;
+    const r = el.getBoundingClientRect(), sr = sc.getBoundingClientRect();
+    sc.scrollTop = Math.max(0, sc.scrollTop + (r.top - sr.top) - 34);
+    return true;
+  }
+
+  ensureScrolled(dn, tries) {
+    const n = tries === undefined ? 12 : tries;
+    const sc = this.calScroll.current;
+    const ready = sc && sc.scrollHeight > sc.clientHeight + 8 && sc.querySelector('[data-mon="' + this.monKey(dn) + '"]');
+    if (ready && this.scrollToDay(dn)) {
+      clearTimeout(this._reassertT);
+      this._reassertT = setTimeout(() => this.scrollToDay(dn), 400);
+      return;
+    }
+    if (n > 0) requestAnimationFrame(() => this.ensureScrolled(dn, n - 1));
+  }
+
+  saveRange(s, e2) {
+    try { localStorage.setItem('meridian.range', JSON.stringify({ s:s, e:e2 })); } catch (err) {}
+  }
+
+  commitDate(which) {
+    const draft = which === 'start' ? this.state.dstart : this.state.dend;
+    if (draft === null) { this.setState({ efield:null }); return; }
+    const dn = this.parseDate(draft);
+    if (dn === null || dn < this.MINDAY || dn > this.TODAY) {
+      this.setState(which === 'start' ? { dstart:null, efield:null } : { dend:null, efield:null });
+      return;
+    }
+    let a = which === 'start' ? dn : this.state.start;
+    let b = which === 'end' ? dn : this.state.end;
+    if (a > b) { const q = a; a = b; b = q; }
+    this.landRange(a, b);
+    this.scrollToDay(dn);
+  }
+
+  setActive(sel, attr, value) {
+    const el = this.rootRef.current;
+    if (!el) return;
+    el.querySelectorAll(sel).forEach(b => { b.dataset.active = b.dataset[attr] === value ? '1' : '0'; });
+  }
+  applyTheme(name) {
+    const el = this.rootRef.current; if (!el) return;
+    const t = this.themes.includes(name) ? name : 'paper';
+    el.dataset.theme = t;
+    this.setActive('[data-theme-btn]', 'themeBtn', t);
+  }
+  applyScreen(name) {
+    const el = this.rootRef.current; if (!el) return;
+    const s = this.screens.includes(name) ? name : 'went';
+    el.dataset.screen = s; el.dataset.sheet = '';
+    this.setActive('[data-nav]', 'nav', s);
+  }
+  applySheet(name) {
+    const el = this.rootRef.current; if (!el) return;
+    if (name === 'back') { el.dataset.sheet = this.sheetOrigin || ''; return; }
+    if (name === 'category') this.sheetOrigin = el.dataset.sheet || '';
+    el.dataset.sheet = this.sheets.includes(name) ? name : '';
+  }
+  activePreset() {
+    const s = this.state.start, e2 = this.state.end;
+    if (e2 !== this.TODAY) return null;
+    const d = new Date(e2 * 86400000);
+    if (s === e2 - 29) return '30';
+    if (s === e2 - 89) return '90';
+    if (s === this.dnum(d.getUTCFullYear(), 0, 1)) return 'ytd';
+    if (s === this.MINDAY) return 'all';
+    return null;
+  }
+  syncDials() {
+    const ap = this.activePreset();
+    const rt = this.rootRef.current;
+    if (rt) rt.querySelectorAll('[data-preset]').forEach(b => {
+      const on = b.dataset.preset === ap;
+      b.dataset.active = on ? '1' : '0';
+      b.style.borderColor = on ? 'var(--brand)' : 'var(--line)';
+      b.style.color = on ? 'var(--brandink)' : 'var(--ink2)';
+      b.style.background = on ? 'var(--brand)' : 'transparent';
+    });
+    this.setActive('[data-dimbtn]', 'dim', this.state.dim);
+    this.setActive('[data-sortbtn]', 'sort', this.state.sort);
+  }
+  componentDidMount() {
+    this.applyTheme(this.props.theme || 'paper');
+    this.applyScreen(this.props.screen || 'went');
+    this.syncDials();
+    let r = null;
+    try {
+      const raw = localStorage.getItem('meridian.range');
+      if (raw) {
+        const o = JSON.parse(raw);
+        if (o && Number.isFinite(o.s) && Number.isFinite(o.e) && o.s >= this.MINDAY && o.e <= this.TODAY && o.s <= o.e) r = o;
+      }
+    } catch (err) {}
+    if (r) this.setState({ start:r.s, end:r.e });
+    this.ensureScrolled(r ? r.s : this.state.start);
+  }
+  componentDidUpdate(prev) {
+    if (prev.theme !== this.props.theme) this.applyTheme(this.props.theme || 'paper');
+    if (prev.screen !== this.props.screen) this.applyScreen(this.props.screen || 'went');
+    this.syncDials();
+  }
+
+  renderVals() {
+    const t = this.totals();
+    const gap = Math.max(0, t.total - t.logged);
+    const base = this.state.src === 'all' ? t.total : t.logged;
+    const pc = v => base > 0 ? Math.round(v / base * 100) : 0;
+    let drain = null;
+    this.CATS.forEach(c => { if (c.dir === 'down' && (!drain || t.cat[c.id] > t.cat[drain.id])) drain = c; });
+    return {
+      rootRef: this.rootRef,
+      pick: e => this.applyTheme(e.currentTarget.dataset.themeBtn),
+      go: e => this.applyScreen(e.currentTarget.dataset.nav),
+      open: e => this.applySheet(e.currentTarget.dataset.open),
+      setDim: e => { const v = e.currentTarget.dataset.dim; this.setState({ dim:v, focus:null }); },
+      setSort: e => { const v = e.currentTarget.dataset.sort; this.setState({ sort:v }); },
+      setPreset: ev => {
+        const p = ev.currentTarget.dataset.preset;
+        const end = this.TODAY;
+        let start;
+        if (p === '30') start = end - 29;
+        else if (p === '90') start = end - 89;
+        else if (p === 'ytd') { const d = new Date(end * 86400000); start = this.dnum(d.getUTCFullYear(), 0, 1); }
+        else start = this.MINDAY;
+        if (start < this.MINDAY) start = this.MINDAY;
+        this.landRange(start, end);
+        this.setState({ focus:null });
+        this.scrollToDay(start);
+      },
+      rangeStatus: this.state.pend === 1 ? 'PICK END DAY' : (this.state.end - this.state.start + 1) + ' DAYS',
+      startText: this.state.dstart !== null ? this.state.dstart : this.dlabel(this.state.start),
+      endText: this.state.dend !== null ? this.state.dend : this.dlabel(this.state.end),
+      calScrollRef: this.calScroll,
+      onStartInput: ev => { const v = ev.target.value; this.setState({ dstart:v }); },
+      onEndInput: ev => { const v = ev.target.value; this.setState({ dend:v }); },
+      onStartFocus: ev => { const el = ev.currentTarget; this.setState({ efield:'start' }); el.select(); this.scrollToDay(this.state.start); },
+      onEndFocus: ev => { const el = ev.currentTarget; this.setState({ efield:'end' }); el.select(); this.scrollToDay(this.state.end); },
+      onStartCommit: () => this.commitDate('start'),
+      onEndCommit: () => this.commitDate('end'),
+      onDateKey: ev => {
+        if (ev.key === 'Enter') {
+          ev.preventDefault();
+          const el = ev.currentTarget, w = el.id === 'rangeEnd' ? 'end' : 'start';
+          this.commitDate(w);
+          el.blur();
+        }
+        else if (ev.key === 'Escape') { const el = ev.currentTarget; this.setState({ dstart:null, dend:null }, () => el.blur()); }
+      },
+      loggedH: this.fmt(t.logged),
+      moreW: (t.logged > 0 ? t.dir.up / t.logged * 100 : 0).toFixed(3) + '%',
+      lessW: (t.logged > 0 ? t.dir.down / t.logged * 100 : 0).toFixed(3) + '%',
+      keepW: (t.logged > 0 ? Math.max(0, t.logged - t.dir.up - t.dir.down) / t.logged * 100 : 0).toFixed(3) + '%',
+      dirHours: this.fmt(t.dir.up) + ' h more \u00b7 ' + this.fmt(t.dir.down) + ' h less \u00b7 ' + this.fmt(Math.round(t.logged) - Math.round(t.dir.up) - Math.round(t.dir.down)) + ' h upkeep',
+      covArc: (Math.max(0, Math.min(100, t.total > 0 ? t.logged / t.total * 100 : 0)) / 100 * 59.69).toFixed(2) + ' 59.69',
+      covLabel: (t.total > 0 ? Math.round(t.logged / t.total * 100) : 0) + '% of the ' + this.fmt(t.total) + ' h in this range are logged',
+      rangeCaption: this.dlabel(this.state.start).toUpperCase() + ' \u2013 ' + this.dlabel(this.state.end).toUpperCase(),
+      coverageNote: (t.total > 0 ? Math.round(t.logged / t.total * 100) : 0) + '% coverage \u00b7 ' + this.fmt(gap) + ' h unlogged',
+      showUndo: !!this.state.undo && this.state.pend === 0,
+      showDays: !(this.state.undo && this.state.pend === 0),
+      undoRange: () => {
+        const u = this.state.undo;
+        if (!u) return;
+        clearTimeout(this._undoT);
+        this.saveRange(u.s, u.e);
+        this.setState({ undo:null, start:u.s, end:u.e, pend:0, dstart:null, dend:null, efield:null });
+        this.scrollToDay(u.s);
+      },
+      gapH: this.fmt(gap),
+      pctLogged: Math.round(t.logged / t.total * 100),
+      topDrainName: drain ? drain.n : '\u2014',
+      topDrainH: drain ? this.fmt(t.cat[drain.id]) : '0',
+      upH: this.fmt(t.dir.up), upPct: pc(t.dir.up),
+      downH: this.fmt(t.dir.down), downPct: pc(t.dir.down),
+      keepH: this.fmt(Math.round(t.logged) - Math.round(t.dir.up) - Math.round(t.dir.down)), keepPct: 100 - pc(t.dir.up) - pc(t.dir.down),
+      gapPct: t.total > 0 ? Math.round(gap / t.total * 100) : 0,
+      chart: this.chart(t),
+      calendar: this.calendar(),
+      showExplainer: this.props.showExplainer ?? true
+    };
+  }
+}
+</script>
+</body>
+</html>

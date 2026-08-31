@@ -1,0 +1,9 @@
+node_modules/
+tests/e2e/shots/
+tests/e2e/test-results/
+data/*
+!data/README.md
+dist/*.zip
+.DS_Store
+Thumbs.db
+tests/e2e/report/
