@@ -84,15 +84,21 @@
   }
 
   /* Where the cursor goes when the sheet opens: the first thing the quick-add
-     row has NOT already decided, in the sheet's own order. Filled everything in
-     already? Then the only thing left is to save it, so that is what takes
-     focus. Computed once, from the opening draft, so it cannot move under the
-     owner as they type.
+     row has NOT already decided, in the sheet's own order. Computed once, from
+     the opening draft, so it cannot move under the owner as they type.
 
-     `save` rather than the category control when a goal has locked the category:
-     the only focusable thing there is `Change`, and landing on it reads as an
-     instruction to change something that is already right. */
-  function initialFocus(draft, goalCount) {
+     Editing is the exception and starts at the top: nothing was handed over,
+     the entry was already whole, and whatever is being changed is as likely to
+     be the duration as anything else.
+
+     The `save` fallback — everything decided and the category locked by a goal —
+     is what the owner asked for at the checkpoint, because the only focusable
+     thing in a locked category block is `Change`, and landing on that reads as
+     an instruction to change something that is already right. In practice `+`
+     now adds a complete row outright instead of opening the sheet, so it is a
+     fallback rather than a path. */
+  function initialFocus(draft, goalCount, editing) {
+    if (editing) return 'duration';
     if (draft.preset === null) return 'duration';
     if (!String(draft.activity).trim()) return 'activity';
     if (goalCount > 0 && !draft.goal_id) return 'goal';
@@ -168,7 +174,7 @@
         var cat = findById(state.categories, g.category_id);
         return !!cat && !cat.archived;
       }).length;
-      return initialFocus(opening, count);
+      return initialFocus(opening, count, editing);
     });
     var focusField = focusState[0];
 

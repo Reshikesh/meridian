@@ -67,27 +67,32 @@
 
   /* ---------- quick-add row ----------
      Decision 19, as amended: the inline row commits on Enter and carries the
-     goal picker too, so a goal-linked entry never has to open a dialog. `+`
-     still opens the full sheet — for the projection preview and for editing —
-     carrying whatever is already typed, so the two paths are one flow.
+     goal picker too, so a goal-linked entry never has to open a dialog.
+
+     `+` adds the entry when the row already says everything an entry needs, and
+     opens the full sheet when it does not — carrying whatever is typed, so the
+     two paths are one flow rather than two forms. A dialog that only repeats
+     what is already on screen is a dialog worth not opening.
 
      The row's five columns are the table's five columns, so every control sits
-     under its own header. */
+     under its own header.
 
-  var EMPTY_DRAFT = { duration: '', activity: '', category_id: null, goal_id: null };
+     The draft itself lives in app.js: an entry saved through the sheet has to
+     clear this row too, and only the level that owns both can do that. */
+
+  var DURATION_HINT = 'Use a time like 1.5, 1.5h or 90m.';
 
   function QuickAdd(props) {
-    var draftState = useState(EMPTY_DRAFT);
     var errorState = useState(null);
-    var draft = draftState[0], setDraft = draftState[1];
     var error = errorState[0], setError = errorState[1];
     var durationRef = useRef(null);
 
+    var draft = props.draft;
     var categories = aggregate.activeCategories(props.state.categories);
     var disabled = categories.length === 0;
 
     function patch(p) {
-      setDraft(function (prev) { return Object.assign({}, prev, p); });
+      props.onDraft(Object.assign({}, draft, p));
       if (error) setError(null);
     }
 
@@ -113,7 +118,7 @@
       /* A blank field and an unreadable one are different mistakes, and the
          second one deserves to be told what a readable value looks like. */
       if (text !== '' && minutes === null) {
-        setError({ field: 'duration', message: 'Use a time like 1.5, 1.5h or 90m.' });
+        setError({ field: 'duration', message: DURATION_HINT });
         return;
       }
 
@@ -131,11 +136,11 @@
         return;
       }
 
+      /* The row is cleared by app.js, which owns the draft — an entry saved
+         through the sheet has to clear it too. QUALITY-BAR §4: focus goes back
+         to the duration field, so consecutive entries take no mouse. */
       props.onAdd(input);
-      setDraft(EMPTY_DRAFT);
       setError(null);
-      /* QUALITY-BAR §4: the row clears and the duration field regains focus, so
-         consecutive entries take no mouse. */
       if (durationRef.current) durationRef.current.focus();
     }
 
@@ -144,6 +149,26 @@
       if (event.key !== 'Enter') return;
       event.preventDefault();
       commit();
+    }
+
+    /* Everything an entry has to have: a duration that can be read, and a
+       category. Activity is optional (spec §6) and a goal is a choice. */
+    function complete() {
+      var text = String(draft.duration).trim();
+      return text !== '' && aggregate.parseDuration(text) !== null && !!draft.category_id;
+    }
+
+    /* `+` finishes the job if the row can, and otherwise opens the place where
+       it can be finished. A duration with a typo in it takes the message rather
+       than the dialog: the owner was typing a duration, not asking for a form. */
+    function addOrOpen() {
+      var text = String(draft.duration).trim();
+      if (text !== '' && aggregate.parseDuration(text) === null) {
+        setError({ field: 'duration', message: DURATION_HINT });
+        return;
+      }
+      if (complete()) commit();
+      else props.onOpenSheet(draft);
     }
 
     var durationError = error && (error.field === 'duration' || error.field === 'duration_min');
@@ -182,8 +207,8 @@
             onKeyDown=${onKeyDown} />
 
           <button type="button" class="btn btn--brand quickadd__open"
-            aria-label="Open the full entry sheet"
-            onClick=${function () { props.onOpenSheet(draft); }}>+</button>
+            aria-label=${complete() ? 'Add this entry' : 'Open the full entry sheet'}
+            onClick=${addOrOpen}>+</button>
         </div>
 
         ${error ? html`
@@ -426,6 +451,7 @@
         <div class="logtable">
           <div class="logtable__scroll">
             <${QuickAdd} state=${state} day=${day} now=${props.now}
+              draft=${props.draft} onDraft=${props.onDraft}
               onAdd=${props.onAddEntry} onOpenSheet=${props.onOpenEntrySheet} />
 
             <div class="logrow logtable__head t-label">
@@ -450,5 +476,6 @@
       </main>`;
   }
 
+  ui.EMPTY_ENTRY_DRAFT = { duration: '', activity: '', category_id: null, goal_id: null };
   ui.Log = Log;
 })();

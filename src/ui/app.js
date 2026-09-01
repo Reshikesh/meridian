@@ -70,6 +70,12 @@
        Manage), but a stack is what makes "closes back to its origin" a
        property of the frame rather than a special case in one sheet. */
     var stackState = useState([]);
+    /* What is typed in the Log's quick-add row. It lives here rather than in the
+       row because an entry saved through the sheet has to clear the row too, and
+       the sheet is not the row's child. */
+    var quickState = useState(function () {
+      return Object.assign({}, ui.EMPTY_ENTRY_DRAFT);
+    });
 
     var data = stateHolder[0], setData = stateHolder[1];
     var screen = screenState[0], setScreen = screenState[1];
@@ -80,6 +86,7 @@
     var sheet = dataState[0], setSheet = dataState[1];
     var day = dayState[0], setDay = dayState[1];
     var stack = stackState[0], setStack = stackState[1];
+    var quick = quickState[0], setQuick = quickState[1];
 
     var firstRun = data === null;
 
@@ -242,13 +249,24 @@
 
     /* ---------- entries ---------- */
 
-    function addEntry(input) {
-      store.addEntry(input);
+    function clearQuickAdd() {
+      setQuick(Object.assign({}, ui.EMPTY_ENTRY_DRAFT));
     }
 
+    function addEntry(input) {
+      store.addEntry(input);
+      clearQuickAdd();
+    }
+
+    /* A new entry clears the row whichever path wrote it; editing an existing
+       one does not, because that sheet was never opened from the row. */
     function saveEntry(sheetState, input) {
-      if (sheetState.entry) store.updateEntry(sheetState.entry.id, input);
-      else store.addEntry(input);
+      if (sheetState.entry) {
+        store.updateEntry(sheetState.entry.id, input);
+      } else {
+        store.addEntry(input);
+        clearQuickAdd();
+      }
       popSheet();
     }
 
@@ -299,6 +317,7 @@
         return html`
           <${ui.Log} key=${key} className=${className} state=${data} now=${tick}
             day=${day} today=${todayKey}
+            draft=${quick} onDraft=${setQuick}
             onStepDay=${stepDay}
             onAddEntry=${addEntry}
             onOpenEntrySheet=${function (prefill) { pushSheet({ kind: 'entry', prefill: prefill }); }}
