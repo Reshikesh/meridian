@@ -1,5 +1,6 @@
 const { test, expect } = require('@playwright/test');
 const { APP_URL } = require('./lib/app-url');
+const { installState } = require('./lib/seed-state');
 
 const SCREENS = ['log', 'went', 'progress', 'goals', 'plan', 'lessons'];
 const THEMES = ['paper', 'graphite', 'blueprint'];
@@ -40,11 +41,15 @@ test('opens from file://, walks every screen and theme, stays silent and offline
     return route.abort();
   });
 
+  // From Phase 1 an empty localStorage means the first-run screen, which has no
+  // nav to walk. firstrun.spec.js owns that path; this one walks the shell.
+  await installState(page);
+
   const w = watch(page);
   const res = await page.goto(APP_URL, { waitUntil: 'load' });
   expect(res, 'file:// navigation returned a response').not.toBeNull();
 
-  // Default screen with nothing in localStorage is "went".
+  // Default screen, with data loaded and no screen persisted, is "went".
   await expect(page.locator('.root')).toHaveAttribute('data-screen', 'went');
   await expect(page.locator('main.screen[data-s="went"]')).toBeVisible();
   await expect(page.locator('.wordmark')).toHaveText('MERIDIAN');
@@ -76,6 +81,7 @@ test('opens from file://, walks every screen and theme, stays silent and offline
 });
 
 test('theme persists across reload with no flash of the wrong theme', async ({ page }) => {
+  await installState(page);
   await page.goto(APP_URL);
   await page.click('[data-theme-btn="graphite"]');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'graphite');
@@ -90,6 +96,7 @@ test('theme persists across reload with no flash of the wrong theme', async ({ p
 });
 
 test('screen is not persisted: a reload returns to went', async ({ page }) => {
+  await installState(page);
   await page.goto(APP_URL);
   await page.click('[data-nav="lessons"]');
   await expect(page.locator('.root')).toHaveAttribute('data-screen', 'lessons');

@@ -74,6 +74,22 @@ const auditInPage = () => {
     .slice(0, 8)
     .map(({ el, r }) => ({ el: label(el), left: Math.round(r.left), right: Math.round(r.right) }));
 
+  // ---------- (i-b) nothing pushed off the LEFT edge ----------
+  // scrollWidth only grows to the RIGHT, so a box that overflows leftward is
+  // invisible to check (i) — and the offender list above only runs once (i) has
+  // already failed. A flex group with `flex: none` in a viewport narrower than
+  // its own content does exactly this: it hangs off the left edge and its first
+  // child is clipped by the window, with no scrollbar to show for it. Found in
+  // the header's theme toggle at 360px/150% zoom, which the width-and-zoom
+  // matrix reaches.
+  const offLeft = all
+    .filter(isVisible)
+    .map((el) => ({ el, r: el.getBoundingClientRect() }))
+    .filter(({ r }) => r.width >= 1 && r.height >= 1 && r.left < -TOL)
+    .sort((a, b) => a.r.left - b.r.left)
+    .slice(0, 8)
+    .map(({ el, r }) => ({ el: label(el), left: Math.round(r.left), right: Math.round(r.right) }));
+
   // ---------- (ii) no clipped text ----------
   // Only elements that render glyphs themselves (a DIRECT non-whitespace text
   // node). Without that, every wrapper inherits its child's overflow and the
@@ -170,7 +186,7 @@ const auditInPage = () => {
     }
   }
 
-  return { pageScroll, textOverflow, overlaps, counts: { elements: all.length, leaves: leaves.length } };
+  return { pageScroll, offLeft, textOverflow, overlaps, counts: { elements: all.length, leaves: leaves.length } };
 };
 
 // One human-readable line per finding, tagged with `where` (width/theme/screen)
@@ -180,6 +196,9 @@ function formatAudit(res, where) {
   if (!res.pageScroll.ok) {
     lines.push(`[${where}] horizontal page scroll: scrollWidth ${res.pageScroll.scrollWidth} > clientWidth ${res.pageScroll.clientWidth} (innerWidth ${res.pageScroll.innerWidth}, scrollbar ${res.pageScroll.scrollbar})`);
     for (const o of res.pageScroll.offenders) lines.push(`    widest: ${o.el} (left ${o.left}, right ${o.right})`);
+  }
+  for (const o of res.offLeft || []) {
+    lines.push(`[${where}] element off the left edge: ${o.el} (left ${o.left}, right ${o.right})`);
   }
   for (const t of res.textOverflow) {
     lines.push(`[${where}] clipped text: ${t.el} scrollWidth ${t.scrollWidth} > clientWidth ${t.clientWidth} (overflow-x: ${t.overflowX}, white-space: ${t.whiteSpace})`);

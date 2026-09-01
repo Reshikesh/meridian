@@ -53,17 +53,22 @@
   to   { opacity: 0; }
 }
 
-/* ---------- Below 1024px ----------
-   The mockup has no breakpoints ("flex-wrap only", spec §5) and its header has an
-   intrinsic width of about 930px, so without this it overlaps on a narrow window.
-   `display: contents` lifts the wordmark and nav out of their wrapper so the
-   header can wrap as three independent groups. */
+/* ---------- Below 1180px: the header wraps ----------
+   The mockup has no breakpoints ("flex-wrap only", spec §5) and its header has
+   an intrinsic width of about 930px, so without this it overlaps on a narrow
+   window. `display: contents` lifts the wordmark and nav out of their wrapper so
+   the header can wrap as three independent groups.
 
-@media (max-width: 1023.98px) {
-  :root {
-    --gutter: 16px;
-  }
+   The trigger moved from 1024px to 1180px in Phase 1, measured rather than
+   guessed. The header now also carries the unexported-changes control that
+   QUALITY-BAR §5 requires and spec §10 has no room for: wordmark 81 + nav 378 +
+   themes 241 + control 232 + stamp 92 + gaps 76 = 1100, against the 1122px of
+   content the 1180px container leaves. It fits at the design width and at the
+   1280px reference, and nowhere below it — so the nav takes its own row from
+   1180px down instead of overlapping the theme toggle. The gutter and heading
+   scale still change at 1024px, where they always did. */
 
+@media (max-width: 1179.98px) {
   .header {
     flex-wrap: wrap;
     row-gap: var(--sp-4);
@@ -101,6 +106,29 @@
     row-gap: 2px;
   }
 
+  /* The data control reserves 178px for its widest label so that the date
+     beside it does not move when the count changes (QUALITY-BAR §3). Below
+     1180px the header has already wrapped and there is nothing beside it to
+     protect, while the reservation itself is 232px of fixed width — wider than
+     the whole layout viewport at 360px and 150% zoom. Released, and allowed to
+     wrap onto a second line. */
+  .datactl {
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
+
+  .datactl__state {
+    min-width: 0;
+  }
+}
+
+/* ---------- Below 1024px ---------- */
+
+@media (max-width: 1023.98px) {
+  :root {
+    --gutter: 16px;
+  }
+
   .empty__head {
     padding: var(--sp-8) var(--gutter) var(--sp-6);
   }
@@ -108,4 +136,85 @@
   .t-h1 {
     font-size: 30px;
   }
+}
+
+/* ---------- First run ----------
+   Spec §10: the flow the mockup has no screen for. It takes the whole page over
+   a header cut back to the wordmark, the theme toggle and the date, because with
+   no data there is nothing to navigate to. Built from the empty state's own
+   recipe so it reads as a finished page rather than a dialog. */
+
+.firstrun {
+  position: relative;
+}
+
+.firstrun__note {
+  margin-top: var(--sp-5);
+  font: 400 15px/1.5 var(--font);
+  color: var(--ink2);
+  max-width: 52ch;
+}
+
+.firstrun__panel {
+  padding: 32px var(--gutter) 40px;
+  background: var(--strip);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+
+.firstrun__options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--sp-4);
+  align-items: stretch;
+}
+
+.option {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  text-align: left;
+  padding: var(--sp-7);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+  cursor: pointer;
+  transition: border-color var(--m-hover) var(--ease),
+              color var(--m-hover) var(--ease);
+}
+
+.option:hover {
+  border-color: var(--ink2);
+}
+
+.option:disabled {
+  opacity: .45;
+  cursor: default;
+}
+
+.option__title {
+  font: 600 15px/1.2 var(--font);
+  color: var(--ink);
+}
+
+.option__sub {
+  font: 400 12.5px/1.5 var(--font);
+  color: var(--ink2);
+}
+
+.firstrun__drop {
+  font: 400 12.5px/1.5 var(--font);
+  color: var(--ink2);
+}
+
+/* Marks the whole screen as the drop target while a file is over it. Purely
+   decorative, so the responsive auditor skips it. */
+.dropveil {
+  position: absolute;
+  inset: 0;
+  border: 2px dashed var(--brand);
+  pointer-events: none;
 }

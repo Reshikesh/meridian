@@ -10,8 +10,12 @@
   .rel  { position: relative; height: 80px; }
   .a { position:absolute; left:10px; top:10px; width:120px; height:40px; background:#cfc; }
   .b { position:absolute; left:80px; top:20px; width:120px; height:40px; background:#ccf; }  /* -> check (iii) */
+  /* -> check (i-b): hangs off the LEFT edge, which does not extend scrollWidth
+     and so is invisible to check (i). */
+  .offleft { position:absolute; left:-60px; top:200px; width:120px; height:30px; background:#ffc; }
 </style></head><body>
   <div class="wide">very wide block</div>
   <p class="clip">this label is far too long for one hundred pixels and has no ellipsis</p>
   <div class="rel"><span class="a">A overlaps</span><span class="b">B overlaps</span></div>
+  <div class="offleft">off the left edge</div>
 </body></html>

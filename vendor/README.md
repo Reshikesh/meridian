@@ -24,9 +24,10 @@ These are classic `<script src>` tags. Only one edge is load-bearing: **preact b
 1. vendor/preact.umd.js
 2. vendor/hooks.umd.js
 3. vendor/htm.umd.js
+4. vendor/xlsx.full.min.js
 ```
 
-`vendor/xlsx.full.min.js` is vendored but deliberately **not** loaded yet: nothing uses it until the workbook import/export lands in Phase 1, and 952 KB parsed on every page load counts against the performance budget. Add its tag then. Do not add it now to "match this list".
+`vendor/xlsx.full.min.js` joined the list in Phase 1, when the workbook import/export landed. It sits in the vendor block, ahead of `src/`, rather than after the app: measured load with it in place is ~160 ms, and `src/ui/app.js` renders at load, so deferring the parse past the first render would buy nothing while risking a core module reaching for a namespace that is not there yet. It is read through `window.XLSX` in the browser and handed to `src/core/workbook.js` as a parameter, never as a global (see `docs/DECISION-LOG.md` #34).
 
 **Warning — `hooks.umd.js` must never run before `preact.umd.js`.** The hooks UMD wrapper ends with
 `t((n||self).preactHooks={},n.preact)`: it reads `n.preact` and hands it straight to the factory,

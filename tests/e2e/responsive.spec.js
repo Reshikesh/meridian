@@ -2,6 +2,7 @@ const path = require('node:path');
 const { test, expect } = require('@playwright/test');
 const { APP_URL } = require('./lib/app-url');
 const { auditInPage, formatAudit } = require('./lib/audit');
+const { installState } = require('./lib/seed-state');
 
 // QUALITY-BAR §2 mandates 360 / 768 / 1024 / 1280 / 1440 / 1920. Each also
 // appears minus a 15 px classic scrollbar, because headed Edge on Windows
@@ -47,6 +48,8 @@ for (const width of WIDTHS) {
         await page.addInitScript((t) => {
           try { localStorage.setItem('meridian:theme', t); } catch (e) { /* private mode */ }
         }, theme);
+        // The shell only exists once there is data; first run is its own spec.
+        await installState(page);
         await page.clock.setFixedTime(FROZEN);
 
         await page.goto(APP_URL);
@@ -83,6 +86,28 @@ for (const width of WIDTHS) {
             );
             await page.screenshot({ path: file, fullPage: true, animations: 'disabled' });
           }
+        }
+
+        // QUALITY-BAR §2 says "every screen AND sheet open". Phase 1 ships one
+        // sheet; Phase 2 adds its own cases here.
+        await page.click('[data-data-open]');
+        await expect(page.locator('.sheet__card')).toBeVisible();
+        await page.waitForFunction(
+          () => document.getAnimations().every((a) => a.playState === 'finished'));
+
+        const sheetAudit = await page.evaluate(auditInPage);
+        expect(sheetAudit.counts.leaves,
+          `${width}/${theme}/data-sheet: audit saw only ${sheetAudit.counts.leaves} leaves`)
+          .toBeGreaterThanOrEqual(MIN_LEAVES);
+        failures.push(...formatAudit(sheetAudit, `${width}/${theme}/data-sheet`));
+
+        if (SHOT_WIDTHS.has(width)) {
+          await page.screenshot({
+            path: path.join(SHOTS, testInfo.project.name, theme,
+              `sheet-data-${String(width).padStart(4, '0')}.png`),
+            fullPage: true,
+            animations: 'disabled',
+          });
         }
 
         expect(failures, failures.join('\n')).toEqual([]);

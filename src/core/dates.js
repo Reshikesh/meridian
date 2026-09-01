@@ -1,9 +1,9 @@
 /* Meridian core — dates.
    Pure: no DOM, no storage, no clock of its own (the caller passes `now`).
 
-   Phase 0 owns only what the header stamp needs: the 04:00 day boundary
-   (decision 2) and Monday-first ISO week numbers (decision 18). Phase 1 extends
-   this module with the spec §3 date parsing; it does not rewrite it.
+   Owns the 04:00 day boundary (decision 2), Monday-first ISO weeks (decision
+   18), the epoch-day arithmetic the calendar runs on (spec §4d), and the typed
+   date parsing from spec §3.
 
    Classic <script src> -> window.Meridian.dates ; CommonJS -> module.exports */
 (function (root, factory) {
@@ -19,6 +19,12 @@
 
   var DAY_MS = 86400000;
   var WEEK_MS = 604800000;
+
+  var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  var MONTHS_FULL = ['January', 'February', 'March', 'April', 'May', 'June',
+                     'July', 'August', 'September', 'October', 'November', 'December'];
 
   function pad2(n) {
     return n < 10 ? '0' + n : String(n);
@@ -60,9 +66,99 @@
     return new Date(day + (3 - dow) * DAY_MS).getUTCFullYear();
   }
 
+  /* `2026-W23`, the workbook's iso_week column. Padded, as ISO 8601 writes it. */
+  function weekKey(d) {
+    return isoWeekYear(d) + '-W' + pad2(isoWeek(d));
+  }
+
   /* ISO day key, `YYYY-MM-DD`. */
   function dayKey(d) {
     return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+  }
+
+  /* Field-by-field, because the Date constructor rolls overflow forward: without
+     the round-trip check `2026-02-31` would quietly become 3 March. */
+  function makeDay(y, mon, day) {
+    if (!(y >= 1000 && y <= 9999) || mon < 1 || mon > 12 || day < 1 || day > 31) return null;
+    var d = new Date(y, mon - 1, day);
+    if (d.getFullYear() !== y || d.getMonth() !== mon - 1 || d.getDate() !== day) return null;
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
+  /* Strict `YYYY-MM-DD` -> local-midnight Date, or null. */
+  function parseDayKey(s) {
+    if (typeof s !== 'string') return null;
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s.trim());
+    return m ? makeDay(+m[1], +m[2], +m[3]) : null;
+  }
+
+  /* Accepts either shape a caller might hold — a day key or a Date — and
+     returns a Date at local midnight, so no arithmetic below carries a time. */
+  function toDate(v) {
+    if (v == null) return null;
+    if (typeof v === 'string') return parseDayKey(v);
+    if (v instanceof Date) {
+      if (isNaN(v.getTime())) return null;
+      return new Date(v.getFullYear(), v.getMonth(), v.getDate());
+    }
+    return null;
+  }
+
+  /* Whole days since 1970-01-01, computed on UTC so a DST hour cannot shift the
+     quotient. The calendar (spec §4d) indexes days by this integer. */
+  function epochDay(v) {
+    var d = toDate(v);
+    if (!d) return null;
+    return Math.round(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / DAY_MS);
+  }
+
+  function fromEpochDay(n) {
+    var u = new Date(n * DAY_MS);
+    return new Date(u.getUTCFullYear(), u.getUTCMonth(), u.getUTCDate());
+  }
+
+  function addDays(v, n) {
+    var d = toDate(v);
+    return d ? new Date(d.getFullYear(), d.getMonth(), d.getDate() + n) : null;
+  }
+
+  /* Whole days from `a` to `b`; negative when b precedes a. */
+  function diffDays(a, b) {
+    var x = epochDay(a), y = epochDay(b);
+    return (x === null || y === null) ? null : y - x;
+  }
+
+  /* Monday=0 .. Sunday=6 (decision 18: Monday first, everywhere). */
+  function weekdayIndex(v) {
+    var d = toDate(v);
+    return d ? (d.getDay() + 6) % 7 : null;
+  }
+
+  function weekStart(v) {
+    var d = toDate(v);
+    return d ? addDays(d, -weekdayIndex(d)) : null;
+  }
+
+  function weekEnd(v) {
+    var s = weekStart(v);
+    return s ? addDays(s, 6) : null;
+  }
+
+  /* Inclusive day count; null when either end will not parse. */
+  function daySpan(a, b) {
+    var n = diffDays(a, b);
+    return n === null ? null : n + 1;
+  }
+
+  /* Inclusive list of day keys. Returns [] rather than throwing when the range
+     runs backwards, so a caller with a swapped range renders empty, not broken. */
+  function eachDay(a, b) {
+    var start = toDate(a), end = toDate(b);
+    if (!start || !end) return [];
+    var out = [];
+    for (var d = start; d <= end; d = addDays(d, 1)) out.push(dayKey(d));
+    return out;
   }
 
   /* The header stamp, `dd.mm.yyyy / W##` (spec §6).
@@ -75,12 +171,110 @@
       ' / W' + pad2(isoWeek(d));
   }
 
+  /* `7 Jun 2026` — the form the mockup uses inside fields (spec §6). */
+  function formatLong(v) {
+    var d = toDate(v);
+    return d ? d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear() : '';
+  }
+
+  /* `7 Jun` — the same without the year, for a landing date inside a table row. */
+  function formatDayMonth(v) {
+    var d = toDate(v);
+    return d ? d.getDate() + ' ' + MONTHS[d.getMonth()] : '';
+  }
+
+  /* Local wall clock, no zone suffix: `2026-06-07T09:12:00` (spec §7 example).
+     Deliberately not an instant — the workbook is read by a human in Excel, and
+     a trailing Z would make every row look hours wrong to them. */
+  function isoDateTime(t) {
+    return t.getFullYear() + '-' + pad2(t.getMonth() + 1) + '-' + pad2(t.getDate()) +
+      'T' + pad2(t.getHours()) + ':' + pad2(t.getMinutes()) + ':' + pad2(t.getSeconds());
+  }
+
+  function isIsoDateTime(s) {
+    return typeof s === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(s.trim());
+  }
+
+  function monthIndex(word) {
+    var w = String(word).toLowerCase();
+    for (var i = 0; i < 12; i++) {
+      if (MONTHS[i].toLowerCase() === w || MONTHS_FULL[i].toLowerCase() === w) return i + 1;
+    }
+    return 0;
+  }
+
+  /* A year the caller did not type. The mockup hard-codes its rule to its own
+     2026 horizon; generalised here: the current year, unless that lands in the
+     future, in which case the year before. */
+  function withYear(day, mon, yearText, today) {
+    if (yearText != null && yearText !== '') {
+      var y = +yearText;
+      return makeDay(y < 100 ? 2000 + y : y, mon, day);
+    }
+    if (!today) return null;
+    var here = makeDay(today.getFullYear(), mon, day);
+    if (here && here > today) return makeDay(today.getFullYear() - 1, mon, day);
+    return here;
+  }
+
+  /* spec §3: parse what the owner types into a date field.
+
+     Forms, in the order they are tried: ISO `Y-M-D`; `7 Jun [2026]`; `Jun 7`;
+     day-first numeric `D/M[/Y]` — so `7/6` is 7 June, business rule §8.16.
+     Anything else returns null and the caller silently reverts the field. */
+  function parseUserDate(text, opts) {
+    if (typeof text !== 'string') return null;
+    var s = text.trim().replace(/\s+/g, ' ');
+    if (!s) return null;
+    var today = (opts && opts.today && toDate(opts.today)) || null;
+    var m;
+
+    m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(s);
+    if (m) return makeDay(+m[1], +m[2], +m[3]);
+
+    m = /^(\d{1,2})[ -]([A-Za-z]{3,9})\.?(?:[ ,-]+(\d{2}|\d{4}))?$/.exec(s);
+    if (m) {
+      var mo = monthIndex(m[2]);
+      return mo ? withYear(+m[1], mo, m[3], today) : null;
+    }
+
+    m = /^([A-Za-z]{3,9})\.? ?(\d{1,2})(?:[ ,]+(\d{2}|\d{4}))?$/.exec(s);
+    if (m) {
+      var mo2 = monthIndex(m[1]);
+      return mo2 ? withYear(+m[2], mo2, m[3], today) : null;
+    }
+
+    m = /^(\d{1,2})[/.](\d{1,2})(?:[/.](\d{2}|\d{4}))?$/.exec(s);
+    if (m) return withYear(+m[1], +m[2], m[3], today);
+
+    return null;
+  }
+
   return {
     DAY_START_HOUR: DAY_START_HOUR,
+    MONTHS: MONTHS,
     logicalDay: logicalDay,
     isoWeek: isoWeek,
     isoWeekYear: isoWeekYear,
+    weekKey: weekKey,
     dayKey: dayKey,
-    formatStamp: formatStamp
+    parseDayKey: parseDayKey,
+    makeDay: makeDay,
+    toDate: toDate,
+    epochDay: epochDay,
+    fromEpochDay: fromEpochDay,
+    addDays: addDays,
+    diffDays: diffDays,
+    weekdayIndex: weekdayIndex,
+    weekStart: weekStart,
+    weekEnd: weekEnd,
+    daySpan: daySpan,
+    eachDay: eachDay,
+    formatStamp: formatStamp,
+    formatLong: formatLong,
+    formatDayMonth: formatDayMonth,
+    isoDateTime: isoDateTime,
+    isIsoDateTime: isIsoDateTime,
+    parseUserDate: parseUserDate
   };
 });

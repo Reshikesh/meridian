@@ -1,6 +1,7 @@
 const { test, expect } = require('@playwright/test');
 const { APP_URL } = require('./lib/app-url');
 const { auditInPage, formatAudit } = require('./lib/audit');
+const { installState } = require('./lib/seed-state');
 
 /* QUALITY-BAR §2 requires no horizontal scrollbar, no overlap and no clipped
    text "at every width from 360 px to 2560 px, AND at browser zoom 90 %, 100 %,
@@ -32,6 +33,7 @@ for (const zoom of ZOOMS) {
           await page.addInitScript((t) => {
             try { localStorage.setItem('meridian:theme', t); } catch (e) { /* private mode */ }
           }, theme);
+          await installState(page);
           await page.clock.setFixedTime(FROZEN);
 
           await page.goto(APP_URL);

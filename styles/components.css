@@ -66,6 +66,12 @@
 
 /* ---------- Theme toggle ---------- */
 
+/* `flex: none` keeps the group at its natural width, which is right — but it
+   also keeps it at its natural width in a viewport narrower than that, and the
+   group then overflows off the LEFT edge of the window, clipping PAPER. Leftward
+   overflow does not extend scrollWidth, so nothing caught it. `max-width` is
+   what lets the wrap below 1024px actually happen; without it the rule is inert.
+   Reachable at 360px and 150% zoom, a real cell of the matrix. */
 .themes {
   display: flex;
   gap: 3px;
@@ -73,6 +79,7 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   flex: none;
+  max-width: 100%;
 }
 
 .themes__btn {
@@ -358,4 +365,329 @@
   font: 400 15px/1.5 var(--font);
   color: var(--ink2);
   max-width: 58ch;
+}
+
+/* ---------- Glyphs ----------
+   Archivo has no glyph for the marks the app needs, so they are drawn (see
+   src/ui/glyph.js). Aligned to the text baseline they sit on. */
+
+.glyph {
+  display: inline-block;
+  vertical-align: -1px;
+  flex: none;
+}
+
+/* ---------- Chip ---------- */
+
+.chip {
+  font: 600 9.5px/1 var(--font);
+  letter-spacing: .12em;
+  padding: 5px 7px;
+  border-radius: var(--radius-sm);
+  background: var(--pale);
+  color: var(--ink2);
+  white-space: nowrap;
+  flex: none;
+}
+
+/* ---------- Header data control ----------
+   The unexported-changes indicator (QUALITY-BAR §5) and the way in to import
+   and export (spec §10), as one control in the stamp's vocabulary. */
+
+.datactl {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: 500 11.5px/1 var(--font);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--navdim);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  white-space: nowrap;
+  flex: none;
+  transition: color var(--m-hover) var(--ease);
+}
+
+.datactl:hover {
+  color: var(--navink);
+}
+
+/* The label doubles as the demo badge (QUALITY-BAR §5). It has to: the header's
+   1180px container leaves 1122px of content width, and a separate DEMO DATA chip
+   beside the control needs 1179px — it does not fit at ANY viewport width, so a
+   chip here would overlap the nav on every screen. The dataset's name is the one
+   thing that fits, it is always on screen, and it opens the sheet where the full
+   badge and Start fresh live. */
+.datactl__label {
+  font-weight: 600;
+  letter-spacing: .1em;
+}
+
+/* --navink, not --brand: #8c1c2b on the paper header's #1a1614 is 1.98:1, the
+   same trap that made focus rings invisible in phase 0 (DECISION-LOG #7). The
+   demo label reads as different because it is brighter than the --navdim the
+   control uses the rest of the time, and because it says DEMO. */
+.datactl[data-demo="1"] .datactl__label {
+  color: var(--navink);
+}
+
+.datactl__sep {
+  opacity: .6;
+}
+
+/* Reserved so the label can go from "Exported 2 min ago" to "128 unexported
+   changes" without moving the date beside it (QUALITY-BAR §3). Measured: the
+   widest string the control can hold is 178px. */
+.datactl__state {
+  display: inline-block;
+  min-width: 178px;
+}
+
+.datactl__state--live {
+  color: var(--navink);
+}
+
+/* ---------- Busy ----------
+   QUALITY-BAR §3: a busy state inside the same UI within 100 ms. Animated in
+   CSS, never through Element.animate with an infinite iteration count — such an
+   animation never reports itself finished, and the responsive suite waits on
+   document.getAnimations() before every audit. */
+
+.busy {
+  font: 500 12.5px/1.4 var(--font);
+  color: var(--ink2);
+}
+
+.busy__dots::after {
+  content: "...";
+  animation: busy-dots 1.2s steps(4, end) infinite;
+  clip-path: inset(0 100% 0 0);
+  display: inline-block;
+}
+
+@keyframes busy-dots {
+  to { clip-path: inset(0 0 0 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .busy__dots::after { clip-path: none; }
+}
+
+/* ---------- Inline validation and confirms ----------
+   QUALITY-BAR §4: messages next to the field, in --warn; lossy actions confirm
+   inline in the same visual language, never through window.confirm. */
+
+.field__error {
+  font: 500 12px/1.45 var(--font);
+  color: var(--warn);
+  max-width: 62ch;
+}
+
+.confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-4);
+  background: var(--warnbg);
+  border-radius: var(--radius);
+}
+
+.confirm__text {
+  font: 500 12.5px/1.4 var(--font);
+  color: var(--ink);
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.confirm__actions {
+  display: flex;
+  gap: var(--sp-3);
+  flex: none;
+}
+
+.btn--warn {
+  border-color: var(--warn);
+  color: var(--warn);
+}
+
+.btn--warn:hover {
+  background: var(--warn);
+  border-color: var(--warn);
+  color: var(--bg);
+}
+
+.linkbtn {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: 500 12.5px/1 var(--font);
+  color: var(--brand);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.linkbtn:hover {
+  color: var(--warn);
+}
+
+/* ---------- Data sheet ---------- */
+
+.data {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+
+.data__status {
+  font: 600 20px/1.2 var(--font);
+  letter-spacing: -.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.data__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+
+.data__actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.data__note,
+.data__replace {
+  font: 400 12.5px/1.5 var(--font);
+  color: var(--ink2);
+  max-width: 58ch;
+}
+
+.data__replace {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.data__fresh {
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--line);
+}
+
+.data__freshrow {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+}
+
+/* ---------- Import report ---------- */
+
+.report {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+}
+
+.report__head {
+  font: 600 20px/1.25 var(--font);
+  letter-spacing: -.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.report__head--warn {
+  color: var(--warn);
+}
+
+.report__line {
+  font: 400 13px/1.5 var(--font);
+  color: var(--ink2);
+  font-variant-numeric: tabular-nums;
+  max-width: 62ch;
+}
+
+.report__table {
+  width: 100%;
+  border-collapse: collapse;
+  font: 500 12.5px/1 var(--font);
+}
+
+.report__table th,
+.report__table td {
+  text-align: left;
+  padding: 9px 0;
+  border-top: 1px solid var(--line);
+}
+
+.report__table thead th {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.report__num {
+  text-align: right;
+  width: 5.5em;
+}
+
+.report__num--warn {
+  color: var(--warn);
+}
+
+.report__block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.report__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.report__reject {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px var(--sp-3);
+  font: 400 12.5px/1.45 var(--font);
+}
+
+.report__where {
+  font-weight: 600;
+  color: var(--warn);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.report__why {
+  color: var(--ink2);
+  min-width: 0;
+}
+
+.report__note {
+  font: 400 12.5px/1.45 var(--font);
+  color: var(--ink2);
+}
+
+/* ---------- Sheet, tall content ----------
+   A report with thirty rejected rows must not push its own buttons off the
+   screen, so the card caps its height and the body scrolls inside it. */
+
+.sheet__card {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 120px);
+}
+
+.sheet__body {
+  overflow-y: auto;
+  min-height: 0;
 }
