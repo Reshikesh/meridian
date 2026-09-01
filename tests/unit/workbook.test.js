@@ -185,6 +185,104 @@ test('every malformed row is rejected by name, and the rest still import', async
   });
 });
 
+test('a reference may name a category or goal instead of giving its id', async (t) => {
+  /* Decision 5 makes the workbook a first-class editor. The Goals sheet asks for
+     a `category_id` while the Categories sheet next door lists eight readable
+     names, so typing `Learning` is the obvious thing for a non-technical person
+     to do — and it was what the owner did at the Phase 1 checkpoint. */
+
+  const CATS = [CAT_HEAD,
+    ['cat_learn', 'Learning', '#2b4a7d', 'more', 7, null, 5, 'FALSE', null],
+    ['cat_family', 'Family', '#a8641d', 'more', 12, null, 3, 'FALSE', null]];
+  const GOAL_HEAD = ['id', 'short_name', 'identity', 'category_id',
+    'target_amount', 'target_unit', 'by_date', 'archived'];
+
+  await t.test('a category name resolves, and is stored as the id', () => {
+    const { state, report } = workbook.decode(XLSX, bookOf({
+      Categories: CATS,
+      Goals: [GOAL_HEAD, ['goal_py', 'Learn Python', null, 'Learning', 130, 'h', '2026-09-30', 'FALSE']],
+    }), { now: NOW });
+
+    assert.equal(report.rejected, 0);
+    assert.equal(state.goals[0].category_id, 'cat_learn', 'the id is what gets stored');
+    assert.ok(report.notes.some((n) => /Goals: 1 reference named a category/.test(n)),
+      'and the friend is told, so the next export teaches the convention');
+  });
+
+  await t.test('it is case- and space-insensitive', () => {
+    const { state, report } = workbook.decode(XLSX, bookOf({
+      Categories: CATS,
+      Goals: [GOAL_HEAD, ['goal_py', 'Learn Python', null, '  learning ', 130, 'h', '2026-09-30', 'FALSE']],
+    }), { now: NOW });
+    assert.equal(report.rejected, 0);
+    assert.equal(state.goals[0].category_id, 'cat_learn');
+  });
+
+  await t.test('entries may name their category and their goal', () => {
+    const { state, report } = workbook.decode(XLSX, bookOf({
+      Categories: CATS,
+      Goals: [GOAL_HEAD, ['goal_py', 'Learn Python', null, 'cat_learn', 130, 'h', '2026-09-30', 'FALSE']],
+      Entries: [ENTRY_HEAD,
+        ['e_0001', '2026-06-07', 60, 'named both', 'Learning', 'Learn Python', null, null]],
+    }), { now: NOW });
+
+    assert.equal(report.rejected, 0);
+    assert.equal(state.entries[0].category_id, 'cat_learn');
+    assert.equal(state.entries[0].goal_id, 'goal_py');
+    assert.ok(report.notes.some((n) => /Entries: 1 reference named a goal/.test(n)));
+  });
+
+  await t.test('the plan sheet takes names too', () => {
+    const { state, report } = workbook.decode(XLSX, bookOf({
+      Categories: CATS,
+      Plan: [['category_id', 'planned_hours', 'week_effective_from'],
+        ['Family', 12, '2026-06-01']],
+    }), { now: NOW });
+    assert.equal(report.rejected, 0);
+    assert.equal(state.plan[0].category_id, 'cat_family');
+  });
+
+  await t.test('rule §8.2 still holds when both sides were named', () => {
+    const { state, report } = workbook.decode(XLSX, bookOf({
+      Categories: CATS,
+      Goals: [GOAL_HEAD, ['goal_py', 'Learn Python', null, 'Learning', 130, 'h', '2026-09-30', 'FALSE']],
+      Entries: [ENTRY_HEAD,
+        ['e_0001', '2026-06-07', 60, 'wrong category', 'Family', 'Learn Python', null, null]],
+    }), { now: NOW });
+    assert.equal(state.entries.length, 0);
+    assert.match(report.rejects[0].reason, /is fed by Learning, but this row is Family/);
+  });
+
+  await t.test('a name that matches nothing says what a working value looks like', () => {
+    const { report } = workbook.decode(XLSX, bookOf({
+      Categories: CATS,
+      Goals: [GOAL_HEAD, ['goal_py', 'Learn Python', null, 'Learnign', 130, 'h', '2026-09-30', 'FALSE']],
+    }), { now: NOW });
+    assert.match(report.rejects[0].reason,
+      /category_id "Learnign" is not in the Categories sheet — use an id like cat_learn, or the exact category name/);
+  });
+
+  await t.test('a name shared by two categories is rejected rather than guessed at', () => {
+    const { report } = workbook.decode(XLSX, bookOf({
+      Categories: [CAT_HEAD,
+        ['cat_a', 'Learning', '#2b4a7d', 'more', 7, null, 1, 'FALSE', null],
+        ['cat_b', 'Learning', '#a8641d', 'more', 3, null, 2, 'FALSE', null]],
+      Goals: [GOAL_HEAD, ['goal_py', 'Learn Python', null, 'Learning', 130, 'h', '2026-09-30', 'FALSE']],
+    }), { now: NOW });
+    assert.match(report.rejects[0].reason, /matches more than one category by name/);
+  });
+
+  await t.test('an id still wins, so nothing about the old behaviour changed', () => {
+    const { state, report } = workbook.decode(XLSX, bookOf({
+      Categories: CATS,
+      Goals: [GOAL_HEAD, ['goal_py', 'Learn Python', null, 'cat_learn', 130, 'h', '2026-09-30', 'FALSE']],
+    }), { now: NOW });
+    assert.equal(report.rejected, 0);
+    assert.equal(state.goals[0].category_id, 'cat_learn');
+    assert.deepEqual(report.notes.filter((n) => /named a category/.test(n)), []);
+  });
+});
+
 test('an entry whose goal belongs to another category is rejected (rule §8.2)', () => {
   const bytes = bookOf({
     Categories: [CAT_HEAD,

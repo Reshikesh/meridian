@@ -237,6 +237,58 @@
     return out;
   }
 
+  /* A reference column resolved by id OR by the human name beside it.
+
+     Decision 5 makes the workbook a first-class editor, and the person editing
+     it is not technical: the Goals sheet asks for a `category_id` while the
+     Categories sheet next door lists eight readable names, so typing `Learning`
+     rather than `cat_learn` is the obvious thing to do, not a mistake. Both are
+     accepted; the id is what gets stored, so the next export shows the id and
+     the file teaches its own convention. */
+  function makeResolver(rows, nameKey) {
+    var byId = Object.create(null);
+    var byName = Object.create(null);
+    var ambiguous = Object.create(null);
+
+    rows.forEach(function (r) {
+      byId[r.id] = r;
+      var n = String(r[nameKey] == null ? '' : r[nameKey]).trim().toLowerCase();
+      if (!n) return;
+      if (byName[n]) ambiguous[n] = true;
+      else byName[n] = r;
+    });
+
+    return {
+      example: rows.length ? rows[0].id : null,
+      get: function (id) { return byId[id] || null; },
+      resolve: function (raw) {
+        if (raw == null || raw === '') return { ok: false, blank: true };
+        if (byId[raw]) return { ok: true, value: raw };
+        var n = String(raw).trim().toLowerCase();
+        if (ambiguous[n]) return { ok: false, ambiguous: true };
+        if (byName[n]) return { ok: true, value: byName[n].id, fromName: true };
+        return { ok: false };
+      }
+    };
+  }
+
+  function refError(field, raw, res, resolver, what) {
+    if (res.ambiguous) {
+      return field + ' "' + raw + '" matches more than one ' + what +
+        ' by name — use the id from the ' + what.charAt(0).toUpperCase() + what.slice(1) +
+        (what === 'category' ? 'ies' : 's') + ' sheet';
+    }
+    return field + ' "' + raw + '" is not in the ' +
+      (what === 'category' ? 'Categories' : 'Goals') + ' sheet' +
+      (resolver.example ? ' — use an id like ' + resolver.example + ', or the exact ' + what + ' name' : '');
+  }
+
+  function namedRefNote(report, sheetName, n, what) {
+    if (!n) return;
+    report.notes.push(sheetName + ': ' + n + (n === 1 ? ' reference named a ' : ' references named a ') +
+      what + ' instead of giving its id. Matched by name and saved with the id, so the next export shows the id.');
+  }
+
   function fromRows(sheets, opts) {
     var ctx = { parseSerial: opts && opts.parseSerial };
     var report = makeReport();
@@ -362,11 +414,14 @@
 
     var catIds = Object.create(null);
     state.categories.forEach(function (c) { catIds[c.id] = c; });
+    var cats = makeResolver(state.categories, 'name');
 
     /* --- Goals --- */
     var goalSheet = sheets.Goals;
     var goalSummary = sheetSummary(report, 'Goals', !!goalSheet);
     var goalIds = Object.create(null);
+    var namedCatRefs = { Goals: 0, Entries: 0, Plan: 0 };
+    var namedGoalRefs = 0;
     if (!goalSheet) {
       report.notes.push('Goals: sheet missing — imported without goals.');
     } else {
@@ -380,7 +435,9 @@
           { key: 'id', read: function (v, f) { return validate.asId(v, f, { required: true }); } },
           { key: 'short_name', read: function (v, f) { return validate.asText(v, f, { required: true }); } },
           { key: 'identity', read: function (v, f) { return validate.asText(v, f); } },
-          { key: 'category_id', read: function (v, f) { return validate.asId(v, f, { required: true }); } },
+          /* asText, not asId: this column accepts the category's NAME as well as
+             its id, and names have spaces in them. */
+          { key: 'category_id', read: function (v, f) { return validate.asText(v, f, { required: true }); } },
           { key: 'target_amount', read: function (v, f) { return validate.asNumber(v, f, { required: true }); } },
           { key: 'target_unit', read: function (v, f) { return validate.asEnum(v, f, validate.TARGET_UNITS); } },
           { key: 'by_date', read: function (v, f) { return validate.asDayKey(v, f, { required: true, parseSerial: ctx.parseSerial }); } },
@@ -388,9 +445,18 @@
         ], ctx, errors);
 
         if (!errors.length) {
-          if (goalIds[g.id]) errors.push('id "' + g.id + '" appears twice in this sheet');
-          else if (!catIds[g.category_id]) errors.push('category_id "' + g.category_id + '" is not in the Categories sheet');
-          else if (g.target_amount <= 0) errors.push('target_amount must be more than zero');
+          if (goalIds[g.id]) {
+            errors.push('id "' + g.id + '" appears twice in this sheet');
+          } else {
+            var catRef = cats.resolve(g.category_id);
+            if (!catRef.ok) {
+              errors.push(refError('category_id', g.category_id, catRef, cats, 'category'));
+            } else {
+              if (catRef.fromName) namedCatRefs.Goals += 1;
+              g.category_id = catRef.value;
+              if (g.target_amount <= 0) errors.push('target_amount must be more than zero');
+            }
+          }
         }
         if (errors.length) return reject(report, goalSummary, 'Goals', rowNo, errors[0]);
 
@@ -401,6 +467,7 @@
         report.accepted += 1;
         if (!g.archived && g.by_date < todayKey) pastGoals += 1;
       });
+      namedRefNote(report, 'Goals', namedCatRefs.Goals, 'category');
       if (pastGoals) {
         report.notes.push(pastGoals + (pastGoals === 1 ? ' goal has' : ' goals have') +
           ' a date that has already passed. Kept as they are.');
@@ -408,6 +475,8 @@
     }
 
     /* --- Entries --- */
+    var goals = makeResolver(state.goals, 'short_name');
+
     var entrySheet = sheets.Entries;
     var entrySummary = sheetSummary(report, 'Entries', !!entrySheet);
     if (!entrySheet) {
@@ -423,20 +492,39 @@
           { key: 'date', read: function (v, f) { return validate.asDayKey(v, f, { required: true, parseSerial: ctx.parseSerial }); } },
           { key: 'duration_min', read: function (v, f) { return validate.asInteger(v, f, { required: true, min: 1 }); } },
           { key: 'activity', read: function (v, f) { return validate.asText(v, f); } },
-          { key: 'category_id', read: function (v, f) { return validate.asId(v, f, { required: true }); } },
-          { key: 'goal_id', read: function (v, f) { return validate.asId(v, f); } },
+          { key: 'category_id', read: function (v, f) { return validate.asText(v, f, { required: true }); } },
+          { key: 'goal_id', read: function (v, f) { return validate.asText(v, f); } },
           { key: 'value', read: function (v, f) { return validate.asInteger(v, f, { min: 1, max: 5 }); } },
           { key: 'created_at', read: function (v, f) { return validate.asDateTime(v, f, ctx); } }
         ], ctx, errors);
 
         if (!errors.length) {
-          if (seenEntries[e.id]) errors.push('id "' + e.id + '" appears twice in this sheet');
-          else if (!catIds[e.category_id]) errors.push('category_id "' + e.category_id + '" is not in the Categories sheet');
-          else if (e.goal_id && !goalIds[e.goal_id]) errors.push('goal_id "' + e.goal_id + '" is not in the Goals sheet');
-          else if (e.goal_id && goalIds[e.goal_id].category_id !== e.category_id) {
-            errors.push('goal_id "' + e.goal_id + '" is fed by ' +
-              catIds[goalIds[e.goal_id].category_id].name + ', but this row is ' +
-              catIds[e.category_id].name);
+          if (seenEntries[e.id]) {
+            errors.push('id "' + e.id + '" appears twice in this sheet');
+          } else {
+            var eCat = cats.resolve(e.category_id);
+            if (!eCat.ok) {
+              errors.push(refError('category_id', e.category_id, eCat, cats, 'category'));
+            } else {
+              if (eCat.fromName) namedCatRefs.Entries += 1;
+              e.category_id = eCat.value;
+
+              if (e.goal_id) {
+                var eGoal = goals.resolve(e.goal_id);
+                if (!eGoal.ok) {
+                  errors.push(refError('goal_id', e.goal_id, eGoal, goals, 'goal'));
+                } else {
+                  if (eGoal.fromName) namedGoalRefs += 1;
+                  e.goal_id = eGoal.value;
+                  /* Business rule §8.2: a goal lives inside one category. */
+                  if (goalIds[e.goal_id].category_id !== e.category_id) {
+                    errors.push('goal_id "' + e.goal_id + '" is fed by ' +
+                      catIds[goalIds[e.goal_id].category_id].name + ', but this row is ' +
+                      catIds[e.category_id].name);
+                  }
+                }
+              }
+            }
           }
         }
         if (errors.length) return reject(report, entrySummary, 'Entries', rowNo, errors[0]);
@@ -447,6 +535,9 @@
         report.accepted += 1;
         report.entryMinutes += e.duration_min;
       });
+
+      namedRefNote(report, 'Entries', namedCatRefs.Entries, 'category');
+      namedRefNote(report, 'Entries', namedGoalRefs, 'goal');
 
       /* The waking-hours cap is a rule about what you may log from here on, not
          a verdict on days already lived (decision 5). Over-full days are
@@ -474,15 +565,21 @@
         var rowNo = i + 2;
         var errors = [];
         var p = readRow(r, [
-          { key: 'category_id', read: function (v, f) { return validate.asId(v, f, { required: true }); } },
+          { key: 'category_id', read: function (v, f) { return validate.asText(v, f, { required: true }); } },
           { key: 'planned_hours', read: function (v, f) { return validate.asNumber(v, f, { required: true, min: 0 }); } },
           { key: 'week_effective_from', read: function (v, f) { return validate.asDayKey(v, f, { required: true, parseSerial: ctx.parseSerial }); } }
         ], ctx, errors);
 
         if (!errors.length) {
-          if (!catIds[p.category_id]) errors.push('category_id "' + p.category_id + '" is not in the Categories sheet');
-          else if (dates.weekdayIndex(p.week_effective_from) !== 0) {
-            errors.push('week_effective_from "' + p.week_effective_from + '" is not a Monday');
+          var pCat = cats.resolve(p.category_id);
+          if (!pCat.ok) {
+            errors.push(refError('category_id', p.category_id, pCat, cats, 'category'));
+          } else {
+            if (pCat.fromName) namedCatRefs.Plan += 1;
+            p.category_id = pCat.value;
+            if (dates.weekdayIndex(p.week_effective_from) !== 0) {
+              errors.push('week_effective_from "' + p.week_effective_from + '" is not a Monday');
+            }
           }
         }
         if (errors.length) return reject(report, planSummary, 'Plan', rowNo, errors[0]);
@@ -491,6 +588,7 @@
         planSummary.accepted += 1;
         report.accepted += 1;
       });
+      namedRefNote(report, 'Plan', namedCatRefs.Plan, 'category');
     }
 
     /* --- Lessons --- */
