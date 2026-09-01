@@ -1159,11 +1159,14 @@
   color: var(--ink);
 }
 
+/* Fixed, and placed by src/ui/log.js against its button. The Log table scrolls
+   horizontally, and `overflow-x: auto` resolves the OTHER axis to `auto` too —
+   there is no such thing as clipping one axis only — so an absolutely
+   positioned panel on the last row is cut off by the scroller and grows it a
+   vertical scrollbar. Fixed positioning is what escapes an ancestor's clip. */
 .rowmenu__panel {
-  position: absolute;
-  top: calc(100% + var(--sp-2));
-  right: 0;
-  z-index: 5;
+  position: fixed;
+  z-index: 30;
   min-width: 148px;
   display: flex;
   flex-direction: column;

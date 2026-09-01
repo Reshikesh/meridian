@@ -400,3 +400,95 @@ test('clicking the activity opens the same editor as the row menu', async ({ pag
   await expect(page.locator('.sheet__title')).toHaveText('EDIT ENTRY — SUN 7 JUNE');
   await expect(page.locator('.fld--sheet')).toHaveValue('Python — async chapter');
 });
+
+test('the last row menu is not trapped in the table scroller', async ({ page }) => {
+  // The Log table scrolls horizontally, and `overflow-x: auto` clips the other
+  // axis too. An absolutely positioned menu on the LAST row was cut off by that
+  // scroller and grew it a vertical scrollbar which, when dragged, closed the
+  // menu. Reported at the Phase 2 checkpoint.
+  await openLog(page);
+
+  const before = await page.locator('.logtable__scroll').evaluate(
+    (el) => ({ scrollHeight: el.scrollHeight, clientHeight: el.clientHeight }));
+  expect(before.scrollHeight).toBeLessThanOrEqual(before.clientHeight + 1);
+
+  await page.locator('.logrow--entry').last().locator('.rowmenu__btn').click();
+  const panel = page.locator('.rowmenu__panel');
+  await expect(panel).toBeVisible();
+
+  // Nothing clips it: its own box, its box clipped by the scroller, and the
+  // viewport all agree.
+  const geometry = await panel.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    const scroller = document.querySelector('.logtable__scroll');
+    const s = scroller.getBoundingClientRect();
+    return {
+      panel: { top: r.top, bottom: r.bottom, left: r.left, right: r.right },
+      clippedBottom: Math.min(r.bottom, s.bottom),
+      viewport: { w: window.innerWidth, h: window.innerHeight },
+      scroller: { scrollHeight: scroller.scrollHeight, clientHeight: scroller.clientHeight },
+      position: getComputedStyle(el).position,
+    };
+  });
+
+  expect(geometry.position).toBe('fixed');
+  expect(geometry.panel.bottom).toBeLessThanOrEqual(geometry.viewport.h);
+  expect(geometry.panel.top).toBeGreaterThanOrEqual(0);
+  expect(geometry.panel.right).toBeLessThanOrEqual(geometry.viewport.w);
+  expect(geometry.panel.left).toBeGreaterThanOrEqual(0);
+  // The whole panel is below the scroller's own bottom edge, which is exactly
+  // what an absolutely positioned one could not do.
+  expect(geometry.panel.bottom).toBeGreaterThan(geometry.clippedBottom - 1);
+  // ...and the scroller did not grow to make room for it.
+  expect(geometry.scroller.scrollHeight)
+    .toBeLessThanOrEqual(geometry.scroller.clientHeight + 1);
+});
+
+test('the menu flips above the button when there is no room below', async ({ page }) => {
+  // Short enough that the last row's button is fully visible — so Playwright
+  // does not scroll it away — but with no room under it for the panel.
+  await page.setViewportSize({ width: 1280, height: 460 });
+  await openLog(page);
+
+  const button = page.locator('.logrow--entry').last().locator('.rowmenu__btn');
+  await button.click();
+  await expect(page.locator('.rowmenu__panel')).toBeVisible();
+
+  const rects = await page.evaluate(() => {
+    const buttons = document.querySelectorAll('.rowmenu__btn');
+    return {
+      panel: document.querySelector('.rowmenu__panel').getBoundingClientRect().toJSON(),
+      button: buttons[buttons.length - 1].getBoundingClientRect().toJSON(),
+      viewportHeight: window.innerHeight,
+    };
+  });
+
+  // It had to flip: there was not room for it below.
+  expect(rects.button.bottom + rects.panel.height).toBeGreaterThan(rects.viewportHeight - 8);
+  expect(rects.panel.bottom).toBeLessThanOrEqual(rects.button.top + 1);
+  expect(rects.panel.top).toBeGreaterThanOrEqual(0);
+});
+
+test('scrolling the table keeps the menu on its button', async ({ page }) => {
+  await page.setViewportSize({ width: 700, height: 900 });
+  await openLog(page);
+
+  await page.locator('.logrow--entry').first().locator('.rowmenu__btn').click();
+  await expect(page.locator('.rowmenu__panel')).toBeVisible();
+
+  const offsetBefore = await page.evaluate(() => {
+    const p = document.querySelector('.rowmenu__panel').getBoundingClientRect();
+    const b = document.querySelector('.rowmenu__btn').getBoundingClientRect();
+    return Math.round(p.right - b.right);
+  });
+
+  await page.locator('.logtable__scroll').evaluate((el) => { el.scrollLeft = 120; });
+  // Still open, and still glued to the button it belongs to.
+  await expect(page.locator('.rowmenu__panel')).toBeVisible();
+  const offsetAfter = await page.evaluate(() => {
+    const p = document.querySelector('.rowmenu__panel').getBoundingClientRect();
+    const b = document.querySelector('.rowmenu__btn').getBoundingClientRect();
+    return Math.round(p.right - b.right);
+  });
+  expect(offsetAfter).toBe(offsetBefore);
+});
