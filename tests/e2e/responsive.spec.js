@@ -88,26 +88,83 @@ for (const width of WIDTHS) {
           }
         }
 
-        // QUALITY-BAR §2 says "every screen AND sheet open". Phase 1 ships one
-        // sheet; Phase 2 adds its own cases here.
-        await page.click('[data-data-open]');
-        await expect(page.locator('.sheet__card')).toBeVisible();
-        await page.waitForFunction(
-          () => document.getAnimations().every((a) => a.playState === 'finished'));
+        // QUALITY-BAR §2 says "every screen AND sheet open". Every sheet the
+        // app has is opened here, one after another, at every width and theme.
+        // `open` leaves the app on the sheet; `close` puts it back.
+        const SHEETS = [
+          {
+            id: 'data',
+            open: async () => page.click('[data-data-open]'),
+            close: async () => page.keyboard.press('Escape'),
+          },
+          {
+            id: 'entry',
+            open: async () => {
+              await page.click('[data-nav="log"]');
+              await page.click('.quickadd__open');
+              // The tallest state of the sheet: a goal picked, so the category
+              // is locked and the projection panel is on screen.
+              await page.locator('.seg').first().getByText('2 h', { exact: true }).click();
+              await page.locator('.seg').nth(1).getByText('Learn Python').click();
+            },
+            close: async () => page.keyboard.press('Escape'),
+          },
+          {
+            id: 'manage',
+            open: async () => {
+              await page.click('[data-nav="log"]');
+              await page.click('.btn--quiet');
+            },
+            close: async () => page.keyboard.press('Escape'),
+          },
+          {
+            id: 'manage-editing',
+            open: async () => {
+              await page.click('[data-nav="log"]');
+              await page.click('.btn--quiet');
+              await page.locator('.manage__rowwrap').first()
+                .getByRole('button', { name: 'edit' }).click();
+            },
+            close: async () => page.keyboard.press('Escape'),
+          },
+          {
+            id: 'category',
+            open: async () => {
+              await page.click('[data-nav="log"]');
+              await page.click('.btn--quiet');
+              await page.click('.sheet__tools .btn--brand');
+            },
+            // Two sheets deep, so two Escapes.
+            close: async () => {
+              await page.keyboard.press('Escape');
+              await page.keyboard.press('Escape');
+            },
+          },
+        ];
 
-        const sheetAudit = await page.evaluate(auditInPage);
-        expect(sheetAudit.counts.leaves,
-          `${width}/${theme}/data-sheet: audit saw only ${sheetAudit.counts.leaves} leaves`)
-          .toBeGreaterThanOrEqual(MIN_LEAVES);
-        failures.push(...formatAudit(sheetAudit, `${width}/${theme}/data-sheet`));
+        for (const sheet of SHEETS) {
+          await sheet.open();
+          await expect(page.locator('.sheet__card').last()).toBeVisible();
+          await page.waitForFunction(
+            () => document.getAnimations().every((a) => a.playState === 'finished'));
 
-        if (SHOT_WIDTHS.has(width)) {
-          await page.screenshot({
-            path: path.join(SHOTS, testInfo.project.name, theme,
-              `sheet-data-${String(width).padStart(4, '0')}.png`),
-            fullPage: true,
-            animations: 'disabled',
-          });
+          const sheetAudit = await page.evaluate(auditInPage);
+          expect(sheetAudit.counts.leaves,
+            `${width}/${theme}/${sheet.id}: audit saw only ${sheetAudit.counts.leaves} leaves`)
+            .toBeGreaterThanOrEqual(MIN_LEAVES);
+          failures.push(...formatAudit(sheetAudit, `${width}/${theme}/sheet-${sheet.id}`));
+
+          if (SHOT_WIDTHS.has(width)) {
+            await page.screenshot({
+              path: path.join(SHOTS, testInfo.project.name, theme,
+                `sheet-${sheet.id}-${String(width).padStart(4, '0')}.png`),
+              fullPage: true,
+              animations: 'disabled',
+            });
+          }
+
+          await sheet.close();
+          await expect(page.locator('.sheet__card')).toHaveCount(0);
         }
 
         expect(failures, failures.join('\n')).toEqual([]);

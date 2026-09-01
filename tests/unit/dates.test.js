@@ -212,3 +212,45 @@ test('created_at is a local wall clock, never an instant', () => {
   assert.ok(!dates.isIsoDateTime('2026-06-07T09:12:00Z'));
   assert.ok(!dates.isIsoDateTime('2026-06-07'));
 });
+
+/* ---------- Log day headings (spec §6) ---------- */
+
+test('formatDayHeading / formatDayShort', async (t) => {
+  await t.test('the Log eyebrow is the mockup\'s SUNDAY 7 JUNE', () => {
+    assert.equal(dates.formatDayHeading(on(2026, 6, 7)), 'SUNDAY 7 JUNE');
+  });
+
+  await t.test('the entry sheet title is the mockup\'s SUN 7 JUNE', () => {
+    assert.equal(dates.formatDayShort(on(2026, 6, 7)), 'SUN 7 JUNE');
+  });
+
+  await t.test('both accept a dayKey as well as a Date', () => {
+    assert.equal(dates.formatDayHeading('2026-06-07'), 'SUNDAY 7 JUNE');
+    assert.equal(dates.formatDayShort('2026-06-07'), 'SUN 7 JUNE');
+  });
+
+  await t.test('the month is spelled out in full, never abbreviated', () => {
+    assert.equal(dates.formatDayHeading('2026-09-30'), 'WEDNESDAY 30 SEPTEMBER');
+    assert.equal(dates.formatDayShort('2026-09-30'), 'WED 30 SEPTEMBER');
+  });
+
+  await t.test('every weekday reads back Monday-first (decision 18)', () => {
+    // 1-7 June 2026 is a Monday-to-Sunday week.
+    const heads = [];
+    for (let d = 1; d <= 7; d++) heads.push(dates.formatDayHeading(on(2026, 6, d)).split(' ')[0]);
+    assert.deepEqual(heads, ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY',
+      'FRIDAY', 'SATURDAY', 'SUNDAY']);
+  });
+
+  await t.test('an unreadable value is an empty string, not a crash', () => {
+    assert.equal(dates.formatDayHeading('nonsense'), '');
+    assert.equal(dates.formatDayShort(null), '');
+  });
+
+  await t.test('WEEKDAYS is Monday-first so weekdayIndex addresses it directly', () => {
+    assert.equal(dates.WEEKDAYS[dates.weekdayIndex(on(2026, 6, 7))], 'Sun');
+    assert.equal(dates.WEEKDAYS[dates.weekdayIndex(on(2026, 6, 1))], 'Mon');
+    assert.equal(dates.WEEKDAYS.length, 7);
+    assert.equal(dates.WEEKDAYS_FULL.length, 7);
+  });
+});

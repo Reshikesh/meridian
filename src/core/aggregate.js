@@ -45,6 +45,46 @@
     return Math.round((Number(h) || 0) * 60);
   }
 
+  /* What the quick-add row and the entry sheet's "Other" field accept:
+     `1.5`, `1.5h`, `90m` (BUILD-PLAN § Phase 2), plus the spellings a person
+     reaches for by reflex — `1.5 hrs`, `90 mins`, `.5h`, `2H`.
+
+     A bare number is HOURS. That is the unit every figure in the app is
+     written in, and the field's own placeholder says `1.5 h`; reading a bare
+     `2` as two minutes would be a silent, unrecoverable misreading of the most
+     common input there is.
+
+     Returns whole minutes, or null for anything it cannot understand — never a
+     guess. The caller turns null into the message next to the field. */
+  var DURATION_RE = /^([0-9]*\.?[0-9]+)\s*([a-z]*)$/;
+
+  function parseDuration(text) {
+    if (text === null || text === undefined) return null;
+    var s = String(text).trim().toLowerCase();
+    if (!s) return null;
+
+    var m = DURATION_RE.exec(s);
+    if (!m) return null;
+
+    var n = Number(m[1]);
+    if (!isFinite(n) || n <= 0) return null;
+
+    var unit = m[2];
+    var minutes;
+    if (unit === '' || unit === 'h' || unit === 'hr' || unit === 'hrs' ||
+        unit === 'hour' || unit === 'hours') {
+      minutes = n * 60;
+    } else if (unit === 'm' || unit === 'min' || unit === 'mins' ||
+               unit === 'minute' || unit === 'minutes') {
+      minutes = n;
+    } else {
+      return null;
+    }
+
+    minutes = Math.round(minutes);
+    return minutes > 0 ? minutes : null;
+  }
+
   /* ---------- settings-derived denominators (decision 17) ---------- */
 
   function sleepHours(settings) {
@@ -317,6 +357,7 @@
     hours: hours,
     formatHours: formatHours,
     hoursToMinutes: hoursToMinutes,
+    parseDuration: parseDuration,
     sleepHours: sleepHours,
     wakingHoursPerDay: wakingHoursPerDay,
     wakingHoursPerWeek: wakingHoursPerWeek,

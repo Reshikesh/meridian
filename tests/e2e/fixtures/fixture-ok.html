@@ -20,6 +20,15 @@
   .rule { position:absolute; left:0; right:0; bottom:0; height:2px; background:#c4562e; pointer-events:none; }
   .tabwrap { position:relative; padding-bottom:8px; }
   .hidden-screen { display:none; }
+  .sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+  /* A capped panel whose body scrolls and whose footer sits below it: the rows
+     past the fold pass UNDER the footer, exactly as Meridian's manage sheet
+     does. Nothing here is a defect. */
+  .panel { position:fixed; left:20px; bottom:20px; width:260px; height:150px; display:flex; flex-direction:column;
+           background:#fff; border:1px solid #ddd; }
+  .panel__body { overflow:auto; min-height:0; flex:1; }
+  .panel__row { padding:10px; border-bottom:1px solid #eee; white-space:nowrap; }
+  .panel__foot { padding:10px; border-top:1px solid #ddd; background:#fafafa; }
 </style></head><body>
   <header>Header that sticks over the rows below it</header>
   <div class="tabwrap"><button>Log</button><span class="rule"></span></div>
@@ -29,7 +38,16 @@
     <tr><td>2.0 h</td><td>Deep work</td><td>Learning</td><td>Ship v1</td></tr></table></div>
   <label>Value <input value="a value far longer than one hundred and twenty pixels of input box"></label>
   <div style="height:1200px">tall filler so the sticky header overlaps content when scrolled</div>
+  <p>Goal <span class="sr-only">No goal on this entry</span></p>
   <div class="hidden-screen"><p style="width:60px;overflow:hidden;white-space:nowrap">hidden and clipped, must be ignored</p></div>
+  <div class="panel">
+    <div class="panel__body">
+      <div class="panel__row">Row one</div><div class="panel__row">Row two</div>
+      <div class="panel__row">Row three</div><div class="panel__row">Row four</div>
+      <div class="panel__row">Row five</div><div class="panel__row">Row six</div>
+    </div>
+    <div class="panel__foot">Footer under the scrolled rows</div>
+  </div>
   <div class="veil"></div>
   <div class="sheet"><h2>New entry</h2><p>Sheet content over the page</p></div>
 </body></html>

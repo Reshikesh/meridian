@@ -332,13 +332,21 @@
   background: var(--bg);
 }
 
+/* Visually hidden, but still read out.
+
+   In the flow rather than `position: absolute`, which is the usual recipe and
+   is wrong here: an absolutely positioned span inside a horizontally scrolling
+   table is laid out against the nearest POSITIONED ancestor, which sits outside
+   the scroller — so it escapes the scroller's clip and stretches the page
+   instead. One inline pixel does not. */
 .sr-only {
-  position: absolute;
+  display: inline-block;
   width: 1px;
   height: 1px;
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+  vertical-align: baseline;
 }
 
 /* ---------- Empty state ----------
@@ -690,4 +698,735 @@
 .sheet__body {
   overflow-y: auto;
   min-height: 0;
+}
+
+/* ============================================================================
+   Phase 2 — the sheets' form controls, the row menu, the manage table.
+   Every value here is the mockup's own (spec §5, deck-07/09/10); what the
+   mockup has no value for is a state it never drew — hover, focus, disabled.
+   ========================================================================== */
+
+/* ---------- Field: label, control, message ---------- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+}
+
+.field__labelrow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+
+/* The entry sheet's "FILLED FROM THE GOAL" beside the CATEGORY label. */
+.field__note {
+  font: 500 10.5px/1 var(--font);
+  letter-spacing: .06em;
+  color: var(--brand);
+}
+
+.field__hint {
+  font: 400 11.5px/1.45 var(--font);
+  color: var(--ink2);
+  text-wrap: pretty;
+}
+
+.field__other {
+  max-width: 160px;
+}
+
+/* ---------- Segmented control (mockup `[data-seg]`) ---------- */
+
+.seg {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+.seg__btn {
+  font: 600 13px/1 var(--font);
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--ink2);
+  border: 1px solid var(--line);
+  cursor: pointer;
+  transition: color var(--m-hover) var(--ease),
+              background-color var(--m-hover) var(--ease),
+              border-color var(--m-hover) var(--ease);
+}
+
+.seg__btn:hover {
+  color: var(--ink);
+  border-color: var(--ink2);
+}
+
+.seg__btn[data-active="1"],
+.seg__btn[data-active="1"]:hover {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+
+.seg__btn:disabled {
+  opacity: .45;
+  cursor: default;
+}
+
+/* ---------- Direction cards (mockup `[data-dir]`) ---------- */
+
+.dirs {
+  display: grid;
+  /* minmax(0,1fr), not 1fr: a 1fr track has an auto minimum, so the longest
+     note would push the group wider than the sheet at narrow widths. */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-3);
+}
+
+.dir {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  text-align: left;
+  padding: 13px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: transparent;
+  cursor: pointer;
+  transition: background-color var(--m-hover) var(--ease),
+              border-color var(--m-hover) var(--ease);
+}
+
+.dir:hover {
+  border-color: var(--ink2);
+}
+
+.dir[data-active="1"] {
+  border-color: var(--ink);
+  background: var(--pale);
+}
+
+.dir__title {
+  font: 600 13px/1 var(--font);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.dir__title--good { color: var(--good); }
+.dir__title--warn { color: var(--warn); }
+.dir__title--dim  { color: var(--ink2); }
+
+.dir__note {
+  font: 400 11.5px/1.4 var(--font);
+  color: var(--ink2);
+}
+
+/* ---------- Colour swatches ---------- */
+
+.swatches {
+  display: flex;
+  gap: var(--sp-2);
+}
+
+.swatches__btn {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  line-height: 0;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+/* The mockup marks the chosen swatch with `outline: 2px var(--ink)` at
+   offset 2. Drawn as a shadow instead so that `outline` stays free for the
+   focus ring, which would otherwise land in exactly the same place. */
+.swatches__btn[data-active="1"] {
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--ink);
+}
+
+.swatch {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius);
+}
+
+/* QUALITY-BAR §7: under 3:1 against this theme's --bg, so it gets an outline
+   rather than a different colour. src/core/colour.js decides which. */
+.swatch[data-outline="1"] {
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.swatch--row {
+  width: 11px;
+  height: 11px;
+  border-radius: var(--radius-sm);
+  flex: none;
+}
+
+.swatch--none {
+  background: var(--axis);
+}
+
+/* ---------- Select ----------
+   A real <select> in the mockup's box. The caret is drawn: Archivo has no
+   glyph for the small down triangle at any subset (vendor/README.md). */
+
+.select {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.select__input {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  min-width: 0;
+  font: 500 12.5px/1 var(--font);
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 8px 26px 8px 10px;
+  cursor: pointer;
+  transition: border-color var(--m-hover) var(--ease);
+}
+
+.select__input:hover {
+  border-color: var(--ink2);
+}
+
+.select__input--empty {
+  color: var(--ink2);
+}
+
+.select__input:disabled {
+  color: var(--ink2);
+  cursor: default;
+}
+
+.select__input[aria-invalid="true"] {
+  border-color: var(--warn);
+}
+
+/* The dropped-down list is painted by the OS, which does not inherit the
+   theme; without this, a dark theme renders black text on a black list. */
+.select__input option {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.select__caret {
+  position: absolute;
+  right: 9px;
+  display: flex;
+  color: var(--ink2);
+  pointer-events: none;
+}
+
+.select--sheet .select__input {
+  font: 500 13px/1 var(--font);
+  padding: 10px 30px 10px 11px;
+}
+
+/* ---------- The mockup's dashed editable text (`[data-fld]`) ---------- */
+
+.fld {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  border-bottom: 1px dashed var(--line);
+  background: transparent;
+  color: var(--ink);
+  padding: 2px 0;
+  font: 400 15px/1.2 var(--font);
+  border-radius: 0;
+  transition: border-color var(--m-hover) var(--ease);
+}
+
+.fld:hover,
+.fld:focus {
+  border-bottom-color: var(--brand);
+}
+
+.fld::placeholder {
+  color: var(--ink2);
+  opacity: 1;
+}
+
+.fld:disabled {
+  color: var(--ink2);
+  cursor: default;
+}
+
+.fld[aria-invalid="true"] {
+  border-bottom-color: var(--warn);
+}
+
+.fld--duration {
+  font: 600 15px/1.2 var(--font);
+  font-variant-numeric: tabular-nums;
+}
+
+.fld--sheet   { font: 400 16px/1.4 var(--font); }
+.fld--name    { font: 600 18px/1.3 var(--font); }
+.fld--rowname { font: 600 15px/1.2 var(--font); }
+
+.fld--plan {
+  font: 600 16px/1.3 var(--font);
+  font-variant-numeric: tabular-nums;
+  max-width: 90px;
+}
+
+/* ---------- Category chip (Log rows) ----------
+   Not `.chip`: that one is the header's caps badge. This is the mockup's
+   inline category tag, and a Less category takes the warn pair. */
+
+.catchip {
+  display: inline-block;
+  font: 500 12px/1 var(--font);
+  padding: 5px 9px;
+  border-radius: var(--radius);
+  background: var(--pale);
+  color: var(--ink);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.catchip--less {
+  background: var(--warnbg);
+  color: var(--warn);
+}
+
+/* ---------- Entry sheet: the locked category ---------- */
+
+.lockrow {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.lockrow__chip {
+  font: 600 13px/1 var(--font);
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: var(--bg);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.lockrow__word {
+  opacity: .55;
+  font-weight: 500;
+}
+
+.btn--change {
+  font: 500 12px/1 var(--font);
+  padding: 10px 12px;
+}
+
+/* The Plan screen's own button style (spec §6), borrowed for the Log screen's
+   way in to Manage categories. */
+.btn--quiet {
+  color: var(--ink);
+}
+
+.btn--small {
+  font: 600 12px/1 var(--font);
+  padding: 9px 13px;
+}
+
+/* ---------- Entry sheet: SAVING THIS MOVES ---------- */
+
+.preview {
+  padding: var(--sp-6) var(--sp-7);
+  background: var(--strip);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.preview__label {
+  margin-bottom: var(--sp-1);
+}
+
+.preview__row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.preview__row--hours { font: 600 17px/1.2 var(--font); }
+.preview__row--lands { font: 600 22px/1.2 var(--font); }
+
+.preview__row--lands .preview__from,
+.preview__row--lands .preview__arrow {
+  font-size: 17px;
+}
+
+.preview__from { color: var(--ink2); }
+.preview__to--good { color: var(--good); }
+
+.preview__arrow {
+  color: var(--ink2);
+  display: inline-flex;
+  align-self: center;
+}
+
+.preview__flat {
+  font: 400 13px/1.5 var(--font);
+  color: var(--ink2);
+}
+
+/* ---------- The sheets' note panel ---------- */
+
+.notepanel {
+  padding: var(--sp-5) var(--sp-7);
+  background: var(--strip);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font: 400 13px/1.5 var(--font);
+  color: var(--ink2);
+  text-wrap: pretty;
+}
+
+.catgrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 132px;
+  gap: var(--sp-6);
+  align-items: start;
+}
+
+/* ---------- Sheet frame additions ---------- */
+
+/* The New category sheet opens over Manage (spec §1: z-index 41). */
+.sheet--stacked {
+  z-index: 41;
+}
+
+.sheet__tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* The manage sheet's footer is a band, not a button row. */
+.sheet__foot--strip {
+  padding: 15px var(--sp-9);
+  border-top: 1px solid var(--line);
+  background: var(--strip);
+}
+
+/* ---------- Row menu (Log `…`) ----------
+   spec §5: "Shadows: sheets only", so the panel separates itself with the
+   sheet card's other two ingredients — a solid --bg and a 1px --line rule. */
+
+.rowmenu {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.rowmenu__btn {
+  font: 500 13px/1 var(--font);
+  color: var(--ink2);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: 4px var(--sp-3);
+  border-radius: var(--radius);
+  transition: color var(--m-hover) var(--ease);
+}
+
+.rowmenu__btn:hover,
+.rowmenu__btn[aria-expanded="true"] {
+  color: var(--ink);
+}
+
+.rowmenu__panel {
+  position: absolute;
+  top: calc(100% + var(--sp-2));
+  right: 0;
+  z-index: 5;
+  min-width: 148px;
+  display: flex;
+  flex-direction: column;
+  padding: var(--sp-1);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.rowmenu__item {
+  text-align: left;
+  font: 500 12.5px/1 var(--font);
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  padding: 9px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color var(--m-hover) var(--ease);
+}
+
+.rowmenu__item:hover {
+  background: var(--pale);
+}
+
+.rowmenu__item--warn {
+  color: var(--warn);
+}
+
+.confirm--menu {
+  flex-direction: column;
+  align-items: stretch;
+  width: 212px;
+}
+
+.confirm--menu .confirm__text {
+  flex: 0 0 auto;
+}
+
+/* ---------- Manage sheet ---------- */
+
+.dirtag {
+  font: 600 10px/1 var(--font);
+  letter-spacing: .1em;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  white-space: nowrap;
+}
+
+.dirtag--good { color: var(--good); }
+.dirtag--warn { color: var(--warn); }
+.dirtag--dim  { color: var(--ink2); }
+
+.sharebar {
+  height: 6px;
+  background: var(--pale);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.sharebar__fill {
+  height: 100%;
+  border-radius: var(--radius);
+  transition: width var(--m-chart) var(--ease);
+}
+
+/* The body carries the rows itself, so it drops the sheet's own padding and
+   gap and scrolls in both directions: the five columns keep their proportions
+   and scroll inside the card rather than collapsing (QUALITY-BAR §2). */
+.sheet__body.manage {
+  --manage-min: 604px;
+  padding: 0;
+  gap: 0;
+  overflow: auto;
+}
+
+.managerow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 84px 92px minmax(0, 1fr) 118px;
+  gap: var(--sp-5);
+  align-items: center;
+  padding: 13px var(--sp-9);
+}
+
+.manage__head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  min-width: var(--manage-min);
+  padding-top: 11px;
+  padding-bottom: 11px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+
+.manage__right {
+  text-align: right;
+}
+
+.manage__rowwrap {
+  min-width: var(--manage-min);
+  border-bottom: 1px solid var(--line2);
+}
+
+.managerow__name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.managerow__label {
+  font: 600 15px/1.2 var(--font);
+  color: var(--ink);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The mockup's dashed "editable" underline, with the editor the mockup never
+   had behind it (spec Appendix A: `data-fld` promises editability with nothing
+   under it). Clicking the name is the same action as `edit`. */
+.managerow__label--edit {
+  padding: 2px 0;
+  border: 0;
+  border-bottom: 1px dashed var(--line);
+  background: transparent;
+  text-align: left;
+  cursor: text;
+  transition: border-color var(--m-hover) var(--ease);
+}
+
+.managerow__label--edit:hover {
+  border-bottom-color: var(--brand);
+}
+
+.managerow--archived .managerow__label {
+  color: var(--ink2);
+}
+
+.managerow__hours {
+  font: 600 14px/1.2 var(--font);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.managerow__hours--warn { color: var(--warn); }
+.managerow__hours--dim  { color: var(--ink2); }
+
+.managerow__kept {
+  font: 500 12.5px/1.3 var(--font);
+  color: var(--ink2);
+  text-align: right;
+}
+
+.managerow__note {
+  font: 400 11.5px/1.4 var(--font);
+  color: var(--ink2);
+}
+
+.managerow__actions {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.managerow__acts {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.managerow__dot {
+  color: var(--ink2);
+}
+
+/* The manage rows' actions. Not `.linkbtn`: that one is brand and underlined,
+   and these read as quiet text until they are hovered (deck-10). */
+.actbtn {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: 500 12px/1 var(--font);
+  color: var(--ink2);
+  cursor: pointer;
+  transition: color var(--m-hover) var(--ease);
+}
+
+.actbtn:hover {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.actbtn--brand,
+.actbtn--brand:hover {
+  font-weight: 600;
+  color: var(--brand);
+}
+
+.actbtn--warn,
+.actbtn--warn:hover {
+  font-weight: 600;
+  color: var(--warn);
+}
+
+.manage__editor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-6) var(--sp-8);
+  align-items: flex-start;
+  padding: var(--sp-5) var(--sp-9) var(--sp-7);
+  background: var(--strip);
+  border-top: 1px solid var(--line2);
+}
+
+.manage__editor .field {
+  flex: 0 1 auto;
+}
+
+/* The three direction cards need room; below 360px of it they wrap onto their
+   own row rather than squeezing the notes to one word per line. */
+.manage__editor .field:nth-child(2) {
+  flex: 1 1 360px;
+}
+
+/* Its own row, so Save and Cancel sit where they sit in every other sheet
+   however the three fields above them happen to wrap. */
+.manage__editoractions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-3);
+  flex: 1 0 100%;
+}
+
+.manage__rowerror {
+  padding: 0 var(--sp-9) 10px;
+}
+
+.confirm--row {
+  margin: 0 var(--sp-9) var(--sp-5);
+}
+
+.manage__empty {
+  min-width: 0;
+  padding: var(--sp-9) var(--sp-9) var(--sp-10);
+  font: 400 13px/1.5 var(--font);
+  color: var(--ink2);
+}
+
+.manage__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-5);
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.manage__footnote {
+  font: 400 12px/1.5 var(--font);
+  color: var(--ink2);
+  max-width: 58ch;
 }

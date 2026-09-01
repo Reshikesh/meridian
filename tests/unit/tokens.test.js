@@ -135,3 +135,16 @@ test('the theme-toggle border ratio against the header is recorded, not fixed', 
     +contrast(THEMES[id]['--line'], THEMES[id]['--navbg']).toFixed(2));
   assert.deepEqual(measured, [13.45, 1.34, 1.41]);
 });
+
+/* src/core/colour.js decides whether a category swatch needs the 1px --line
+   outline QUALITY-BAR §7 asks for on graphite, which means it has to know each
+   theme's --bg. It carries its own copy of those three values because it must
+   run in the browser with no access to the stylesheet; this is the assertion
+   that stops the copy drifting from the source. */
+test('colour.THEME_BG matches --bg in tokens.css', () => {
+  const colour = require('../../src/core/colour.js');
+  for (const id of THEME_IDS) {
+    assert.equal(colour.THEME_BG[id], THEMES[id]['--bg'], id);
+  }
+  assert.deepEqual(Object.keys(colour.THEME_BG).sort(), [...THEME_IDS].sort());
+});

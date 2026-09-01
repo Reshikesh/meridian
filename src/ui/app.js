@@ -10,6 +10,7 @@
   var useState = preactHooks.useState;
   var useEffect = preactHooks.useEffect;
   var dates = window.Meridian.dates;
+  var aggregate = window.Meridian.aggregate;
   var workbook = window.Meridian.workbook;
   var ui = window.Meridian.ui;
   var seed = window.MERIDIAN_SEED;
@@ -61,6 +62,14 @@
     var stampState = useState(currentStamp);
     var tickState = useState(function () { return new Date(); });
     var dataState = useState({ open: false, view: 'idle', pending: null, message: null });
+    /* The Log screen's day. Spec §1: the analysis range is the only persisted
+       state, so this resets to today on every open — which is where the friend
+       wants to be when they sit down to log. */
+    var dayState = useState(function () { return dates.dayKey(dates.logicalDay(new Date())); });
+    /* Sheets, oldest first. Only the New category sheet ever stacks (over
+       Manage), but a stack is what makes "closes back to its origin" a
+       property of the frame rather than a special case in one sheet. */
+    var stackState = useState([]);
 
     var data = stateHolder[0], setData = stateHolder[1];
     var screen = screenState[0], setScreen = screenState[1];
@@ -69,6 +78,8 @@
     var stamp = stampState[0], setStamp = stampState[1];
     var tick = tickState[0], setTick = tickState[1];
     var sheet = dataState[0], setSheet = dataState[1];
+    var day = dayState[0], setDay = dayState[1];
+    var stack = stackState[0], setStack = stackState[1];
 
     var firstRun = data === null;
 
@@ -200,8 +211,106 @@
       setSheet({ open: false, view: 'idle', pending: null, message: null });
     }
 
+    /* ---------- the Log screen ---------- */
+
+    var todayKey = dates.dayKey(dates.logicalDay(tick));
+
+    /* Past days stay editable; a day that has not happened is never reachable
+       (spec §12, business rule §8.15). */
+    function stepDay(delta) {
+      setDay(function (prev) {
+        var next = dates.dayKey(dates.addDays(prev, delta));
+        return next > todayKey ? prev : next;
+      });
+    }
+
+    /* ---------- the sheet stack ----------
+       push/pop rather than one id, because the New category sheet opens over
+       Manage and has to close back to it (the mockup's `data-open="back"`). */
+
+    function pushSheet(entry) {
+      setStack(function (prev) { return prev.concat([entry]); });
+    }
+
+    function popSheet() {
+      setStack(function (prev) { return prev.slice(0, -1); });
+    }
+
+    function clearStack() {
+      setStack([]);
+    }
+
+    /* ---------- entries ---------- */
+
+    function addEntry(input) {
+      store.addEntry(input);
+    }
+
+    function saveEntry(sheetState, input) {
+      if (sheetState.entry) store.updateEntry(sheetState.entry.id, input);
+      else store.addEntry(input);
+      popSheet();
+    }
+
+    var stackNodes = stack.map(function (item, i) {
+      var key = item.kind + ':' + i;
+
+      if (item.kind === 'entry') {
+        return html`
+          <${ui.EntrySheet} key=${key} state=${data} now=${tick} day=${day}
+            entry=${item.entry || null} prefill=${item.prefill || null}
+            onSave=${function (input) { saveEntry(item, input); }}
+            onClose=${popSheet} />`;
+      }
+
+      if (item.kind === 'manage') {
+        return html`
+          <${ui.ManageSheet} key=${key} state=${data} now=${tick} theme=${theme}
+            onNew=${function () { pushSheet({ kind: 'category' }); }}
+            onUpdate=${function (id, patch) { store.updateCategory(id, patch); }}
+            onArchive=${function (id) { store.archiveCategory(id, new Date()); }}
+            onRestore=${function (id) { store.restoreCategory(id); }}
+            onDelete=${function (id) { store.deleteCategory(id); }}
+            onClose=${clearStack} />`;
+      }
+
+      return html`
+        <${ui.CategorySheet} key=${key} state=${data} theme=${theme}
+          onAdd=${function (input) { store.addCategory(input); popSheet(); }}
+          onClose=${popSheet} />`;
+    });
+
     var exportInfo = data ? data.exportInfo : null;
     var dataLabel = ui.format.exportLabel(exportInfo, tick);
+
+    /* Phase 2 gives Log a real screen; the other five are still the designed
+       empty state, and both take the same cross-fade classes.
+
+       A plain function, not a component: a component declared inside App would
+       be a new function identity on every render, so Preact would tear the
+       screen down and rebuild it each time — and the quick-add row would lose
+       what was being typed into it the moment anything else changed. */
+    function renderScreen(id, mode) {
+      var className = 'screen' +
+        (mode === 'leaving' ? ' screen--leaving' : mode === 'entering' ? ' screen--entering' : '');
+      var key = (mode === 'leaving' ? 'out:' : '') + id;
+
+      if (id === 'log') {
+        return html`
+          <${ui.Log} key=${key} className=${className} state=${data} now=${tick}
+            day=${day} today=${todayKey}
+            onStepDay=${stepDay}
+            onAddEntry=${addEntry}
+            onOpenEntrySheet=${function (prefill) { pushSheet({ kind: 'entry', prefill: prefill }); }}
+            onEditEntry=${function (entry) { pushSheet({ kind: 'entry', entry: entry }); }}
+            onDeleteEntry=${function (id2) { store.deleteEntry(id2); }}
+            onManage=${function () { pushSheet({ kind: 'manage' }); }} />`;
+      }
+
+      return html`
+        <${ui.EmptyState} key=${key} screen=${id}
+          leaving=${mode === 'leaving'} entering=${mode === 'entering'} />`;
+    }
 
     var sheetNode = sheet.open ? html`
       <${ui.DataSheet}
@@ -238,12 +347,12 @@
             onScreen=${goToScreen} onTheme=${chooseTheme}
             onOpenData=${function () { patchSheet({ open: true, view: 'idle', message: null }); }} />
           <div class="screens">
-            ${outgoing === null ? null : html`
-              <${ui.EmptyState} key=${'out:' + outgoing} screen=${outgoing} leaving />`}
-            <${ui.EmptyState} key=${screen} screen=${screen} entering=${outgoing !== null} />
+            ${outgoing === null ? null : renderScreen(outgoing, 'leaving')}
+            ${renderScreen(screen, outgoing === null ? null : 'entering')}
           </div>
         </div>
         ${sheetNode}
+        ${stackNodes}
       </div>`;
   }
 

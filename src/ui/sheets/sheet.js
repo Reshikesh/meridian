@@ -4,11 +4,12 @@
    is trapped inside while open and returns to the opener on close, the first
    field is focused on open, and the page behind cannot scroll.
 
-   Phase 1 has two dialogs of its own — the Data sheet and the import report,
+   Phase 1 had two dialogs of its own — the Data sheet and the import report,
    including the replace-or-keep confirm, which QUALITY-BAR §4 names as a lossy
    action that must confirm inline and never through window.confirm. Phase 2
-   owns the sheets proper (entry, goal, category, manage) and the stacked
-   category sheet; nothing here tries to anticipate them. */
+   adds the sheets proper (entry, category, manage) and, with them, stacking:
+   the New category sheet opens over Manage at z-index 41 and closes back to it,
+   which is what the mockup's `data-open="back"` encodes. */
 (function () {
   'use strict';
 
@@ -16,6 +17,15 @@
   var ui = (window.Meridian = window.Meridian || {}).ui = window.Meridian.ui || {};
   var useEffect = preactHooks.useEffect;
   var useRef = preactHooks.useRef;
+
+  /* Every open sheet, oldest first. Escape belongs to the last one.
+
+     Without this, two sheets both add a capture-phase keydown listener to
+     `document`: capture listeners on the SAME node fire in registration order,
+     so the outer sheet would hear Escape first, and `stopPropagation` does not
+     silence a listener on the node it was called from. One Escape would close
+     both. */
+  var OPEN = [];
 
   var FOCUSABLE = [
     'a[href]', 'button:not([disabled])', 'input:not([disabled])',
@@ -36,6 +46,8 @@
       var card = cardRef.current;
       var opener = document.activeElement;
       var body = document.body;
+      var token = {};
+      OPEN.push(token);
 
       /* Locking the body would remove the scrollbar and shift the whole page
          left by its width; the gutter is paid back as padding. */
@@ -49,6 +61,9 @@
       if (first && first.focus) first.focus();
 
       function onKeyDown(event) {
+        /* Only the topmost sheet answers, so Escape closes the stacked category
+           sheet and leaves Manage standing behind it. */
+        if (OPEN[OPEN.length - 1] !== token) return;
         if (event.key === 'Escape') {
           event.stopPropagation();
           onClose();
@@ -75,6 +90,8 @@
 
       return function () {
         document.removeEventListener('keydown', onKeyDown, true);
+        var at = OPEN.indexOf(token);
+        if (at !== -1) OPEN.splice(at, 1);
         body.style.overflow = prevOverflow;
         body.style.paddingRight = prevPadding;
         if (opener && opener.focus && document.contains(opener)) opener.focus();
@@ -86,17 +103,26 @@
     }
 
     return html`
-      <div class=${'sheet' + (props.wide ? ' sheet--wide' : '')} onClick=${onVeilClick}>
+      <div class=${'sheet' + (props.wide ? ' sheet--wide' : '') +
+          (props.stacked ? ' sheet--stacked' : '')} onClick=${onVeilClick}>
         <div class="sheet__card" ref=${cardRef} role="dialog" aria-modal="true"
           aria-label=${props.title}>
           <div class="sheet__head">
             <span class="sheet__title">${props.title}</span>
-            <button type="button" class="sheet__close" onClick=${onClose} aria-label="Close">
-              <${ui.Glyph} name="close" />
-            </button>
+            <div class="sheet__tools">
+              ${props.tools || null}
+              <button type="button" class="sheet__close" onClick=${onClose} aria-label="Close">
+                <${ui.Glyph} name="close" />
+              </button>
+            </div>
           </div>
-          <div class="sheet__body">${props.children}</div>
-          ${props.footer ? html`<div class="sheet__foot">${props.footer}</div>` : null}
+          <div class=${'sheet__body' + (props.bodyClass ? ' ' + props.bodyClass : '')}>
+            ${props.children}
+          </div>
+          ${props.footer ? html`
+            <div class=${'sheet__foot' + (props.footClass ? ' ' + props.footClass : '')}>
+              ${props.footer}
+            </div>` : null}
         </div>
       </div>`;
   }

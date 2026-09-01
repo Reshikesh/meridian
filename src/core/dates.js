@@ -26,6 +26,13 @@
   var MONTHS_FULL = ['January', 'February', 'March', 'April', 'May', 'June',
                      'July', 'August', 'September', 'October', 'November', 'December'];
 
+  /* Monday first (decision 18), so index 0 is Monday everywhere in the app and
+     `weekdayIndex` can address these directly. */
+  var WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  var WEEKDAYS_FULL = ['Monday', 'Tuesday', 'Wednesday', 'Thursday',
+                       'Friday', 'Saturday', 'Sunday'];
+
   function pad2(n) {
     return n < 10 ? '0' + n : String(n);
   }
@@ -183,6 +190,25 @@
     return d ? d.getDate() + ' ' + MONTHS[d.getMonth()] : '';
   }
 
+  /* `SUNDAY 7 JUNE` — the Log screen's day eyebrow (spec §6). Uppercased here
+     rather than in CSS because the month is spelled out in full only in this
+     one place, and `text-transform` on a string the app never shows in mixed
+     case would hide that from anyone reading the markup. */
+  function formatDayHeading(v) {
+    var d = toDate(v);
+    if (!d) return '';
+    return (WEEKDAYS_FULL[weekdayIndex(d)] + ' ' + d.getDate() + ' ' +
+      MONTHS_FULL[d.getMonth()]).toUpperCase();
+  }
+
+  /* `SUN 7 JUNE` — the same, abbreviated, for the entry sheet's title. */
+  function formatDayShort(v) {
+    var d = toDate(v);
+    if (!d) return '';
+    return (WEEKDAYS[weekdayIndex(d)] + ' ' + d.getDate() + ' ' +
+      MONTHS_FULL[d.getMonth()]).toUpperCase();
+  }
+
   /* Local wall clock, no zone suffix: `2026-06-07T09:12:00` (spec §7 example).
      Deliberately not an instant — the workbook is read by a human in Excel, and
      a trailing Z would make every row look hours wrong to them. */
@@ -253,6 +279,9 @@
   return {
     DAY_START_HOUR: DAY_START_HOUR,
     MONTHS: MONTHS,
+    MONTHS_FULL: MONTHS_FULL,
+    WEEKDAYS: WEEKDAYS,
+    WEEKDAYS_FULL: WEEKDAYS_FULL,
     logicalDay: logicalDay,
     isoWeek: isoWeek,
     isoWeekYear: isoWeekYear,
@@ -273,6 +302,8 @@
     formatStamp: formatStamp,
     formatLong: formatLong,
     formatDayMonth: formatDayMonth,
+    formatDayHeading: formatDayHeading,
+    formatDayShort: formatDayShort,
     isoDateTime: isoDateTime,
     isIsoDateTime: isIsoDateTime,
     parseUserDate: parseUserDate

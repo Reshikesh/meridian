@@ -36,9 +36,50 @@ const auditInPage = () => {
   // opacity/content-visibility, because getComputedStyle does not propagate
   // `display:none` down to descendants — a child of a hidden screen still
   // reports its own `display: block`.
+  // The sr-only recipe: a 1x1 box with its content clipped away, carrying text
+  // that only a screen reader ever reads. It is not a layout box, so a
+  // "clipped text" or "overlap" report on one is noise by construction — it is
+  // clipped ON PURPOSE, and it is 1x1 so it collides with whatever it sits in.
+  // Detected by shape, not by class name, so it holds for any such recipe.
+  const isVisuallyHidden = (el) => {
+    const s = style(el);
+    if (!s.clipPath || s.clipPath === 'none') return false;
+    const r = el.getBoundingClientRect();
+    return r.width <= 2 && r.height <= 2;
+  };
+
+  // What of an element is actually ON SCREEN: its own rect, intersected with
+  // every clipping ancestor.
+  //
+  // A rect is where an element WOULD be, clipping or not, so without this a row
+  // that has scrolled under the edge of its own scroll container reads as
+  // overlapping whatever is painted beyond it — and a capped sheet with a
+  // scrolling body reports its footer colliding with every row below the fold.
+  // Passing under its container's edges is the entire point of a scroller.
+  //
+  // Returns null when nothing of it is on screen.
+  const visibleRect = (el) => {
+    const r = el.getBoundingClientRect();
+    let left = r.left, top = r.top, right = r.right, bottom = r.bottom;
+    for (let n = el.parentElement; n && n.nodeType === 1; n = n.parentElement) {
+      const s = style(n);
+      if (s.overflowX === 'visible' && s.overflowY === 'visible') continue;
+      const b = n.getBoundingClientRect();
+      if (b.width === 0 && b.height === 0) continue;
+      left = Math.max(left, b.left);
+      top = Math.max(top, b.top);
+      right = Math.min(right, b.right);
+      bottom = Math.min(bottom, b.bottom);
+      if (right - left <= TOL || bottom - top <= TOL) return null;
+    }
+    return { left, top, right, bottom, width: right - left, height: bottom - top };
+  };
+
   const isVisible = (el) => {
     if (SKIP_TAGS.has(el.tagName)) return false;
     if (!el.getClientRects().length) return false; // display:none, empty inline, closed <details>
+    if (isVisuallyHidden(el)) return false;
+    if (visibleRect(el) === null) return false;
     for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
       const s = style(n);
       if (s.display === 'none' || s.visibility === 'hidden' || s.visibility === 'collapse') return false;
@@ -82,10 +123,14 @@ const auditInPage = () => {
   // child is clipped by the window, with no scrollbar to show for it. Found in
   // the header's theme toggle at 360px/150% zoom, which the width-and-zoom
   // matrix reaches.
+  //
+  // The CLIPPED rect again: content inside a horizontally scrolled container
+  // legitimately sits to the left of that container's own box, and saying so
+  // would flag every scrolled table in the app.
   const offLeft = all
     .filter(isVisible)
-    .map((el) => ({ el, r: el.getBoundingClientRect() }))
-    .filter(({ r }) => r.width >= 1 && r.height >= 1 && r.left < -TOL)
+    .map((el) => ({ el, r: visibleRect(el) }))
+    .filter(({ r }) => r && r.width >= 1 && r.height >= 1 && r.left < -TOL)
     .sort((a, b) => a.r.left - b.r.left)
     .slice(0, 8)
     .map(({ el, r }) => ({ el: label(el), left: Math.round(r.left), right: Math.round(r.right) }));
@@ -157,8 +202,10 @@ const auditInPage = () => {
     const s = style(el);
     if (s.pointerEvents === 'none') continue;            // decorative rules, focus rings, gradients
     if (el.hasAttribute('data-allow-overlap')) continue; // explicit opt-out
-    const r = el.getBoundingClientRect();
-    if (r.width < 1 || r.height < 1) continue;
+    // The CLIPPED rect, so a half-scrolled row is compared by the half of it
+    // that a person can actually see.
+    const r = visibleRect(el);
+    if (!r || r.width < 1 || r.height < 1) continue;
     leaves.push({ el, r, layer: layerOf(el), sticky: isSticky(el) });
   }
 

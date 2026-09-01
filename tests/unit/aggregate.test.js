@@ -237,3 +237,59 @@ test('plannedTotal counts only categories still in the plan (rule §8.11)', () =
   assert.equal(aggregate.plannedTotal(cats), 66);
   assert.equal(aggregate.activeCategories(cats).length, 3);
 });
+
+/* ---------- duration parsing (BUILD-PLAN § Phase 2) ---------- */
+
+test('parseDuration', async (t) => {
+  await t.test('a bare number is hours', () => {
+    assert.equal(aggregate.parseDuration('1.5'), 90);
+    assert.equal(aggregate.parseDuration('2'), 120);
+    assert.equal(aggregate.parseDuration('0.5'), 30);
+    assert.equal(aggregate.parseDuration('.5'), 30);
+  });
+
+  await t.test('an h suffix is hours, in every spelling', () => {
+    for (const s of ['1.5h', '1.5 h', '1.5hr', '1.5 hrs', '1.5 hour', '1.5 hours']) {
+      assert.equal(aggregate.parseDuration(s), 90, s);
+    }
+  });
+
+  await t.test('an m suffix is minutes, in every spelling', () => {
+    for (const s of ['90m', '90 m', '90min', '90 mins', '90 minute', '90 minutes']) {
+      assert.equal(aggregate.parseDuration(s), 90, s);
+    }
+  });
+
+  await t.test('is case-insensitive and tolerates surrounding space', () => {
+    assert.equal(aggregate.parseDuration('  2H '), 120);
+    assert.equal(aggregate.parseDuration('30M'), 30);
+  });
+
+  await t.test('rounds to whole minutes, because the store holds integers', () => {
+    assert.equal(aggregate.parseDuration('0.33'), 20);      // 19.8 -> 20
+    assert.equal(aggregate.parseDuration('1.005'), 60);     // 60.3 -> 60
+    assert.equal(aggregate.parseDuration('12.5m'), 13);
+  });
+
+  await t.test('refuses zero and anything that rounds to zero', () => {
+    assert.equal(aggregate.parseDuration('0'), null);
+    assert.equal(aggregate.parseDuration('0h'), null);
+    assert.equal(aggregate.parseDuration('0.4m'), null);
+  });
+
+  await t.test('refuses anything it cannot understand, rather than guessing', () => {
+    for (const s of ['', '   ', 'abc', '1.5x', '1h30', '1:30', '-2', '1,5',
+                     '2 hours 30', '1e3', 'NaN', 'Infinity']) {
+      assert.equal(aggregate.parseDuration(s), null, JSON.stringify(s));
+    }
+  });
+
+  await t.test('refuses null and undefined', () => {
+    assert.equal(aggregate.parseDuration(null), null);
+    assert.equal(aggregate.parseDuration(undefined), null);
+  });
+
+  await t.test('accepts a number as well as a string', () => {
+    assert.equal(aggregate.parseDuration(1.5), 90);
+  });
+});
