@@ -51,26 +51,19 @@
       });
     }
 
-    function onKeyDown(event) {
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        add();
-      }
-    }
-
     var footer = html`
       <button type="button" class="btn" onClick=${props.onClose}>Cancel</button>
-      <button type="button" class="btn btn--brand" onClick=${add}>Add category</button>`;
+      <button type="submit" class="btn btn--brand">Add category</button>`;
 
     return html`
-      <${ui.Sheet} title="NEW CATEGORY" onClose=${props.onClose} footer=${footer} stacked>
+      <${ui.Sheet} title="NEW CATEGORY" onClose=${props.onClose} footer=${footer}
+        onSubmit=${add} stacked>
 
         <div class="catgrid">
           <${fields.Field} label="NAME" id="cat-name" error=${errorFor(errors, 'name')}>
             <${fields.TextField} className="fld--name" labelledBy="cat-name-label"
               value=${draft.name} placeholder="Volunteering" autofocus
               invalid=${!!errorFor(errors, 'name')}
-              onKeyDown=${onKeyDown}
               onInput=${function (v) { patch({ name: v }); }} />
           <//>
 

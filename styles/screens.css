@@ -283,6 +283,9 @@
   border-bottom: 1px solid var(--line);
 }
 
+/* The last column of the table's five, so the `+` sits at the right-hand end of
+   the row, directly above the row menus, and every control above it lines up
+   under its own header. */
 .quickadd__open {
   font: 700 15px/1 var(--font);
   padding: 9px 0;

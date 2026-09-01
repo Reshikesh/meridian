@@ -13,9 +13,15 @@
   /* -> check (i-b): hangs off the LEFT edge, which does not extend scrollWidth
      and so is invisible to check (i). */
   .offleft { position:absolute; left:-60px; top:200px; width:120px; height:30px; background:#ffc; }
+  /* -> check (iv): a menu inside a scroller, which clips it. This is the class
+     of defect the owner found at the Phase 2 checkpoint. */
+  .scrollbox { overflow-x:auto; width:200px; height:60px; position:relative; margin-top:240px; }
+  .menu { position:absolute; top:40px; left:10px; width:140px; height:80px; background:#fff; border:1px solid #999; }
 </style></head><body>
   <div class="wide">very wide block</div>
   <p class="clip">this label is far too long for one hundred pixels and has no ellipsis</p>
   <div class="rel"><span class="a">A overlaps</span><span class="b">B overlaps</span></div>
   <div class="offleft">off the left edge</div>
+  <div class="scrollbox"><div style="width:400px">wide row</div>
+    <div class="menu" data-overlay>Edit / Delete, cut off by the scroller</div></div>
 </body></html>

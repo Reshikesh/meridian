@@ -1126,6 +1126,15 @@
   gap: 10px;
 }
 
+/* The <form> a sheet with a primary action wraps its body and footer in, so
+   Enter saves. It has to carry the card's column layout, or the body stops
+   scrolling inside the capped card. */
+.sheet__form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 /* The manage sheet's footer is a band, not a button row. */
 .sheet__foot--strip {
   padding: 15px var(--sp-9);

@@ -185,19 +185,15 @@
       </div>`;
   }
 
-  /* ---------- category dropdown ----------
-     A real <select>. The mockup draws a div with a ▾, which has no keyboard, no
-     type-ahead and no accessible name; the box below is styled to match it
-     exactly and the caret is drawn because Archivo has no ▾ glyph.
+  /* ---------- dropdown ----------
+     A real <select>. The mockup draws a div with a small triangle, which has no
+     keyboard, no type-ahead and no accessible name; the box below is styled to
+     match it exactly, and the caret is drawn because Archivo has no glyph for
+     that triangle at any subset (vendor/README.md).
 
-     Archived categories leave every picker and stay in the history (§8.11) —
-     except the one already on the entry being edited, which `current` keeps in
-     the list so an old row can be saved without silently changing category. */
-  function CategorySelect(props) {
-    var list = props.categories.filter(function (c) {
-      return !c.archived || c.id === props.value;
-    });
-
+     The empty option is the placeholder, so a picker with nothing chosen reads
+     as "Category" / "Counts toward" rather than as a blank box. */
+  function Select(props) {
     return html`
       <div class=${'select' + (props.className ? ' ' + props.className : '')}>
         <select class=${'select__input' + (props.value ? '' : ' select__input--empty')}
@@ -207,19 +203,50 @@
           aria-label=${props.label || null}
           aria-labelledby=${props.labelledBy || null}
           aria-invalid=${props.invalid ? 'true' : null}
+          data-autofocus=${props.autofocus ? '' : null}
+          ref=${props.inputRef || null}
           onKeyDown=${props.onKeyDown}
           onChange=${function (e) { props.onChange(e.currentTarget.value || null); }}>
-          <option value="">${props.placeholder || 'Category'}</option>
-          ${list.map(function (c) {
-            return html`<option value=${c.id} key=${c.id}>
-              ${c.name}${c.archived ? ' (archived)' : ''}
-            </option>`;
+          <option value="">${props.placeholder}</option>
+          ${props.options.map(function (o) {
+            return html`<option value=${o.id} key=${o.id}>${o.label}</option>`;
           })}
         </select>
         <span class="select__caret" aria-hidden="true">
           <${ui.Glyph} name="caret" size=${10} />
         </span>
       </div>`;
+  }
+
+  /* Archived categories leave every picker and stay in the history (§8.11) —
+     except the one already on the entry being edited, which stays in the list so
+     an old row can be saved without silently changing category. */
+  function CategorySelect(props) {
+    var options = props.categories
+      .filter(function (c) { return !c.archived || c.id === props.value; })
+      .map(function (c) {
+        return { id: c.id, label: c.name + (c.archived ? ' (archived)' : '') };
+      });
+    return html`<${Select} ...${props} options=${options}
+      placeholder=${props.placeholder || 'Category'} />`;
+  }
+
+  /* Goals that can still take hours: not archived, and fed by a category that is
+     not archived either. Business rule §8.2 is enforced by the caller — picking
+     one fills its category, and moving off that category clears the goal. */
+  function GoalSelect(props) {
+    var options = (props.goals || [])
+      .filter(function (g) {
+        if (g.id === props.value) return true;
+        if (g.archived) return false;
+        for (var i = 0; i < props.categories.length; i++) {
+          if (props.categories[i].id === g.category_id) return !props.categories[i].archived;
+        }
+        return false;
+      })
+      .map(function (g) { return { id: g.id, label: g.short_name }; });
+    return html`<${Select} ...${props} options=${options}
+      placeholder=${props.placeholder || 'Counts toward'} />`;
   }
 
   /* ---------- the mockup's dashed "editable text" ----------
@@ -249,6 +276,8 @@
     SWATCHES: SWATCHES,
     DIRECTIONS: DIRECTIONS,
     Field: Field,
+    Select: Select,
+    GoalSelect: GoalSelect,
     Segmented: Segmented,
     DirectionCards: DirectionCards,
     Swatch: Swatch,

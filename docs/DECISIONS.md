@@ -20,9 +20,9 @@ Status: **all resolved on 30 Aug 2026.** These override `MERIDIAN-SPEC-v1.1.md` 
 | 14 | Non-hour goal units | **Hours only.** `target_unit` is always `h` in v1; the column stays for later. |
 | 15 | Local data and an imported workbook both exist | **Prompt: "Replace local data" / "Keep local, discard import".** Never merge. |
 | 16 | Category rename history | **Rename in place.** Archive sets `archived_on`; restore clears it. Effective-dated rename chains are deferred to the GitHub version. |
-| 17 | Sleep / Work / Errands | **Sleep and errands are Settings defaults (8 h/day, 15 h/week), never logged. Work is a logged Upkeep category; its 45 h is its planned hours.** Every "accounted for / to go / coverage / unlogged / of N h" figure uses **waking hours = 24 − sleep default** per day (16 h; 112 h per week). The Plan bar keeps its 168 h breakdown because it names sleep explicitly. |
+| 17 | Sleep / Work / Errands | **Amended 2 Sep 2026 — see below.** ~~Sleep and errands are Settings defaults (8 h/day, 15 h/week), never logged.~~ **Work is a logged Upkeep category; its 45 h is its planned hours.** Every "accounted for / to go / coverage / unlogged / of N h" figure uses **the whole day: 24 h, and 168 h a week.** |
 | 18 | Week start | **Monday everywhere**, including the calendar header (M T W T F S S). ISO week numbers. |
-| 19 | How a quick entry commits | **The inline quick-add row commits on Enter** (duration, activity, category; goal optional via the row's category → the entry links to no goal). **`+` opens the full sheet** for goal-linked entries and "Other" durations. Both paths write the same entry shape. |
+| 19 | How a quick entry commits | **Amended 2 Sep 2026 — see below.** **The inline quick-add row commits on Enter** (duration, activity, category **and goal**). **`+` opens the full sheet** for the projection preview and for editing. Both paths write the same entry shape. |
 | 20 | Seed goals | **Two hours-only goals:** Learn Python — 130 h, due 16 weeks after first run; Half-marathon training — 60 h, due 20 weeks after first run. Seed entries make the reachability maths consistent (see spec §9 [P]). |
 | 21 | "COUNTS TOWARD" in the New category sheet | **Dropped.** A category feeds many goals; the only link is `Goals.category_id`. The sheet keeps NAME, COLOUR, DIRECTION and the upkeep note. |
 | 22 | v1 rendering stack | **Preact 10 + htm + preact/hooks, vendored UMD builds, no build step.** API-compatible with React so the GitHub version is a mechanical port (htm → JSX). Vanilla JS only for the pre-paint theme script and the seed file. |
@@ -30,3 +30,44 @@ Status: **all resolved on 30 Aug 2026.** These override `MERIDIAN-SPEC-v1.1.md` 
 ## Things that are technical, not product (Claude Code decides and logs them in `docs/DECISION-LOG.md`)
 
 File and module layout, component boundaries, state shape, ID format, how the ribbon chart's layout function is ported, test structure, how the responsive collapse is implemented, export filename details, vendoring URLs and versions.
+
+## Amendments
+
+Decisions are final until the owner changes one. These were changed at the Phase 2
+checkpoint, on 2 Sep 2026, after using the built screens.
+
+### 17 — there is no sleep setting
+
+**Was:** sleep was a Settings default of 8 h a day, never logged, and every
+denominator in the app was "waking hours" — 24 − sleep, so 16 h a day and 112 h a
+week. The day cap was the same figure.
+
+**Now:** the setting is gone. A day is 24 h and a week is 168 h, which is what the
+mockup says (spec §6: "9.5 h accounted for, 14.5 to go"; "97/168 h"; "SHARE OF
+168 H"). Anyone who wants to see their sleep makes a category called Sleep and
+logs it like anything else.
+
+**Why:** a fixed nightly figure is wrong on most nights — five hours one night,
+eight the next — so it would need editing daily to stay true, which is worse than
+not having it. The 24 h day cap stays, as a guard against a typo (`90` where
+`90m` was meant), not as a budget.
+
+**Consequences:** `sleep_hours_per_day` is out of the Settings sheet; a workbook
+from an earlier build still importing it gets a note saying so, not a reject.
+`errands_hours_per_week` is untouched and still dormant; how the v1.5 Plan
+screen breaks 168 down is a question for that phase.
+
+### 19 — the quick-add row carries the goal too
+
+**Was:** the inline row took duration, activity and category, and an entry made
+there linked to no goal; `+` opened the full sheet for goal-linked entries.
+
+**Now:** the row also has a COUNTS TOWARD picker, so a goal-linked entry never
+has to open a dialog. The `+` moves to the right-hand end of the row and still
+opens the full sheet — for the SAVING THIS MOVES projection, and as the editor
+for an existing entry.
+
+**Why:** logging against a goal is the ordinary case, not the exception, and a
+dialog for it is friction in the loop the app is built around. Business rule
+§8.2 is unchanged: picking a goal fills its category, and moving the category off
+it clears the goal.

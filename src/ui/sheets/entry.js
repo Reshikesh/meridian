@@ -69,7 +69,7 @@
     }
     if (!preset && otherText) preset = OTHER;
 
-    var goalId = entry ? (entry.goal_id || null) : null;
+    var goalId = entry ? (entry.goal_id || null) : (prefill.goal_id || null);
     var categoryId = entry ? entry.category_id : (prefill.category_id || null);
 
     return {
@@ -81,6 +81,23 @@
       /* A goal fills and locks its category; `Change` unlocks it. */
       locked: !!goalId
     };
+  }
+
+  /* Where the cursor goes when the sheet opens: the first thing the quick-add
+     row has NOT already decided, in the sheet's own order. Filled everything in
+     already? Then the only thing left is to save it, so that is what takes
+     focus. Computed once, from the opening draft, so it cannot move under the
+     owner as they type.
+
+     `save` rather than the category control when a goal has locked the category:
+     the only focusable thing there is `Change`, and landing on it reads as an
+     instruction to change something that is already right. */
+  function initialFocus(draft, goalCount) {
+    if (draft.preset === null) return 'duration';
+    if (!String(draft.activity).trim()) return 'activity';
+    if (goalCount > 0 && !draft.goal_id) return 'goal';
+    if (!draft.locked) return 'category';
+    return 'save';
   }
 
   function draftMinutes(draft) {
@@ -143,6 +160,17 @@
     var errorState = useState([]);
     var draft = draftState[0], setDraft = draftState[1];
     var errors = errorState[0], setErrors = errorState[1];
+
+    var focusState = useState(function () {
+      var opening = initialDraft(props);
+      var count = (state.goals || []).filter(function (g) {
+        if (g.archived) return false;
+        var cat = findById(state.categories, g.category_id);
+        return !!cat && !cat.archived;
+      }).length;
+      return initialFocus(opening, count);
+    });
+    var focusField = focusState[0];
 
     function patch(p) {
       setDraft(function (prev) { return Object.assign({}, prev, p); });
@@ -226,16 +254,18 @@
 
     var footer = html`
       <button type="button" class="btn" onClick=${props.onClose}>Cancel</button>
-      <button type="button" class="btn btn--brand" onClick=${save}>Save entry</button>`;
+      <button type="submit" class="btn btn--brand"
+        data-autofocus=${focusField === 'save' ? '' : null}>Save entry</button>`;
 
     var title = (editing ? 'EDIT ENTRY — ' : 'NEW ENTRY — ') + dates.formatDayShort(props.day);
 
     return html`
-      <${ui.Sheet} title=${title} onClose=${props.onClose} footer=${footer}>
+      <${ui.Sheet} title=${title} onClose=${props.onClose} footer=${footer} onSubmit=${save}>
 
         <${fields.Field} label="HOW LONG" id="entry-len"
           error=${errorFor(errors, 'duration_min')}>
-          <${fields.Segmented} labelledBy="entry-len-label" autofocus
+          <${fields.Segmented} labelledBy="entry-len-label"
+            autofocus=${focusField === 'duration'}
             value=${draft.preset}
             options=${PRESETS.concat([{ id: OTHER, label: 'Other' }])}
             onChange=${function (id) { patch({ preset: id }); }} />
@@ -252,6 +282,7 @@
         <${fields.Field} label="ACTIVITY — OPTIONAL" id="entry-activity">
           <${fields.TextField} className="fld--sheet" labelledBy="entry-activity-label"
             value=${draft.activity} placeholder="Async chapter + exercises"
+            autofocus=${focusField === 'activity'}
             onInput=${function (v) { patch({ activity: v }); }} />
         <//>
 
@@ -260,6 +291,7 @@
             error=${errorFor(errors, 'goal_id')}
             hint="A goal lives inside one category, so picking it fills the category below. Two hours of Postgres would never touch Python.">
             <${fields.Segmented} labelledBy="entry-goal-label"
+              autofocus=${focusField === 'goal'}
               value=${draft.goal_id || NO_GOAL}
               options=${goals.map(function (g) { return { id: g.id, label: g.short_name }; })
                 .concat([{ id: NO_GOAL, label: 'Nothing yet' }])}
@@ -281,6 +313,7 @@
             <${fields.CategorySelect} className="select--sheet"
               categories=${state.categories} value=${draft.category_id}
               labelledBy="entry-category-label"
+              autofocus=${focusField === 'category'}
               invalid=${!!errorFor(errors, 'category_id')}
               onChange=${chooseCategory} />`}
         <//>

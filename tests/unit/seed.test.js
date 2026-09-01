@@ -37,7 +37,6 @@ function everyStart() {
   return out.concat(EXTRA);
 }
 
-const SETTINGS = { sleep_hours_per_day: 8 };
 
 // The complete Monday-to-Sunday week inside the seed. Thirteen full days always
 // contain one; today is part-logged and never counts.
@@ -76,8 +75,7 @@ test('the discretionary hours are the Plan screen’s 52 (rule §8.6)', () => {
   const rest = cats.filter((c) => c.name !== 'Work')
     .reduce((n, c) => n + c.weekly_plan_hours, 0);
   assert.equal(work, 45);
-  assert.equal(rest, 52, '168 − 56 sleep − 45 work − 15 errands');
-  assert.equal(rest + work + 15, aggregate.wakingHoursPerWeek(SETTINGS), 'and 112 waking hours');
+  assert.equal(rest, 52, 'spec §9’s discretionary total');
 });
 
 test('"start empty" is the categories and their plan, nothing else', () => {
@@ -116,10 +114,10 @@ test('the demo week adds up, whichever day it is built on', async (t) => {
       const days = aggregate.byDay(inWeek);
       assert.deepEqual(Object.keys(days).length, 7, 'no day of the week is empty');
       for (const [day, minutes] of Object.entries(days)) {
-        assert.ok(minutes <= aggregate.wakingMinutesPerDay(SETTINGS),
-          `${day} holds ${minutes} min, over the ${aggregate.wakingHoursPerDay(SETTINGS)} h cap`);
+        assert.ok(minutes <= aggregate.MINUTES_PER_DAY,
+          `${day} holds ${minutes} min, over the ${aggregate.HOURS_PER_DAY} h cap`);
         assert.ok(minutes <= 900,
-          `${day} leaves no headroom under the cap for the owner to nudge a duration up`);
+          `${day} leaves the owner room to nudge a duration up without hitting the cap`);
       }
     });
   }
@@ -246,7 +244,7 @@ test('lessons and settings are the ones spec §7 describes', () => {
   const state = seed.buildDemo(now);
 
   assert.deepEqual(state.settings, {
-    theme: 'paper', day_boundary: '04:00', sleep_hours_per_day: 8,
+    theme: 'paper', day_boundary: '04:00',
     errands_hours_per_week: 15, week_start: 'monday',
   });
   assert.equal(seed.buildDemo(now, { theme: 'graphite' }).settings.theme, 'graphite');

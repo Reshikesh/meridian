@@ -49,7 +49,7 @@ test('the whole day can be logged from the keyboard alone', async ({ page }) => 
     await page.keyboard.press('Tab');
     await page.keyboard.type(row.activity);
     await page.keyboard.press('Tab');
-    await page.locator('.quickadd__row .select__input').selectOption(row.category);
+    await page.locator('.quickadd__row .select--cat .select__input').selectOption(row.category);
     await page.keyboard.press('Enter');
 
     await expect(page.locator('.quickadd__row .fld--duration')).toBeFocused();
@@ -74,7 +74,7 @@ test('Enter commits from the duration field, not only from the last one', async 
   await openLog(page);
   const before = (await entries(page)).length;
 
-  await page.locator('.quickadd__row .select__input').selectOption('cat_family');
+  await page.locator('.quickadd__row .select--cat .select__input').selectOption('cat_family');
   await page.locator('.quickadd__row .fld--duration').fill('2');
   await page.locator('.quickadd__row .fld--duration').press('Enter');
 
@@ -89,7 +89,7 @@ test('a duration nobody can read is refused, and nothing is written', async ({ p
   await openLog(page);
   const before = (await entries(page)).length;
 
-  await page.locator('.quickadd__row .select__input').selectOption('cat_family');
+  await page.locator('.quickadd__row .select--cat .select__input').selectOption('cat_family');
   await page.locator('.quickadd__row .fld--duration').fill('half an hour');
   await page.locator('.quickadd__row .fld--duration').press('Enter');
 
@@ -108,22 +108,23 @@ test('a missing category is refused', async ({ page }) => {
   await expect(page.locator('.quickadd__error')).toHaveText('Pick a category.');
 });
 
-test('a day cannot be pushed over the waking hours (decision 17)', async ({ page }) => {
+test('a day cannot hold more than the 24 hours it has (rule §8.17)', async ({ page }) => {
   await openLog(page);
   const before = (await entries(page)).length;
 
-  // The seeded Sunday holds 5.0 h of the 16 h a waking day has, so 12 h is one
-  // hour too many.
-  await page.locator('.quickadd__row .select__input').selectOption('cat_work');
-  await page.locator('.quickadd__row .fld--duration').fill('12');
+  // The seeded Sunday holds 5.0 h, so 20 h is one hour too many. The cap is a
+  // guard against a typo, not a budget: decision 17 as amended has no sleep
+  // setting, and sleep is an ordinary category.
+  await page.locator('.quickadd__row .select--cat .select__input').selectOption('cat_work');
+  await page.locator('.quickadd__row .fld--duration').fill('20');
   await page.locator('.quickadd__row .fld--duration').press('Enter');
 
-  await expect(page.locator('.quickadd__error')).toContainText('over 16 h');
-  await expect(page.locator('.quickadd__error')).toContainText('11.0 h left');
+  await expect(page.locator('.quickadd__error')).toContainText('over 24 h');
+  await expect(page.locator('.quickadd__error')).toContainText('19.0 h left');
   expect((await entries(page)).length).toBe(before);
 
-  // 11 h exactly fits.
-  await page.locator('.quickadd__row .fld--duration').fill('11');
+  // 19 h exactly fits.
+  await page.locator('.quickadd__row .fld--duration').fill('19');
   await page.locator('.quickadd__row .fld--duration').press('Enter');
   expect((await entries(page)).length).toBe(before + 1);
 });
@@ -133,16 +134,16 @@ test('a day cannot be pushed over the waking hours (decision 17)', async ({ page
 test('the header, the week strip and the counter all move with an entry', async ({ page }) => {
   await openLog(page);
 
-  await expect(page.locator('.logday .t-h1')).toHaveText('5.0 h accounted for, 11.0 to go');
-  await expect(page.locator('.weekstrip__total')).toHaveText('91.5/112 h');
+  await expect(page.locator('.logday .t-h1')).toHaveText('5.0 h accounted for, 19.0 to go');
+  await expect(page.locator('.weekstrip__total')).toHaveText('91.5/168 h');
   await expect(page.locator('.weekstrip__day').nth(6).locator('.weekstrip__num')).toHaveText('5.0');
 
-  await page.locator('.quickadd__row .select__input').selectOption('cat_reading');
+  await page.locator('.quickadd__row .select--cat .select__input').selectOption('cat_reading');
   await page.locator('.quickadd__row .fld--duration').fill('1');
   await page.locator('.quickadd__row .fld--duration').press('Enter');
 
-  await expect(page.locator('.logday .t-h1')).toHaveText('6.0 h accounted for, 10.0 to go');
-  await expect(page.locator('.weekstrip__total')).toHaveText('92.5/112 h');
+  await expect(page.locator('.logday .t-h1')).toHaveText('6.0 h accounted for, 18.0 to go');
+  await expect(page.locator('.weekstrip__total')).toHaveText('92.5/168 h');
   await expect(page.locator('.weekstrip__day').nth(6).locator('.weekstrip__num')).toHaveText('6.0');
   await expect(page.locator('.datactl__state')).toHaveText('1 unexported change');
 });
@@ -170,7 +171,7 @@ test('past days page and stay editable; the future does not', async ({ page }) =
 
   // A past day is editable, and the entry lands on THAT day.
   const before = (await entries(page, '2026-06-06')).length;
-  await page.locator('.quickadd__row .select__input').selectOption('cat_reading');
+  await page.locator('.quickadd__row .select--cat .select__input').selectOption('cat_reading');
   await page.locator('.quickadd__row .fld--duration').fill('30m');
   await page.locator('.quickadd__row .fld--duration').press('Enter');
   expect((await entries(page, '2026-06-06')).length).toBe(before + 1);
@@ -186,7 +187,7 @@ test('a day with nothing on it keeps its row and its header', async ({ page }) =
   for (let i = 0; i < 20; i++) await page.click('.logday__paging .btn >> nth=0');
 
   await expect(page.locator('.logtable__empty')).toHaveText('Nothing logged on this day yet.');
-  await expect(page.locator('.logday .t-h1')).toHaveText('0.0 h accounted for, 16.0 to go');
+  await expect(page.locator('.logday .t-h1')).toHaveText('0.0 h accounted for, 24.0 to go');
   await expect(page.locator('.quickadd__row')).toBeVisible();
 });
 
@@ -275,7 +276,7 @@ test('what is typed into the row is still there when + opens the sheet', async (
 
   await page.locator('.quickadd__row .fld--duration').fill('45m');
   await page.locator('.quickadd__row .fld--activity').fill('Long run');
-  await page.locator('.quickadd__row .select__input').selectOption('cat_exercise');
+  await page.locator('.quickadd__row .select--cat .select__input').selectOption('cat_exercise');
   await page.click('.quickadd__open');
 
   await expect(page.locator('.fld--sheet')).toHaveValue('Long run');
@@ -308,7 +309,7 @@ test('a row can be edited through the same sheet', async ({ page }) => {
   expect(edited.duration_min).toBe(120);
   // created_at is never rewritten by an edit.
   expect(edited.created_at.startsWith('2026-06-07')).toBe(true);
-  await expect(page.locator('.logday .t-h1')).toHaveText('6.0 h accounted for, 10.0 to go');
+  await expect(page.locator('.logday .t-h1')).toHaveText('6.0 h accounted for, 18.0 to go');
 });
 
 test('delete confirms inline and only then removes the row', async ({ page }) => {
@@ -328,7 +329,7 @@ test('delete confirms inline and only then removes the row', async ({ page }) =>
   await page.click('.confirm--menu .btn--warn');
   expect((await entries(page)).length).toBe(2);
   await expect(page.locator('.logrow--entry')).toHaveCount(2);
-  await expect(page.locator('.logday .t-h1')).toHaveText('3.0 h accounted for, 13.0 to go');
+  await expect(page.locator('.logday .t-h1')).toHaveText('3.0 h accounted for, 21.0 to go');
 });
 
 test('Escape closes the row menu and leaves the row alone', async ({ page }) => {
@@ -380,7 +381,7 @@ test('nothing is written when a sheet is cancelled', async ({ page }) => {
 
 test('an entry logged in the row survives a reload', async ({ page }) => {
   await openLog(page);
-  await page.locator('.quickadd__row .select__input').selectOption('cat_learn');
+  await page.locator('.quickadd__row .select--cat .select__input').selectOption('cat_learn');
   await page.locator('.quickadd__row .fld--duration').fill('90m');
   await page.locator('.quickadd__row .fld--activity').fill('Survives a reload');
   await page.locator('.quickadd__row .fld--duration').press('Enter');
@@ -389,7 +390,7 @@ test('an entry logged in the row survives a reload', async ({ page }) => {
   await page.click('[data-nav="log"]');
   await expect(page.locator('.logrow__activity').filter({ hasText: 'Survives a reload' }))
     .toBeVisible();
-  await expect(page.locator('.logday .t-h1')).toHaveText('6.5 h accounted for, 9.5 to go');
+  await expect(page.locator('.logday .t-h1')).toHaveText('6.5 h accounted for, 17.5 to go');
 });
 
 test('clicking the activity opens the same editor as the row menu', async ({ page }) => {
@@ -491,4 +492,176 @@ test('scrolling the table keeps the menu on its button', async ({ page }) => {
     return Math.round(p.right - b.right);
   });
   expect(offsetAfter).toBe(offsetBefore);
+});
+
+/* ---------- the quick-add row's goal picker (decision 19, as amended) ---------- */
+
+test('a goal-linked entry can be logged from the row, without opening a sheet', async ({ page }) => {
+  await openLog(page);
+  const before = (await entries(page)).length;
+
+  await page.locator('.quickadd__row .fld--duration').fill('1.5h');
+  await page.locator('.quickadd__row .fld--activity').fill('Async chapter');
+  await page.locator('.quickadd__row .select--goal .select__input').selectOption('goal_py');
+
+  // Business rule §8.2: picking the goal fills its category.
+  await expect(page.locator('.quickadd__row .select--cat .select__input')).toHaveValue('cat_learn');
+
+  await page.locator('.quickadd__row .fld--duration').press('Enter');
+  await expect(page.locator('.sheet__card')).toHaveCount(0);
+
+  const after = await entries(page);
+  expect(after.length).toBe(before + 1);
+  const added = after[after.length - 1];
+  expect(added.goal_id).toBe('goal_py');
+  expect(added.category_id).toBe('cat_learn');
+  expect(added.duration_min).toBe(90);
+
+  // ...and the row clears both pickers for the next entry.
+  await expect(page.locator('.quickadd__row .select--goal .select__input')).toHaveValue('');
+  await expect(page.locator('.quickadd__row .select--cat .select__input')).toHaveValue('');
+});
+
+test('moving the category off the goal clears the goal', async ({ page }) => {
+  await openLog(page);
+
+  await page.locator('.quickadd__row .select--goal .select__input').selectOption('goal_run');
+  await expect(page.locator('.quickadd__row .select--cat .select__input'))
+    .toHaveValue('cat_exercise');
+
+  await page.locator('.quickadd__row .select--cat .select__input').selectOption('cat_family');
+  await expect(page.locator('.quickadd__row .select--goal .select__input')).toHaveValue('');
+
+  await page.locator('.quickadd__row .fld--duration').fill('1');
+  await page.locator('.quickadd__row .fld--duration').press('Enter');
+  const after = await entries(page);
+  expect(after[after.length - 1].category_id).toBe('cat_family');
+  expect(after[after.length - 1].goal_id).toBe(null);
+});
+
+test('an archived goal leaves the row picker', async ({ page }) => {
+  await openLog(page);
+  await page.evaluate(() => window.Meridian.store.archiveGoal('goal_py'));
+
+  const options = await page.locator('.quickadd__row .select--goal .select__input option')
+    .evaluateAll((els) => els.map((el) => el.value));
+  expect(options).not.toContain('goal_py');
+  expect(options).toContain('goal_run');
+});
+
+/* ---------- Enter saves, and focus lands where the work is ---------- */
+
+test('Enter saves the entry sheet from a text field', async ({ page }) => {
+  await openLog(page);
+  const before = (await entries(page)).length;
+
+  await page.click('.quickadd__open');
+  await page.locator('.seg').first().getByText('1 h', { exact: true }).click();
+  await page.locator('.select--sheet .select__input').selectOption('cat_family');
+  await page.locator('.fld--sheet').fill('Saved with the Enter key');
+  await page.locator('.fld--sheet').press('Enter');
+
+  await expect(page.locator('.sheet__card')).toHaveCount(0);
+  const after = await entries(page);
+  expect(after.length).toBe(before + 1);
+  expect(after[after.length - 1].activity).toBe('Saved with the Enter key');
+});
+
+test('Enter on a segmented button picks that option, it does not save', async ({ page }) => {
+  await openLog(page);
+  const before = (await entries(page)).length;
+
+  await page.click('.quickadd__open');
+  const twoHours = page.locator('.seg').first().getByText('2 h', { exact: true });
+  await twoHours.focus();
+  await page.keyboard.press('Enter');
+
+  await expect(twoHours).toHaveAttribute('data-active', '1');
+  await expect(page.locator('.sheet__card')).toBeVisible();
+  expect((await entries(page)).length).toBe(before);
+});
+
+test('Enter with a field missing shows the message rather than doing nothing', async ({ page }) => {
+  await openLog(page);
+  await page.click('.quickadd__open');
+  await page.locator('.fld--sheet').fill('No duration, no category');
+  await page.locator('.fld--sheet').press('Enter');
+
+  await expect(page.locator('.sheet__card')).toBeVisible();
+  await expect(page.locator('.field__error').first()).toHaveText('Enter how long it took.');
+});
+
+test('the sheet opens on the first thing the row has not already decided', async ({ page }) => {
+  await openLog(page);
+  const row = page.locator('.quickadd__row');
+
+  // Nothing typed: HOW LONG.
+  await page.click('.quickadd__open');
+  await expect(page.locator('.seg').first().locator('[tabindex="0"]')).toBeFocused();
+  await page.keyboard.press('Escape');
+
+  // Duration typed: ACTIVITY.
+  await row.locator('.fld--duration').fill('2h');
+  await page.click('.quickadd__open');
+  await expect(page.locator('.fld--sheet')).toBeFocused();
+  await page.keyboard.press('Escape');
+
+  // Duration and activity: COUNTS TOWARD.
+  await row.locator('.fld--activity').fill('Reading the docs');
+  await page.click('.quickadd__open');
+  await expect(page.locator('.seg').nth(1).locator('[tabindex="0"]')).toBeFocused();
+  await page.keyboard.press('Escape');
+
+  // All three, with the goal locking the category: nothing left but to save it.
+  await row.locator('.select--goal .select__input').selectOption('goal_py');
+  await page.click('.quickadd__open');
+  await expect(page.locator('.sheet__foot .btn--brand')).toBeFocused();
+  await page.keyboard.press('Enter');
+
+  await expect(page.locator('.sheet__card')).toHaveCount(0);
+  const after = await entries(page);
+  expect(after[after.length - 1].goal_id).toBe('goal_py');
+  expect(after[after.length - 1].activity).toBe('Reading the docs');
+});
+
+test('with no goals at all, the category is what takes focus', async ({ page }) => {
+  await openLog(page);
+  // The COUNTS TOWARD block only exists when there is something to count
+  // toward, so with no goals the next undecided field after ACTIVITY is
+  // CATEGORY.
+  await page.evaluate(() => {
+    const store = window.Meridian.store;
+    store.getState().goals.slice().forEach((g) => store.archiveGoal(g.id));
+  });
+
+  const row = page.locator('.quickadd__row');
+  await row.locator('.fld--duration').fill('2h');
+  await row.locator('.fld--activity').fill('Something');
+  await page.click('.quickadd__open');
+
+  await expect(page.locator('.select--sheet .select__input')).toBeFocused();
+});
+
+test('sleep can be an ordinary category and a whole day can be logged', async ({ page }) => {
+  await openLog(page);
+
+  // What the owner asked for at the Phase 2 checkpoint: no fixed nightly figure,
+  // just a category like any other (decision 17, as amended).
+  await page.click('.btn--quiet');
+  await page.click('.sheet__tools .btn--brand');
+  await page.locator('.fld--name').fill('Sleep');
+  await page.locator('.dir').filter({ hasText: 'Upkeep' }).click();
+  await page.click('.sheet--stacked .btn--brand');
+  await page.click('.sheet__foot .btn--brand');
+
+  const sleepId = await page.evaluate(() =>
+    window.Meridian.store.getState().categories.find((c) => c.name === 'Sleep').id);
+
+  await page.locator('.quickadd__row .select--cat .select__input').selectOption(sleepId);
+  await page.locator('.quickadd__row .fld--duration').fill('7.5h');
+  await page.locator('.quickadd__row .fld--activity').fill('Slept');
+  await page.locator('.quickadd__row .fld--duration').press('Enter');
+
+  await expect(page.locator('.logday .t-h1')).toHaveText('12.5 h accounted for, 11.5 to go');
+  expect((await entries(page)).length).toBe(4);
 });

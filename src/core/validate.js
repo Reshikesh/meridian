@@ -10,9 +10,9 @@
    IMPORT is forgiving about everything except structure. Decision 5 makes the
    workbook a first-class editor, and CLAUDE.md's "nothing may be lost" means a
    row describing hours somebody actually lived is never thrown away for
-   breaking a rule the app enforces going forward. So the waking-hours day cap
-   and a goal whose date has already passed are creation-path rules only; on
-   import they become notes in the report. What import does reject is a row that
+   breaking a rule the app enforces going forward. So the 24 h day cap and a goal
+   whose date has already passed are creation-path rules only; on import they
+   become notes in the report. What import does reject is a row that
    cannot be understood at all: a duration that is not a number, a date that is
    not a date, a foreign key that points nowhere.
 
@@ -168,12 +168,16 @@
     return null;
   }
 
-  /* Business rule §8.17 / decision 17: a day may not exceed the waking hours.
+  /* Business rule §8.17: a day may not hold more than the 24 hours it has.
+     It is a guard against a typo — `90` where `90m` was meant — not a policy
+     about how much of a day is yours; decision 17 as amended has no sleep
+     setting, so sleep is an ordinary category and 24 h is the only true limit.
+
      Cross-row, so it takes the whole state — and the entry being edited is
      excluded from the day's running total, or raising a 2 h entry to 2.5 h would
      be measured as if both existed. */
   function dayCapCheck(state, dayKey, addedMinutes, excludeId) {
-    var capMinutes = aggregate.wakingMinutesPerDay(state.settings);
+    var capMinutes = aggregate.MINUTES_PER_DAY;
     var used = 0;
     var entries = state.entries || [];
     for (var i = 0; i < entries.length; i++) {
@@ -231,7 +235,7 @@
       var cap = dayCapCheck(state, input.date, minutes, excludeId);
       if (!cap.ok) {
         errors.push(fail('duration_min', 'That puts ' + dates.formatLong(day) + ' over ' +
-          aggregate.wakingHoursPerDay(state.settings) + ' h. ' +
+          aggregate.HOURS_PER_DAY + ' h. ' +
           aggregate.formatHours(cap.remainingMinutes) + ' h left.'));
       }
     }

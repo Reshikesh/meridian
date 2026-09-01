@@ -58,19 +58,53 @@ const auditInPage = () => {
   // Passing under its container's edges is the entire point of a scroller.
   //
   // Returns null when nothing of it is on screen.
+  // Whether `el` is a containing block for a fixed-position descendant. These
+  // properties are the ones that make `position: fixed` resolve against an
+  // element instead of the viewport — and therefore the only ones that let an
+  // ancestor's overflow clip a fixed box at all.
+  const cbForFixed = (el) => {
+    const s = style(el);
+    return (s.transform && s.transform !== 'none')
+      || (s.perspective && s.perspective !== 'none')
+      || (s.filter && s.filter !== 'none')
+      || (s.backdropFilter && s.backdropFilter !== 'none')
+      || /transform|filter|perspective/.test(s.willChange || '')
+      || /paint|layout|strict|content/.test(s.contain || '');
+  };
+
   const visibleRect = (el) => {
     const r = el.getBoundingClientRect();
     let left = r.left, top = r.top, right = r.right, bottom = r.bottom;
+    // Overflow only clips what it actually contains: a fixed box is clipped by
+    // nothing unless an ancestor is its containing block, and an absolute box
+    // is clipped only from its containing block upward. Ignoring that reported
+    // every fixed dropdown in the app as "clipped" by the first scroller above
+    // it, which is exactly the false positive that trains people to stop
+    // reading this auditor.
+    let pos = style(el).position;
     for (let n = el.parentElement; n && n.nodeType === 1; n = n.parentElement) {
       const s = style(n);
-      if (s.overflowX === 'visible' && s.overflowY === 'visible') continue;
-      const b = n.getBoundingClientRect();
-      if (b.width === 0 && b.height === 0) continue;
-      left = Math.max(left, b.left);
-      top = Math.max(top, b.top);
-      right = Math.min(right, b.right);
-      bottom = Math.min(bottom, b.bottom);
-      if (right - left <= TOL || bottom - top <= TOL) return null;
+      const isCb = cbForFixed(n);
+      let clipsMe;
+      if (pos === 'fixed') clipsMe = isCb;
+      else if (pos === 'absolute') clipsMe = s.position !== 'static' || isCb;
+      else clipsMe = true;
+
+      if (clipsMe && !(s.overflowX === 'visible' && s.overflowY === 'visible')) {
+        const b = n.getBoundingClientRect();
+        if (b.width !== 0 || b.height !== 0) {
+          left = Math.max(left, b.left);
+          top = Math.max(top, b.top);
+          right = Math.min(right, b.right);
+          bottom = Math.min(bottom, b.bottom);
+          if (right - left <= TOL || bottom - top <= TOL) return null;
+        }
+      }
+
+      // Past its containing block, it is laid out like any other descendant.
+      if ((pos === 'fixed' && isCb) || (pos === 'absolute' && (s.position !== 'static' || isCb))) {
+        pos = 'static';
+      }
     }
     return { left, top, right, bottom, width: right - left, height: bottom - top };
   };
@@ -233,7 +267,48 @@ const auditInPage = () => {
     }
   }
 
-  return { pageScroll, offLeft, textOverflow, overlaps, counts: { elements: all.length, leaves: leaves.length } };
+  // ---------- (iv) no overlay clipped or off screen ----------
+  // The class of defect the owner found at the Phase 2 checkpoint: the Log row
+  // menu, absolutely positioned inside a table that scrolls horizontally. A box
+  // with `overflow-x: auto` ALWAYS clips the other axis too — CSS resolves it to
+  // `auto`, there is no clip-one-axis-only — so the menu on the last row was cut
+  // off by its own table and grew it a scrollbar.
+  //
+  // Nothing in checks (i)-(iii) could see it: they audit what is on screen, and
+  // this was a thing that had been taken OFF the screen. So overlays say what
+  // they are, with `data-overlay`, and the rule is that all of one has to be
+  // visible: its own rect, its rect clipped by its ancestors, and the viewport
+  // all agree.
+  const clippedOverlays = [];
+  for (const el of document.querySelectorAll('[data-overlay]')) {
+    if (!isVisible(el)) continue;
+    const own = el.getBoundingClientRect();
+    if (own.width < 1 || own.height < 1) continue;
+    const seen = visibleRect(el);
+    const lost = {
+      top: Math.round(Math.max(0, seen.top - own.top)),
+      left: Math.round(Math.max(0, seen.left - own.left)),
+      bottom: Math.round(Math.max(0, own.bottom - seen.bottom)),
+      right: Math.round(Math.max(0, own.right - seen.right)),
+    };
+    const clipped = lost.top > TOL || lost.left > TOL || lost.bottom > TOL || lost.right > TOL;
+    const offScreen = own.top < -TOL || own.left < -TOL
+      || own.bottom > de.clientHeight + TOL || own.right > de.clientWidth + TOL;
+    if (clipped || offScreen) {
+      clippedOverlays.push({
+        el: label(el),
+        rect: [Math.round(own.left), Math.round(own.top), Math.round(own.width), Math.round(own.height)],
+        lost,
+        offScreen,
+        viewport: [de.clientWidth, de.clientHeight],
+      });
+    }
+  }
+
+  return {
+    pageScroll, offLeft, textOverflow, overlaps, clippedOverlays,
+    counts: { elements: all.length, leaves: leaves.length, overlays: document.querySelectorAll('[data-overlay]').length },
+  };
 };
 
 // One human-readable line per finding, tagged with `where` (width/theme/screen)
@@ -252,6 +327,10 @@ function formatAudit(res, where) {
   }
   for (const o of res.overlaps) {
     lines.push(`[${where}] overlap ${o.overlap.w}x${o.overlap.h}px: ${o.a} ${JSON.stringify(o.aRect)} vs ${o.b} ${JSON.stringify(o.bRect)}`);
+  }
+  for (const o of res.clippedOverlays || []) {
+    const why = o.offScreen ? 'reaches outside the viewport' : 'is clipped by an ancestor';
+    lines.push(`[${where}] overlay ${why}: ${o.el} rect ${JSON.stringify(o.rect)} lost ${JSON.stringify(o.lost)} viewport ${JSON.stringify(o.viewport)}`);
   }
   return lines;
 }

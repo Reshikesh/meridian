@@ -9,7 +9,7 @@ const TODAY = '2026-06-07';
 
 function state(overrides) {
   return Object.assign({
-    settings: { sleep_hours_per_day: 8 },
+    settings: {},
     categories: [
       { id: 'cat_learn', name: 'Learning', direction: 'more', archived: false },
       { id: 'cat_scroll', name: 'Scrolling', direction: 'less', archived: false },
@@ -83,15 +83,15 @@ test('a new entry is checked before anything is written', async (t) => {
   });
 });
 
-test('a day cannot exceed the waking hours (rule §8.17)', async (t) => {
+test('a day cannot hold more than the 24 hours it has (rule §8.17)', async (t) => {
   const full = state({
-    entries: [{ id: 'e_1', date: TODAY, duration_min: 900, category_id: 'cat_learn' }],
+    entries: [{ id: 'e_1', date: TODAY, duration_min: 1380, category_id: 'cat_learn' }],
   });
 
   await t.test('the last hour of the day fits', () => {
     const r = validate.validateEntry(
       { date: TODAY, duration_min: 60, category_id: 'cat_learn' }, full, { now: NOW });
-    assert.equal(r.ok, true, '15 h logged plus 1 h is exactly 16');
+    assert.equal(r.ok, true, '23 h logged plus 1 h is exactly 24');
   });
 
   await t.test('one minute more does not, and says how much is left', () => {
@@ -99,33 +99,34 @@ test('a day cannot exceed the waking hours (rule §8.17)', async (t) => {
       { date: TODAY, duration_min: 61, category_id: 'cat_learn' }, full, { now: NOW });
     assert.equal(r.ok, false);
     assert.equal(r.errors[0].field, 'duration_min');
-    assert.match(r.errors[0].message, /over 16 h\. 1\.0 h left\./);
+    assert.match(r.errors[0].message, /over 24 h\. 1\.0 h left\./);
   });
 
   await t.test('editing an entry does not count it twice', () => {
-    // Raising the existing 15 h entry to 15.5 h must be measured against the
+    // Raising the existing 23 h entry to 23.5 h must be measured against the
     // rest of the day, not against a day that already contains it.
     const r = validate.validateEntry(
-      { date: TODAY, duration_min: 930, category_id: 'cat_learn' },
+      { date: TODAY, duration_min: 1410, category_id: 'cat_learn' },
       full, { now: NOW, excludeId: 'e_1' });
     assert.equal(r.ok, true);
   });
 
-  await t.test('the cap follows the sleep setting, not a hard-coded 16', () => {
-    const shortSleeper = state({
-      settings: { sleep_hours_per_day: 6 },
+  await t.test('a day with sleep logged as a category still fits', () => {
+    // Decision 17 as amended: sleep is an ordinary category, so 8 h of it on
+    // top of a 16 h waking day is an ordinary, legal day.
+    const withSleep = state({
       entries: [{ id: 'e_1', date: TODAY, duration_min: 960, category_id: 'cat_learn' }],
     });
     const r = validate.validateEntry(
-      { date: TODAY, duration_min: 120, category_id: 'cat_learn' }, shortSleeper, { now: NOW });
-    assert.equal(r.ok, true, 'six hours of sleep leaves an eighteen-hour day');
+      { date: TODAY, duration_min: 480, category_id: 'cat_learn' }, withSleep, { now: NOW });
+    assert.equal(r.ok, true);
   });
 
   await t.test('the check is reusable on its own', () => {
     const cap = validate.dayCapCheck(full, TODAY, 120, null);
     assert.equal(cap.ok, false);
-    assert.equal(cap.capMinutes, 960);
-    assert.equal(cap.usedMinutes, 900);
+    assert.equal(cap.capMinutes, 1440);
+    assert.equal(cap.usedMinutes, 1380);
     assert.equal(cap.remainingMinutes, 60);
   });
 });

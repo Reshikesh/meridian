@@ -2,10 +2,11 @@
    Pure: no DOM, no storage, no clock of its own.
 
    Every "accounted for / to go / coverage / unlogged / of N h" figure in the app
-   is computed here against WAKING hours — 24 minus the sleep default, 16 h a day
-   and 112 h a week (decision 17). The only 168 in the app is the Plan screen's
-   own bar, which names sleep explicitly; `HOURS_PER_WEEK` is exported for it and
-   is never a denominator for coverage.
+   is computed here against the whole day: 24 h, and 168 h a week (decision 17,
+   as amended). There is no sleep setting. A day is as long as a day is, and
+   sleep is an ordinary category for anyone who wants to log it — a fixed
+   nightly figure would be wrong on most nights and would need editing on the
+   rest.
 
    Classic <script src> -> window.Meridian.aggregate ; CommonJS -> module.exports */
 (function (root, factory) {
@@ -18,8 +19,8 @@
 
   var HOURS_PER_DAY = 24;
   var HOURS_PER_WEEK = 168;
-  var DEFAULT_SLEEP_HOURS = 8;      // spec §7 Settings default
-  var DEFAULT_ERRANDS_HOURS = 15;
+  var MINUTES_PER_DAY = HOURS_PER_DAY * 60;
+  var DEFAULT_ERRANDS_HOURS = 15;   // spec §7 Settings default; the v1.5 Plan screen's
 
   /* ---------- hours ---------- */
 
@@ -83,27 +84,6 @@
 
     minutes = Math.round(minutes);
     return minutes > 0 ? minutes : null;
-  }
-
-  /* ---------- settings-derived denominators (decision 17) ---------- */
-
-  function sleepHours(settings) {
-    var v = settings && settings.sleep_hours_per_day;
-    v = (v === null || v === undefined || v === '') ? DEFAULT_SLEEP_HOURS : Number(v);
-    if (!isFinite(v) || v < 0 || v >= HOURS_PER_DAY) v = DEFAULT_SLEEP_HOURS;
-    return v;
-  }
-
-  function wakingHoursPerDay(settings) {
-    return HOURS_PER_DAY - sleepHours(settings);
-  }
-
-  function wakingHoursPerWeek(settings) {
-    return wakingHoursPerDay(settings) * 7;
-  }
-
-  function wakingMinutesPerDay(settings) {
-    return Math.round(wakingHoursPerDay(settings) * 60);
   }
 
   /* ---------- selection ---------- */
@@ -311,8 +291,8 @@
   /* The donut and the "{n}% coverage · {n} h unlogged" caption (spec §4a).
      The percentage is never clamped — 105 % coverage is a real thing to say
      about a day someone over-logged — but the arc geometry is, in the chart.  */
-  function coverage(minutes, dayCount, settings) {
-    var totalHours = wakingHoursPerDay(settings) * Math.max(0, dayCount);
+  function coverage(minutes, dayCount) {
+    var totalHours = HOURS_PER_DAY * Math.max(0, dayCount);
     var loggedT = tenths(minutes);
     var totalT = Math.round(totalHours * 10);
     return {
@@ -324,8 +304,8 @@
   }
 
   /* The Log header's "{x} h accounted for, {y} to go" (spec §6). */
-  function dayCoverage(entries, dayKey, settings) {
-    return coverage(dayMinutes(entries, dayKey), 1, settings);
+  function dayCoverage(entries, dayKey) {
+    return coverage(dayMinutes(entries, dayKey), 1);
   }
 
   /* Decision 13: a Less category's weekly cap is its planned hours unless the
@@ -351,17 +331,13 @@
   return {
     HOURS_PER_DAY: HOURS_PER_DAY,
     HOURS_PER_WEEK: HOURS_PER_WEEK,
-    DEFAULT_SLEEP_HOURS: DEFAULT_SLEEP_HOURS,
+    MINUTES_PER_DAY: MINUTES_PER_DAY,
     DEFAULT_ERRANDS_HOURS: DEFAULT_ERRANDS_HOURS,
     tenths: tenths,
     hours: hours,
     formatHours: formatHours,
     hoursToMinutes: hoursToMinutes,
     parseDuration: parseDuration,
-    sleepHours: sleepHours,
-    wakingHoursPerDay: wakingHoursPerDay,
-    wakingHoursPerWeek: wakingHoursPerWeek,
-    wakingMinutesPerDay: wakingMinutesPerDay,
     inRange: inRange,
     sumMinutes: sumMinutes,
     byDay: byDay,

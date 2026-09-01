@@ -26,8 +26,9 @@
   'use strict';
 
   /* Decision 9: the eight sample categories, with the colours and planned hours
-     of spec §9. The seven discretionary rows total 52 — the "YOURS 52" of the
-     Plan screen's 168 = 56 sleep + 45 work + 15 errands + 52. */
+     of spec §9. The seven discretionary rows total 52, which is spec §9's own
+     figure; how the v1.5 Plan screen breaks 168 down is its own question now
+     that there is no sleep setting (decision 17, as amended). */
   var CATEGORIES = [
     { id: 'cat_work', name: 'Work', colour: '#2b7d5d', direction: 'upkeep', weekly_plan_hours: 45, sort: 1 },
     { id: 'cat_scroll', name: 'Scrolling', colour: '#c8291a', direction: 'less', weekly_plan_hours: 14, sort: 2 },
@@ -180,7 +181,6 @@
     return {
       theme: theme || 'paper',
       day_boundary: '04:00',
-      sleep_hours_per_day: 8,
       errands_hours_per_week: 15,
       week_start: 'monday'
     };

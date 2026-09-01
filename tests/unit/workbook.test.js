@@ -334,11 +334,11 @@ test('what is missing, unknown or already past is reported, not fatal', async (t
   await t.test('an over-full day is kept and noted, never discarded (decision 5)', () => {
     const bytes = bookOf({
       Categories: ONE_CATEGORY,
-      Entries: [ENTRY_HEAD, ['e_0001', '2026-06-05', 1020, 'a 17 h day', 'cat_learn', null, null, null]],
+      Entries: [ENTRY_HEAD, ['e_0001', '2026-06-05', 1500, 'a 25 h day', 'cat_learn', null, null, null]],
     });
     const { state, report } = workbook.decode(XLSX, bytes, { now: NOW });
     assert.equal(state.entries.length, 1, 'a day somebody lived is not a validation error');
-    assert.ok(report.notes.some((n) => /1 day holds more than 16 h \(2026-06-05\)/.test(n)));
+    assert.ok(report.notes.some((n) => /1 day holds more than 24 h \(2026-06-05\)/.test(n)));
   });
 
   await t.test('a goal whose date has passed is kept and noted', () => {
@@ -406,24 +406,39 @@ test('a workbook that cannot be read at all fails as a whole, cleanly', async (t
 test('settings come back through the workbook', async (t) => {
   await t.test('a valid settings sheet is applied', () => {
     const { state, report } = workbook.decode(XLSX, bookOf({
-      Settings: [['key', 'value'], ['theme', 'graphite'], ['sleep_hours_per_day', 7],
-        ['errands_hours_per_week', 12], ['day_boundary', '04:00'], ['week_start', 'monday']],
+      Settings: [['key', 'value'], ['theme', 'graphite'], ['errands_hours_per_week', 12],
+        ['day_boundary', '04:00'], ['week_start', 'monday']],
       Categories: ONE_CATEGORY,
     }), { now: NOW });
     assert.equal(report.rejected, 0);
     assert.equal(state.settings.theme, 'graphite');
-    assert.equal(state.settings.sleep_hours_per_day, 7);
+    assert.equal(state.settings.errands_hours_per_week, 12);
+    assert.equal(state.settings.sleep_hours_per_day, undefined);
+  });
+
+  await t.test('a retired setting says what happened to it, rather than "unknown"', () => {
+    // A workbook exported by an earlier build still carries the row. Meridian
+    // wrote it, so calling it unknown would be a lie (decision 17, as amended).
+    const { state, report } = workbook.decode(XLSX, bookOf({
+      Settings: [['key', 'value'], ['sleep_hours_per_day', 8], ['theme', 'blueprint']],
+      Categories: ONE_CATEGORY,
+    }), { now: NOW });
+    assert.equal(report.rejected, 0);
+    assert.equal(state.settings.theme, 'blueprint');
+    assert.equal(state.settings.sleep_hours_per_day, undefined);
+    assert.ok(report.notes.some((n) => /sleep_hours_per_day" is no longer used/.test(n)),
+      report.notes.join(' | '));
   });
 
   await t.test('a bad setting is one reject, and the others still apply', () => {
     const { state, report } = workbook.decode(XLSX, bookOf({
-      Settings: [['key', 'value'], ['theme', 'neon'], ['sleep_hours_per_day', 7], ['made_up', 'x']],
+      Settings: [['key', 'value'], ['theme', 'neon'], ['errands_hours_per_week', 7], ['made_up', 'x']],
       Categories: ONE_CATEGORY,
     }), { now: NOW });
     assert.equal(report.rejects.length, 1);
     assert.match(report.rejects[0].reason, /theme "neon"/);
     assert.equal(state.settings.theme, 'paper', 'the default stands');
-    assert.equal(state.settings.sleep_hours_per_day, 7);
+    assert.equal(state.settings.errands_hours_per_week, 7);
     assert.ok(report.notes.some((n) => /ignored unknown setting "made_up"/.test(n)));
   });
 });

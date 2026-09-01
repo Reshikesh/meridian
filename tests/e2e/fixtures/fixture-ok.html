@@ -29,6 +29,10 @@
   .panel__body { overflow:auto; min-height:0; flex:1; }
   .panel__row { padding:10px; border-bottom:1px solid #eee; white-space:nowrap; }
   .panel__foot { padding:10px; border-top:1px solid #ddd; background:#fafafa; }
+  /* An overlay done right: fixed, so no ancestor clips it, and inside the
+     viewport. The row menu's shape after the Phase 2 checkpoint fix. */
+  .goodmenu { position:fixed; top:100px; right:40px; width:150px; height:70px;
+              background:#fff; border:1px solid #999; }
 </style></head><body>
   <header>Header that sticks over the rows below it</header>
   <div class="tabwrap"><button>Log</button><span class="rule"></span></div>
@@ -48,6 +52,7 @@
     </div>
     <div class="panel__foot">Footer under the scrolled rows</div>
   </div>
+  <div class="goodmenu" data-overlay>Edit / Delete, clipped by nothing</div>
   <div class="veil"></div>
   <div class="sheet"><h2>New entry</h2><p>Sheet content over the page</p></div>
 </body></html>

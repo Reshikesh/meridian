@@ -87,84 +87,116 @@ for (const width of WIDTHS) {
             await page.screenshot({ path: file, fullPage: true, animations: 'disabled' });
           }
         }
+        // QUALITY-BAR §2 says "every screen AND sheet open". Every sheet AND every
+        // state that only exists after a click — a row menu, an inline confirm,
+        // a row editor — is opened here, one after another, at every width and
+        // theme. The transient ones are in this list because the row-menu defect
+        // the owner found at the Phase 2 checkpoint lived in exactly the gap
+        // between "audited every screen" and "audited every state".
+        const esc = async () => page.keyboard.press('Escape');
+        const openLog = async () => page.click('[data-nav="log"]');
+        const openManage = async () => { await openLog(); await page.click('.btn--quiet'); };
 
-        // QUALITY-BAR §2 says "every screen AND sheet open". Every sheet the
-        // app has is opened here, one after another, at every width and theme.
-        // `open` leaves the app on the sheet; `close` puts it back.
-        const SHEETS = [
+        const STATES = [
           {
-            id: 'data',
-            open: async () => page.click('[data-data-open]'),
-            close: async () => page.keyboard.press('Escape'),
+            id: 'sheet-data',
+            open: () => page.click('[data-data-open]'),
+            ready: '.sheet__card',
+            close: esc,
           },
           {
-            id: 'entry',
+            id: 'sheet-entry',
             open: async () => {
-              await page.click('[data-nav="log"]');
+              await openLog();
               await page.click('.quickadd__open');
               // The tallest state of the sheet: a goal picked, so the category
               // is locked and the projection panel is on screen.
               await page.locator('.seg').first().getByText('2 h', { exact: true }).click();
               await page.locator('.seg').nth(1).getByText('Learn Python').click();
             },
-            close: async () => page.keyboard.press('Escape'),
+            ready: '.sheet__card',
+            close: esc,
           },
           {
-            id: 'manage',
-            open: async () => {
-              await page.click('[data-nav="log"]');
-              await page.click('.btn--quiet');
-            },
-            close: async () => page.keyboard.press('Escape'),
+            id: 'sheet-manage',
+            open: openManage,
+            ready: '.sheet--wide .sheet__card',
+            close: esc,
           },
           {
-            id: 'manage-editing',
+            id: 'sheet-manage-editing',
             open: async () => {
-              await page.click('[data-nav="log"]');
-              await page.click('.btn--quiet');
+              await openManage();
               await page.locator('.manage__rowwrap').first()
                 .getByRole('button', { name: 'edit' }).click();
             },
-            close: async () => page.keyboard.press('Escape'),
+            ready: '.manage__editor',
+            close: esc,
           },
           {
-            id: 'category',
+            id: 'sheet-manage-confirm',
             open: async () => {
-              await page.click('[data-nav="log"]');
-              await page.click('.btn--quiet');
+              await openManage();
+              await page.locator('.manage__rowwrap').first()
+                .getByRole('button', { name: 'archive' }).click();
+            },
+            ready: '.confirm--row',
+            close: esc,
+          },
+          {
+            id: 'sheet-category',
+            open: async () => {
+              await openManage();
               await page.click('.sheet__tools .btn--brand');
             },
+            ready: '.sheet--stacked .sheet__card',
             // Two sheets deep, so two Escapes.
-            close: async () => {
-              await page.keyboard.press('Escape');
-              await page.keyboard.press('Escape');
+            close: async () => { await esc(); await esc(); },
+          },
+          {
+            id: 'rowmenu-last',
+            open: async () => {
+              await openLog();
+              await page.locator('.logrow--entry').last().locator('.rowmenu__btn').click();
             },
+            ready: '.rowmenu__panel',
+            close: esc,
+          },
+          {
+            id: 'rowmenu-confirm',
+            open: async () => {
+              await openLog();
+              await page.locator('.logrow--entry').last().locator('.rowmenu__btn').click();
+              await page.click('.rowmenu__item--warn');
+            },
+            ready: '.confirm--menu',
+            close: esc,
           },
         ];
 
-        for (const sheet of SHEETS) {
-          await sheet.open();
-          await expect(page.locator('.sheet__card').last()).toBeVisible();
+        for (const state of STATES) {
+          await state.open();
+          await expect(page.locator(state.ready).last()).toBeVisible();
           await page.waitForFunction(
             () => document.getAnimations().every((a) => a.playState === 'finished'));
 
-          const sheetAudit = await page.evaluate(auditInPage);
-          expect(sheetAudit.counts.leaves,
-            `${width}/${theme}/${sheet.id}: audit saw only ${sheetAudit.counts.leaves} leaves`)
+          const stateAudit = await page.evaluate(auditInPage);
+          expect(stateAudit.counts.leaves,
+            `${width}/${theme}/${state.id}: audit saw only ${stateAudit.counts.leaves} leaves`)
             .toBeGreaterThanOrEqual(MIN_LEAVES);
-          failures.push(...formatAudit(sheetAudit, `${width}/${theme}/sheet-${sheet.id}`));
+          failures.push(...formatAudit(stateAudit, `${width}/${theme}/${state.id}`));
 
           if (SHOT_WIDTHS.has(width)) {
             await page.screenshot({
               path: path.join(SHOTS, testInfo.project.name, theme,
-                `sheet-${sheet.id}-${String(width).padStart(4, '0')}.png`),
+                `${state.id}-${String(width).padStart(4, '0')}.png`),
               fullPage: true,
               animations: 'disabled',
             });
           }
 
-          await sheet.close();
-          await expect(page.locator('.sheet__card')).toHaveCount(0);
+          await state.close();
+          await expect(page.locator(state.ready)).toHaveCount(0);
         }
 
         expect(failures, failures.join('\n')).toEqual([]);

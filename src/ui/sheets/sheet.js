@@ -102,6 +102,26 @@
       if (event.target === event.currentTarget) onClose();
     }
 
+    /* A real <form> when the sheet has a primary action, so Enter in a field
+       saves it — native implicit submission, which also leaves Enter on a
+       segmented button doing what it should (picking that option) instead of
+       saving the sheet from under it. The body and the footer both go inside,
+       because the submit button lives in the footer. */
+    var body = html`
+      <div class=${'sheet__body' + (props.bodyClass ? ' ' + props.bodyClass : '')}>
+        ${props.children}
+      </div>`;
+
+    var foot = props.footer ? html`
+      <div class=${'sheet__foot' + (props.footClass ? ' ' + props.footClass : '')}>
+        ${props.footer}
+      </div>` : null;
+
+    function onSubmit(event) {
+      event.preventDefault();
+      props.onSubmit();
+    }
+
     return html`
       <div class=${'sheet' + (props.wide ? ' sheet--wide' : '') +
           (props.stacked ? ' sheet--stacked' : '')} onClick=${onVeilClick}>
@@ -116,13 +136,9 @@
               </button>
             </div>
           </div>
-          <div class=${'sheet__body' + (props.bodyClass ? ' ' + props.bodyClass : '')}>
-            ${props.children}
-          </div>
-          ${props.footer ? html`
-            <div class=${'sheet__foot' + (props.footClass ? ' ' + props.footClass : '')}>
-              ${props.footer}
-            </div>` : null}
+          ${props.onSubmit
+            ? html`<form class="sheet__form" onSubmit=${onSubmit}>${[body, foot]}</form>`
+            : [body, foot]}
         </div>
       </div>`;
   }

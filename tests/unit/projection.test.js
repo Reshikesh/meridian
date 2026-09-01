@@ -15,7 +15,7 @@ const TODAY = '2026-06-07';
 
 function stateWith(entries, goal) {
   return {
-    settings: { sleep_hours_per_day: 8 },
+    settings: {},
     categories: [{ id: 'cat_learn', name: 'Learning', direction: 'more' }],
     goals: [Object.assign({
       id: 'goal_py', short_name: 'Learn Python', category_id: 'cat_learn',

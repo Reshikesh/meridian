@@ -31,8 +31,8 @@ test('the sheet lists every category against the waking week (decision 17)', asy
   await openManage(page);
 
   await expect(page.locator('.sheet__title')).toHaveText('CATEGORIES — 91.5 H THIS WEEK');
-  await expect(page.locator('.manage__head')).toContainText('SHARE OF 112 H');
-  await expect(page.locator('.manage__footnote')).toContainText('adding up to 112');
+  await expect(page.locator('.manage__head')).toContainText('SHARE OF 168 H');
+  await expect(page.locator('.manage__footnote')).toContainText('adding up to 168');
   await expect(page.locator('.manage__rowwrap')).toHaveCount(8);
 
   // A Less category's hours are the warn colour (deck-10).
@@ -92,7 +92,7 @@ test('an archived category leaves the pickers and stays in the history (§8.11)'
   await expect(page.locator('.sheet__card')).toHaveCount(0);
 
   // Gone from the quick-add picker...
-  const options = await page.locator('.quickadd__row .select__input option')
+  const options = await page.locator('.quickadd__row .select--cat .select__input option')
     .evaluateAll((els) => els.map((el) => el.value));
   expect(options).not.toContain('cat_family');
   expect(options).toContain('cat_learn');
@@ -100,7 +100,7 @@ test('an archived category leaves the pickers and stays in the history (§8.11)'
   // ...and still on the entry it was logged against.
   await expect(page.locator('.logrow--entry').filter({ hasText: 'Lunch with family' })
     .locator('.catchip')).toHaveText('Family');
-  await expect(page.locator('.logday .t-h1')).toHaveText('5.0 h accounted for, 11.0 to go');
+  await expect(page.locator('.logday .t-h1')).toHaveText('5.0 h accounted for, 19.0 to go');
 });
 
 /* ---------- delete, only at zero hours (§8.10) ---------- */
@@ -263,4 +263,20 @@ test('with every category gone, the row says so instead of failing quietly', asy
 
   await page.click('.btn--quiet');
   await expect(page.locator('.manage__empty')).toContainText('No categories yet');
+});
+
+test('Enter saves the New category sheet and the row editor', async ({ page }) => {
+  await openManage(page);
+
+  await page.click('.sheet__tools .btn--brand');
+  await page.locator('.fld--name').fill('Volunteering');
+  await page.locator('.fld--name').press('Enter');
+  await expect(page.locator('.sheet--stacked')).toHaveCount(0);
+  expect((await categories(page)).some((c) => c.name === 'Volunteering')).toBe(true);
+
+  await row(page, 'Reading').getByRole('button', { name: 'edit' }).click();
+  await page.locator('.fld--rowname').fill('Books');
+  await page.locator('.fld--rowname').press('Enter');
+  await expect(page.locator('.manage__editor')).toHaveCount(0);
+  expect((await categories(page)).find((c) => c.id === 'cat_reading').name).toBe('Books');
 });

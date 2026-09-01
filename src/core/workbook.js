@@ -44,13 +44,20 @@
     { name: 'Lessons', columns: ['id', 'iso_week', 'date', 'text', 'tags'] }
   ];
 
-  var SETTING_KEYS = ['theme', 'day_boundary', 'sleep_hours_per_day', 'errands_hours_per_week', 'week_start'];
+  var SETTING_KEYS = ['theme', 'day_boundary', 'errands_hours_per_week', 'week_start'];
+
+  /* Settings this app used to carry. A workbook exported by an older build
+     still has the row, and "ignored unknown setting" would be a lie about a key
+     Meridian itself wrote — so it says what happened to it instead. */
+  var RETIRED_SETTINGS = {
+    sleep_hours_per_day: 'Settings: "sleep_hours_per_day" is no longer used — a logged day '
+      + 'is the whole 24 h, and sleep is an ordinary category if you want to log it.'
+  };
 
   function defaultSettings() {
     return {
       theme: 'paper',
       day_boundary: '04:00',
-      sleep_hours_per_day: aggregate.DEFAULT_SLEEP_HOURS,
       errands_hours_per_week: aggregate.DEFAULT_ERRANDS_HOURS,
       week_start: 'monday'
     };
@@ -340,7 +347,8 @@
         var k = validate.blank(r.key) ? '' : String(r.key).trim();
         var rowNo = i + 2;
         if (SETTING_KEYS.indexOf(k) === -1) {
-          if (k) report.notes.push('Settings: ignored unknown setting "' + k + '".');
+          if (RETIRED_SETTINGS[k]) report.notes.push(RETIRED_SETTINGS[k]);
+          else if (k) report.notes.push('Settings: ignored unknown setting "' + k + '".');
           return;
         }
         var res = readSetting(k, r.value);
@@ -539,16 +547,16 @@
       namedRefNote(report, 'Entries', namedCatRefs.Entries, 'category');
       namedRefNote(report, 'Entries', namedGoalRefs, 'goal');
 
-      /* The waking-hours cap is a rule about what you may log from here on, not
-         a verdict on days already lived (decision 5). Over-full days are
-         reported and kept. */
+      /* The day cap is a rule about what you may log from here on, not a verdict
+         on days already lived (decision 5). Over-full days are reported and
+         kept. */
       var perDay = aggregate.byDay(state.entries);
-      var capMinutes = aggregate.wakingMinutesPerDay(state.settings);
+      var capMinutes = aggregate.MINUTES_PER_DAY;
       var over = Object.keys(perDay).filter(function (k) { return perDay[k] > capMinutes; });
       if (over.length) {
         over.sort();
         report.notes.push(over.length + (over.length === 1 ? ' day holds' : ' days hold') +
-          ' more than ' + aggregate.wakingHoursPerDay(state.settings) + ' h (' +
+          ' more than ' + aggregate.HOURS_PER_DAY + ' h (' +
           over.slice(0, 3).join(', ') + (over.length > 3 ? ', …' : '') +
           '). Kept as logged; new entries on those days will be refused.');
       }
@@ -646,7 +654,6 @@
       if (!/^\d{2}:\d{2}$/.test(t.value)) return { ok: false, reason: 'day_boundary "' + t.value + '" is not a time like 04:00' };
       return t;
     }
-    if (key === 'sleep_hours_per_day') return validate.asNumber(value, key, { required: true, min: 0 });
     if (key === 'errands_hours_per_week') return validate.asNumber(value, key, { required: true, min: 0 });
     return validate.asText(value, key);
   }
@@ -752,6 +759,7 @@
     APP_VERSION: APP_VERSION,
     SHEETS: SHEETS,
     SETTING_KEYS: SETTING_KEYS,
+    RETIRED_SETTINGS: RETIRED_SETTINGS,
     defaultSettings: defaultSettings,
     emptyState: emptyState,
     canonical: canonical,

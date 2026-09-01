@@ -2,9 +2,10 @@
 
    The day's entries, the quick-add row, the row menu and the week bar strip.
    Layout, type and copy are the mockup's (spec §6, deck-01-log.png), with the
-   three changes the decisions require: no VALUE column and no value dots
-   (decision 10), waking-hours denominators rather than 24 h and 168 h
-   (decision 17), and a real quick-add row that commits on Enter (decision 19).
+   two changes the decisions require: no VALUE column and no value dots
+   (decision 10), and a real quick-add row that commits on Enter (decision 19).
+   The denominators are the mockup's own — 24 h a day, 168 h a week — because
+   decision 17, as amended, has no sleep setting.
 
    No business rules live here. Durations are parsed by
    `aggregate.parseDuration`, every entry is checked by `validate.validateEntry`,
@@ -65,11 +66,15 @@
   }
 
   /* ---------- quick-add row ----------
-     Decision 19: the inline row commits on Enter with duration, activity and
-     category; `+` opens the full sheet for a goal-linked or "Other" duration,
-     carrying whatever is already typed so the two paths are one flow. */
+     Decision 19, as amended: the inline row commits on Enter and carries the
+     goal picker too, so a goal-linked entry never has to open a dialog. `+`
+     still opens the full sheet — for the projection preview and for editing —
+     carrying whatever is already typed, so the two paths are one flow.
 
-  var EMPTY_DRAFT = { duration: '', activity: '', category_id: null };
+     The row's five columns are the table's five columns, so every control sits
+     under its own header. */
+
+  var EMPTY_DRAFT = { duration: '', activity: '', category_id: null, goal_id: null };
 
   function QuickAdd(props) {
     var draftState = useState(EMPTY_DRAFT);
@@ -84,6 +89,21 @@
     function patch(p) {
       setDraft(function (prev) { return Object.assign({}, prev, p); });
       if (error) setError(null);
+    }
+
+    /* Business rule §8.2, both ways round: a goal lives inside one category, so
+       picking a goal fills that category, and moving the category off it clears
+       the goal rather than saving a pairing validate.js would refuse. */
+    function chooseGoal(id) {
+      var goal = id ? findById(props.state.goals, id) : null;
+      patch(goal
+        ? { goal_id: goal.id, category_id: goal.category_id }
+        : { goal_id: null });
+    }
+
+    function chooseCategory(id) {
+      var goal = draft.goal_id ? findById(props.state.goals, draft.goal_id) : null;
+      patch({ category_id: id, goal_id: goal && goal.category_id === id ? goal.id : null });
     }
 
     function commit() {
@@ -102,7 +122,7 @@
         duration_min: minutes,
         activity: String(draft.activity).trim() || null,
         category_id: draft.category_id,
-        goal_id: null
+        goal_id: draft.goal_id || null
       };
 
       var check = validate.validateEntry(input, props.state, { now: props.now });
@@ -128,6 +148,7 @@
 
     var durationError = error && (error.field === 'duration' || error.field === 'duration_min');
     var categoryError = error && error.field === 'category_id';
+    var goalError = error && error.field === 'goal_id';
 
     return html`
       <div class="quickadd">
@@ -147,17 +168,22 @@
             onInput=${function (v) { patch({ activity: v }); }}
             onKeyDown=${onKeyDown} />
 
-          <${fields.CategorySelect}
+          <${fields.CategorySelect} className="select--cat"
             categories=${props.state.categories} value=${draft.category_id}
             label="Category" disabled=${disabled} invalid=${!!categoryError}
-            onChange=${function (v) { patch({ category_id: v }); }}
+            onChange=${chooseCategory}
+            onKeyDown=${onKeyDown} />
+
+          <${fields.GoalSelect} className="select--goal"
+            goals=${props.state.goals} categories=${props.state.categories}
+            value=${draft.goal_id}
+            label="Counts toward" disabled=${disabled} invalid=${!!goalError}
+            onChange=${chooseGoal}
             onKeyDown=${onKeyDown} />
 
           <button type="button" class="btn btn--brand quickadd__open"
-            aria-label="New entry, with a goal or another duration"
+            aria-label="Open the full entry sheet"
             onClick=${function () { props.onOpenSheet(draft); }}>+</button>
-
-          <div></div>
         </div>
 
         ${error ? html`
@@ -285,7 +311,8 @@
           onClick=${function () { open ? close() : setOpen(true); }}>…</button>
 
         ${open ? html`
-          <div class="rowmenu__panel" ref=${panelRef} role=${confirming ? 'group' : 'menu'}
+          <div class="rowmenu__panel" data-overlay ref=${panelRef}
+            role=${confirming ? 'group' : 'menu'}
             style=${pos ? 'top:' + pos.top + 'px;left:' + pos.left + 'px'
               : 'visibility:hidden'}>
             ${confirming ? html`
@@ -347,7 +374,7 @@
     var minutes = aggregate.weekMinutes(props.state.entries, props.day);
     var monday = dates.weekStart(props.day);
     var total = minutes.reduce(function (n, m) { return n + m; }, 0);
-    var weekHours = aggregate.wakingHoursPerWeek(props.state.settings);
+    var weekHours = aggregate.HOURS_PER_WEEK;
 
     return html`
       <div class="weekstrip">
@@ -389,7 +416,7 @@
     var day = props.day;
 
     var entries = (state.entries || []).filter(function (e) { return e.date === day; });
-    var coverage = aggregate.dayCoverage(state.entries || [], day, state.settings);
+    var coverage = aggregate.dayCoverage(state.entries || [], day);
 
     return html`
       <main class=${props.className} data-s="log">

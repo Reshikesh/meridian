@@ -4,8 +4,6 @@ const test = require('node:test');
 const assert = require('node:assert');
 const aggregate = require('../../src/core/aggregate.js');
 
-const SETTINGS = { sleep_hours_per_day: 8, errands_hours_per_week: 15 };
-
 const CATEGORIES = [
   { id: 'cat_work', name: 'Work', direction: 'upkeep', weekly_plan_hours: 45, colour: '#2b7d5d' },
   { id: 'cat_scroll', name: 'Scrolling', direction: 'less', weekly_plan_hours: 14, colour: '#c8291a' },
@@ -39,25 +37,22 @@ test('hours round in whole minutes, never through toFixed on a float', async (t)
   });
 });
 
-test('waking hours are 24 minus the sleep default, never a hard-coded 16 (decision 17)', async (t) => {
-  await t.test('the defaults give 16 a day and 112 a week', () => {
-    assert.equal(aggregate.wakingHoursPerDay(SETTINGS), 16);
-    assert.equal(aggregate.wakingHoursPerWeek(SETTINGS), 112);
-    assert.equal(aggregate.wakingMinutesPerDay(SETTINGS), 960);
-  });
-
-  await t.test('a friend who edits the sleep setting moves the denominator', () => {
-    assert.equal(aggregate.wakingHoursPerDay({ sleep_hours_per_day: 7 }), 17);
-    assert.equal(aggregate.wakingHoursPerWeek({ sleep_hours_per_day: 7 }), 119);
-  });
-
-  await t.test('nonsense in the workbook falls back to the default', () => {
-    for (const bad of [undefined, null, '', 'eight', -1, 24, 99, NaN]) {
-      assert.equal(aggregate.wakingHoursPerDay({ sleep_hours_per_day: bad }), 16, String(bad));
+test('a day is the whole 24 hours (decision 17, as amended)', async (t) => {
+  await t.test('there is no sleep setting left to read', () => {
+    // Removed deliberately: a fixed nightly figure is wrong on most nights, and
+    // sleep is an ordinary category for anyone who wants to log it. Named here
+    // so the removal cannot quietly come back.
+    for (const gone of ['sleepHours', 'wakingHoursPerDay', 'wakingHoursPerWeek',
+      'wakingMinutesPerDay', 'DEFAULT_SLEEP_HOURS']) {
+      assert.equal(aggregate[gone], undefined, gone);
     }
   });
 
-  await t.test('168 is exported for the Plan bar, which names sleep explicitly', () => {
+  await t.test('the denominators are constants, not settings-derived', () => {
+    assert.equal(aggregate.MINUTES_PER_DAY, 1440);
+  });
+
+  await t.test('a day is 24 h and a week is 168 h, as the mockup has them', () => {
     assert.equal(aggregate.HOURS_PER_WEEK, 168);
     assert.equal(aggregate.HOURS_PER_DAY, 24);
   });
@@ -194,30 +189,36 @@ test('the direction split derives upkeep as the residual (spec §4b)', async (t)
   });
 });
 
-test('coverage uses waking hours, not the 24-hour day (decision 17)', async (t) => {
-  await t.test('a seed week reads 95 of 112', () => {
-    const c = aggregate.coverage(5700, 7, SETTINGS);
+test('coverage is measured against the whole day (decision 17, as amended)', async (t) => {
+  await t.test('a seed week reads 95 of 168', () => {
+    const c = aggregate.coverage(5700, 7);
     assert.equal(c.loggedHours, 95);
-    assert.equal(c.totalHours, 112);
-    assert.equal(c.unloggedHours, 17);
-    assert.equal(c.pct, 85);
+    assert.equal(c.totalHours, 168);
+    assert.equal(c.unloggedHours, 73);
+    assert.equal(c.pct, 57);
   });
 
-  await t.test('a single day reads against 16 h', () => {
-    const c = aggregate.coverage(570, 1, SETTINGS);
+  await t.test('a single day reads against 24 h', () => {
+    const c = aggregate.coverage(570, 1);
     assert.equal(c.loggedHours, 9.5);
-    assert.equal(c.totalHours, 16);
-    assert.equal(c.unloggedHours, 6.5, 'the mockup’s "9.5 accounted for, 6.5 to go"');
+    assert.equal(c.totalHours, 24);
+    assert.equal(c.unloggedHours, 14.5, 'the mockup’s "9.5 accounted for, 14.5 to go"');
+  });
+
+  await t.test('a fully logged day, sleep included, is 100 % and nothing to go', () => {
+    const c = aggregate.coverage(1440, 1);
+    assert.equal(c.pct, 100);
+    assert.equal(c.unloggedHours, 0);
   });
 
   await t.test('an over-logged day is reported honestly, not clamped', () => {
-    const c = aggregate.coverage(1020, 1, SETTINGS);   // 17 h on a 16 h day
-    assert.equal(c.pct, 106);
+    const c = aggregate.coverage(1500, 1);   // 25 h on a 24 h day
+    assert.equal(c.pct, 104);
     assert.equal(c.unloggedHours, 0, 'hours to go cannot go negative');
   });
 
   await t.test('an empty range does not divide by zero', () => {
-    const c = aggregate.coverage(0, 0, SETTINGS);
+    const c = aggregate.coverage(0, 0);
     assert.equal(c.pct, 0);
     assert.equal(c.totalHours, 0);
   });

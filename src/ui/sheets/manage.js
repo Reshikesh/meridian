@@ -4,10 +4,9 @@
    every historical range, delete only clears a category nobody has lived, and an
    archived category leaves the pickers but never the history.
 
-   The mockup's denominator is 168 h. Decision 17 makes every "of N h" figure in
-   the app a WAKING-hours figure, so the column reads SHARE OF 112 H and the
-   footer counts to 112. Only the Plan screen's own bar keeps 168, because it
-   names sleep out loud. */
+   The denominator is the mockup's own 168 h: decision 17, as amended, has no
+   sleep setting, so a week is the 168 hours a week has and sleep is an ordinary
+   category for anyone who wants to log it. */
 (function () {
   'use strict';
 
@@ -73,7 +72,7 @@
 
         <div class="manage__editoractions">
           <button type="button" class="btn" onClick=${props.onCancel}>Cancel</button>
-          <button type="button" class="btn btn--brand" onClick=${props.onSave}>Save</button>
+          <button type="submit" class="btn btn--brand">Save</button>
         </div>
       </div>`;
   }
@@ -103,8 +102,15 @@
     var archived = !!c.archived;
     var untouched = !archived && props.totalMinutes === 0;
 
+    /* Every row is a <form>, so Enter saves from the name field as well as from
+       the editor strip below it — "rename in place" puts the name in the row and
+       the other three fields under it, and both have to be inside the same form.
+       A row that is not being edited has no submit button and no fields, so its
+       form is inert. The Manage sheet itself passes no `onSubmit` (its footer
+       button is Done, which closes), so there is no outer form to nest inside. */
     return html`
-      <div class=${'manage__rowwrap' + (editing ? ' manage__rowwrap--editing' : '')}>
+      <form class=${'manage__rowwrap' + (editing ? ' manage__rowwrap--editing' : '')}
+        onSubmit=${function (e) { e.preventDefault(); if (editing) props.onSave(); }}>
         <div class=${'managerow' + (archived ? ' managerow--archived' : '')}>
           <div class="managerow__name">
             ${swatchColour ? html`
@@ -182,7 +188,7 @@
         ${editing ? html`
           <${RowEditor} id=${c.id} theme=${props.theme} draft=${props.draft}
             errors=${props.errors} onPatch=${props.onPatch}
-            onSave=${props.onSave} onCancel=${props.onCancelEdit} />` : null}
+            onCancel=${props.onCancelEdit} />` : null}
 
         ${props.confirm ? html`
           <div class="confirm confirm--row">
@@ -194,7 +200,7 @@
               <button type="button" class="btn" onClick=${props.confirm.onNo}>Keep it</button>
             </div>
           </div>` : null}
-      </div>`;
+      </form>`;
   }
 
   /* ---------- the sheet ---------- */
@@ -209,7 +215,7 @@
     var confirm = confirmState[0], setConfirm = confirmState[1];
 
     var settings = state.settings;
-    var weekDenominator = aggregate.wakingHoursPerWeek(settings);
+    var weekDenominator = aggregate.HOURS_PER_WEEK;
     var today = dates.dayKey(dates.logicalDay(props.now));
     var monday = dates.weekStart(today);
     var weekEntries = aggregate.inRange(state.entries || [],

@@ -21,6 +21,8 @@ test('the audit CATCHES all three failure classes', async ({ page }) => {
   expect(res.textOverflow.length, 'must detect clipped text').toBeGreaterThan(0);
   expect(res.overlaps.length, 'must detect overlapping leaves').toBeGreaterThan(0);
   expect(res.offLeft.length, 'must detect a box pushed off the left edge').toBeGreaterThan(0);
+  expect(res.clippedOverlays.length,
+    'must detect an overlay clipped by an ancestor').toBeGreaterThan(0);
 });
 
 test('the audit does NOT flag legitimate patterns', async ({ page }) => {
@@ -34,4 +36,6 @@ test('the audit does NOT flag legitimate patterns', async ({ page }) => {
   expect(res.textOverflow, 'ellipsis, clamp, scroller and input must not count as clipped').toEqual([]);
   expect(res.overlaps, 'sticky over rows and fixed sheet over page must not count as overlap').toEqual([]);
   expect(res.offLeft, 'nothing legitimate hangs off the left edge').toEqual([]);
+  expect(res.clippedOverlays, 'a fixed, on-screen overlay is not clipped').toEqual([]);
+  expect(res.counts.overlays, 'the overlay fixture is actually present').toBeGreaterThan(0);
 });
