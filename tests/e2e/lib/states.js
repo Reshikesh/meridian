@@ -22,13 +22,27 @@ function transientStates(page) {
   };
   const day = (label) => page.locator(`.cal__cell[aria-label="${label}"]`);
 
-  // Swap the dataset under the page and come back to Where it went. The
-  // init script only writes the demo when the key is absent, so what is
-  // written here survives the reload.
+  // Swap the dataset under the page and come back to Where it went.
+  //
+  // Written from an init script, not from the live page: a setItem in the
+  // old document followed by an immediate reload lost the write under load
+  // three times in the matrices (the reload came up on the demo). An init
+  // script runs inside the new document, before the app's own scripts, so
+  // the store's synchronous read sees exactly what was written. Init scripts
+  // accumulate and run in registration order, so the last dataset asked for
+  // is the one that wins; the seed's own script only writes when the key is
+  // absent, so it never gets in the way.
   const loadState = async (state) => {
-    await page.evaluate(([k, json]) => localStorage.setItem(k, json), [DATA_KEY, JSON.stringify(state)]);
+    const json = JSON.stringify(state);
+    await page.addInitScript(([k, v]) => {
+      try { localStorage.setItem(k, v); } catch (e) { /* private mode */ }
+    }, [DATA_KEY, json]);
     await page.reload();
     await openWent();
+    const loaded = await page.evaluate(() => window.Meridian.store.getState().entries.length);
+    if (loaded !== state.entries.length) {
+      throw new Error(`loadState: the store holds ${loaded} entries, expected ${state.entries.length}`);
+    }
   };
 
   return [
