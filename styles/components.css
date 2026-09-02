@@ -1442,3 +1442,653 @@
   color: var(--ink2);
   max-width: 58ch;
 }
+
+/* ---------- Where it went: coverage donut (spec §4a) ---------- */
+
+.donut {
+  flex: none;
+  display: block;
+}
+
+.donut__svg {
+  display: block;
+  transform: rotate(-90deg);
+}
+
+.donut__disc {
+  fill: var(--pale);
+}
+
+.donut__arc {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 19;
+}
+
+.donut__rim {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+/* ---------- Where it went: direction split bar (spec §4b) ---------- */
+
+.split {
+  flex: 1 1 300px;
+  max-width: 440px;
+  /* The mockup's 250px floor, but never wider than the header itself: a
+     240px layout viewport (360px at 150% zoom) has to hold it. */
+  min-width: min(250px, 100%);
+}
+
+.split__label {
+  margin-bottom: 7px;
+}
+
+.split__bar {
+  display: flex;
+  height: 30px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+
+/* Each segment is a size container so its label can hide when the segment
+   is too narrow to hold it (spec §4b lists the clipped label as ungraceful,
+   QUALITY-BAR §2 forbids clipped text). The thresholds are the widths the
+   two-, three- and four-character labels need at 600 11px. */
+.split__seg {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  container-type: inline-size;
+}
+
+.split__seg--more {
+  background: var(--good);
+}
+
+.split__seg--less {
+  background: var(--warn);
+}
+
+/* Decorative: the label sits over it by design, so it is out of hit-testing
+   and the responsive auditor leaves it alone. */
+.split__veil {
+  position: absolute;
+  inset: 0;
+  background: var(--axis);
+  opacity: .26;
+  pointer-events: none;
+}
+
+.split__pct {
+  position: relative;
+  font: 600 11px/1 var(--font);
+  font-variant-numeric: tabular-nums;
+  color: var(--brandink);
+  white-space: nowrap;
+}
+
+.split__pct--keep {
+  color: var(--ink2);
+}
+
+@container (max-width: 23.98px) {
+  .split__pct[data-len="2"] { display: none; }
+}
+
+@container (max-width: 29.98px) {
+  .split__pct[data-len="3"] { display: none; }
+}
+
+@container (max-width: 35.98px) {
+  .split__pct[data-len="4"] { display: none; }
+}
+
+.split__caption {
+  font: 400 11px/1.3 var(--font);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink2);
+  margin-top: 7px;
+}
+
+/* ---------- Where it went: the rail (spec §3, §4d) ---------- */
+
+.rail__top {
+  flex: none;
+}
+
+/* PICK END DAY plus the four presets measure ~231px against 227px of row,
+   in the mockup as here; it spills 4px into the rail's padding rather than
+   wrapping, so the calendar does not jump when a pick starts. Only in a
+   viewport too narrow to hold the row at all (240px: 360px at 150% zoom)
+   does it wrap. */
+.rail__status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  row-gap: 6px;
+  margin-bottom: 9px;
+  padding: 0 4px;
+}
+
+@media (max-width: 479.98px) {
+  .rail__status {
+    flex-wrap: wrap;
+  }
+}
+
+.rail__undo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: 600 10px/1 var(--font);
+  letter-spacing: .09em;
+  color: var(--brand);
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  flex: none;
+}
+
+.rail__undo:hover {
+  text-decoration: underline;
+}
+
+.rail__days {
+  font: 600 10.5px/1 var(--font);
+  letter-spacing: .1em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+
+.rail__spacer {
+  flex: 1 1 auto;
+}
+
+.presets {
+  display: flex;
+  gap: 4px;
+  flex: none;
+}
+
+.preset {
+  font: 600 9.5px/1 var(--font);
+  letter-spacing: .05em;
+  padding: 6px 5px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink2);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color var(--m-hover) var(--ease),
+              background-color var(--m-hover) var(--ease),
+              border-color var(--m-hover) var(--ease);
+}
+
+.preset:hover {
+  border-color: var(--ink2);
+  color: var(--ink);
+}
+
+.preset[data-active="1"],
+.preset[data-active="1"]:hover {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: var(--brandink);
+}
+
+.rail__dates {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px;
+  margin-bottom: 11px;
+}
+
+.rail__input {
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+}
+
+/* The revert hold (QUALITY-BAR §4): a timed class, not an animation, so it
+   is seen under prefers-reduced-motion too. */
+.rail__input--reverted,
+.rail__input--reverted:focus {
+  background: var(--warnbg);
+  border-color: var(--warn);
+}
+
+.rail__dash {
+  font: 600 12px/1 var(--font);
+  color: var(--ink2);
+  flex: none;
+}
+
+/* ---------- Where it went: the calendar (spec §4d) ---------- */
+
+.cal__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.cal {
+  padding: 0 4px;
+}
+
+/* The month column is 38px, not the mockup's 32: "May 26" at 600 10px with
+   its letter-spacing is 35px wide and was clipped. The seven day columns
+   give up under a pixel each. */
+.cal__head {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 6px;
+  margin-bottom: 7px;
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 4;
+  padding-bottom: 4px;
+}
+
+.cal__dow {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  font: 600 9.5px/1 var(--font);
+  color: var(--ink2);
+  text-align: center;
+}
+
+/* Room for a date chip above the first row and below the last. */
+.cal__list {
+  padding: 20px 0 24px;
+}
+
+.cal__band {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 6px;
+  align-items: start;
+  margin-bottom: 7px;
+}
+
+.cal__mon {
+  font: 600 10px/1 var(--font);
+  color: var(--ink2);
+  padding-top: 3px;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+
+.cal__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.cal__blank {
+  height: 17px;
+}
+
+.cal__cell {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 17px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.cal__cell[aria-disabled="true"] {
+  cursor: default;
+}
+
+/* Only colour and opacity move (QUALITY-BAR §3: heat 160ms, hover 80ms); the
+   corner marks and the ring never animate. */
+.cal__fill {
+  position: absolute;
+  inset: 0 1px 2px 1px;
+  border-radius: 1px;
+  background: var(--pale);
+  transition: background-color var(--m-chart) var(--ease),
+              opacity var(--m-chart) var(--ease);
+}
+
+.cal__fill--off {
+  background: transparent;
+  border: 1px dashed var(--line2);
+}
+
+.cal__fill--in {
+  background: var(--axis);
+}
+
+.cal__fill--heat-more {
+  background: var(--good);
+}
+
+.cal__fill--heat-less {
+  background: var(--warn);
+}
+
+.cal__fill--heat-keep {
+  background: var(--axis);
+}
+
+.cal__fill--hover {
+  background: var(--brand);
+  opacity: 1;
+  border: 0;
+  transition-duration: var(--m-hover);
+}
+
+.cal__num {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 600 9px/1 var(--font);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.01em;
+  pointer-events: none;
+  z-index: 2;
+  color: var(--ink);
+}
+
+.cal__num--hover {
+  color: var(--brandink);
+}
+
+.cal__mark {
+  position: absolute;
+  inset: -2px -1px 0 -1px;
+  pointer-events: none;
+}
+
+.cal__mark--start {
+  box-shadow: inset 3px 3px 0 0 var(--brand);
+}
+
+.cal__mark--end {
+  box-shadow: inset -3px -3px 0 0 var(--brand);
+}
+
+.cal__ring {
+  position: absolute;
+  inset: -3px -2px -1px -2px;
+  pointer-events: none;
+  border: 1.5px solid var(--brand);
+  border-radius: var(--radius-sm);
+  z-index: 3;
+}
+
+.cal__chip {
+  position: absolute;
+  font: 600 9.5px/1 var(--font);
+  white-space: nowrap;
+  background: var(--brand);
+  color: var(--brandink);
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.cal__chip--start {
+  bottom: 100%;
+  margin-bottom: 6px;
+}
+
+.cal__chip--end {
+  top: 100%;
+  margin-top: 5px;
+}
+
+.cal__chip--centre {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.cal__chip--left {
+  left: 0;
+}
+
+.cal__chip--right {
+  right: 0;
+}
+
+.cal__chip--dim {
+  opacity: .4;
+}
+
+/* ---------- Where it went: chart panel head ---------- */
+
+.went__panelhead {
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-bottom: 9px;
+}
+
+.went__caption {
+  margin-right: auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.went__note {
+  font: 400 11.5px/1 var(--font);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink2);
+}
+
+.went__ctl {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+/* The mockup's `data-seg` in the chart panel is smaller than the sheets'. */
+.seg--small {
+  gap: 4px;
+}
+
+.seg--small .seg__btn {
+  font: 600 11.5px/1 var(--font);
+  padding: 7px 11px;
+}
+
+.went__pctlabel {
+  text-align: right;
+  font: 600 9.5px/1 var(--font);
+  letter-spacing: .14em;
+  color: var(--ink2);
+  margin-bottom: 5px;
+}
+
+.went__empty {
+  padding: 40px 0 46px;
+  border-top: 1px solid var(--line);
+}
+
+.went__emptytitle {
+  font: 600 15px/1.4 var(--font);
+  color: var(--ink);
+}
+
+.went__emptynote {
+  font: 400 13px/1.5 var(--font);
+  color: var(--ink2);
+  margin-top: 6px;
+}
+
+/* ---------- Where it went: the ribbon (spec §4c) ---------- */
+
+/* Below ribbon.MIN_WIDTH the chart scrolls sideways inside its own panel,
+   the Log table's treatment (QUALITY-BAR §2). */
+.ribbon {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.ribbon__svg {
+  display: block;
+  overflow: visible;
+}
+
+.ribbon text {
+  font-family: var(--font);
+}
+
+.ribbon__flow--more,
+.ribbon__bar--more,
+.ribbon__trunk--more {
+  fill: var(--good);
+}
+
+.ribbon__flow--less,
+.ribbon__bar--less,
+.ribbon__trunk--less {
+  fill: var(--warn);
+}
+
+.ribbon__flow--keep,
+.ribbon__bar--keep,
+.ribbon__trunk--keep {
+  fill: var(--axis);
+}
+
+/* QUALITY-BAR §3: chart focus/dim animates opacity over 160ms, never size. */
+.ribbon__flow,
+.ribbon__bar,
+.ribbon__trunk,
+.ribbon__name,
+.ribbon__sub,
+.ribbon__pct,
+.ribbon__hours {
+  transition: fill-opacity var(--m-chart) var(--ease);
+}
+
+.ribbon__leader {
+  stroke: var(--line);
+  stroke-width: 1;
+  transition: stroke-opacity var(--m-chart) var(--ease);
+}
+
+.ribbon__band {
+  cursor: pointer;
+  outline: none;
+}
+
+.ribbon__band:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.ribbon__name {
+  font-size: 14.5px;
+  font-weight: 600;
+  fill: var(--ink);
+}
+
+.ribbon__sub {
+  font-size: 11px;
+  fill: var(--ink2);
+}
+
+.ribbon__pct {
+  font-variant-numeric: tabular-nums;
+}
+
+.ribbon__pctval {
+  font-size: 20px;
+  font-weight: 700;
+  fill: var(--ink);
+  letter-spacing: -.02em;
+}
+
+.ribbon__pctunit {
+  font-size: 11.5px;
+  font-weight: 600;
+  fill: var(--ink2);
+}
+
+.ribbon__hours {
+  font-size: 12px;
+  font-weight: 500;
+  fill: var(--ink2);
+  font-variant-numeric: tabular-nums;
+}
+
+.ribbon__labeltitle {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .14em;
+  fill: var(--ink2);
+}
+
+.ribbon__labeltotal {
+  font-size: 26px;
+  font-weight: 700;
+  fill: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Where it went: legend ---------- */
+
+.went__legend {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 14px var(--gutter) 26px;
+  flex-wrap: wrap;
+  font: 500 12px/1 var(--font);
+  color: var(--ink2);
+  border-top: 1px solid var(--line);
+}
+
+.legend__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend__swatch {
+  width: 13px;
+  height: 13px;
+  border-radius: var(--radius-sm);
+  flex: none;
+}
+
+.legend__swatch--more {
+  background: var(--good);
+}
+
+.legend__swatch--less {
+  background: var(--warn);
+}
+
+.legend__swatch--keep {
+  background: var(--axis);
+}
+
+.legend__hint {
+  color: var(--ink);
+  font-weight: 600;
+}

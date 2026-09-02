@@ -18,7 +18,10 @@
     arrow: 'M2 6 H9.5 M6.5 3 L9.5 6 L6.5 9',
     arrowleft: 'M10 6 H2.5 M5.5 3 L2.5 6 L5.5 9',
     download: 'M6 2 V8 M3.2 5.4 L6 8.2 L8.8 5.4 M2.2 10 H9.8',
-    upload: 'M6 8.4 V2.4 M3.2 5 L6 2.2 L8.8 5 M2.2 10 H9.8'
+    upload: 'M6 8.4 V2.4 M3.2 5 L6 2.2 L8.8 5 M2.2 10 H9.8',
+    /* ↩ for the range picker's UNDO (spec §6): a leftward arrow whose tail
+       curls back under it. */
+    undo: 'M2.6 4.6 H8.2 A2.4 2.4 0 0 1 8.2 9.4 H5.4 M5 2.2 L2.6 4.6 L5 7'
   };
 
   /* The three solid marks. Stroked paths cannot draw these: ▲ ▼ ▾ are filled

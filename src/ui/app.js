@@ -11,6 +11,7 @@
   var useEffect = preactHooks.useEffect;
   var dates = window.Meridian.dates;
   var aggregate = window.Meridian.aggregate;
+  var range = window.Meridian.range;
   var workbook = window.Meridian.workbook;
   var ui = window.Meridian.ui;
   var seed = window.MERIDIAN_SEED;
@@ -76,6 +77,15 @@
     var quickState = useState(function () {
       return Object.assign({}, ui.EMPTY_ENTRY_DRAFT);
     });
+    /* The Where-it-went view: range, pending pick, undo, split, sort, focus.
+       Here rather than in the screen for the same reason as the quick-add
+       draft: only the active screen is in the DOM, and a pick or an undo in
+       flight must survive a trip to Log and back. The range is the one
+       persisted piece (spec §1); it is read once here and written by every
+       landing, in the same click. */
+    var wentState = useState(function () {
+      return range.emptyView(range.fromStored(store.readRange()));
+    });
 
     var data = stateHolder[0], setData = stateHolder[1];
     var screen = screenState[0], setScreen = screenState[1];
@@ -87,6 +97,7 @@
     var day = dayState[0], setDay = dayState[1];
     var stack = stackState[0], setStack = stackState[1];
     var quick = quickState[0], setQuick = quickState[1];
+    var went = wentState[0], setWent = wentState[1];
 
     var firstRun = data === null;
 
@@ -231,6 +242,68 @@
       });
     }
 
+    /* ---------- Where it went ----------
+       The stored range is clamped against the live dataset on every render
+       (rule §8.15): deleting the earliest entries on Log moves the first day
+       with no reload in between. Every change is a range.js transition; only a
+       landing writes meridian:range — the first click of a pick does not. */
+
+    var wentBounds = range.bounds(data ? data.entries : [], todayKey);
+    var wentRange = range.clamp(
+      went.range || range.defaultRange(todayKey, wentBounds.minDay),
+      wentBounds.minDay, todayKey);
+    var wentView = Object.assign({}, went, { range: wentRange });
+
+    function wentOpts() {
+      return {
+        today: todayKey,
+        minDay: wentBounds.minDay,
+        nodeIds: function (r) {
+          var selected = aggregate.inRange(data.entries, r.start, r.end);
+          return aggregate.chartNodes(selected, data.categories, data.goals, went.split, went.sort)
+            .map(function (n) { return n.id; });
+        }
+      };
+    }
+
+    function landWent(next) {
+      setWent(next);
+      if (!next.pending) store.writeRange(range.toStored(next.range));
+    }
+
+    var wentActions = {
+      pick: function (day) {
+        var next = range.pick(wentView, day, wentOpts());
+        if (next !== wentView) landWent(next);
+      },
+      abort: function () { setWent(range.abort(wentView)); },
+      undo: function () { landWent(range.undo(wentView, wentOpts())); },
+      preset: function (id) { landWent(range.preset(wentView, id, wentOpts())); },
+      typed: function (which, text) {
+        var out = range.commitTyped(wentView, which, text, wentOpts());
+        if (!out) return null;
+        landWent(out.view);
+        return out.day;
+      },
+      split: function (id) { setWent(range.setSplit(wentView, id)); },
+      sort: function (id) { setWent(range.setSort(wentView, id)); },
+      focus: function (id) { setWent(range.toggleFocus(wentView, id)); }
+    };
+
+    /* The six-second undo (spec §3). Keyed on the undo payload, so a fresh
+       landing restarts the clock and an unchanged one, which clears the
+       payload, stops it. */
+    useEffect(function () {
+      if (!went.undo) return undefined;
+      var armed = went.undo;
+      var timer = setTimeout(function () {
+        setWent(function (prev) {
+          return prev.undo === armed ? Object.assign({}, prev, { undo: null }) : prev;
+        });
+      }, range.UNDO_MS);
+      return function () { clearTimeout(timer); };
+    }, [went.undo]);
+
     /* ---------- the sheet stack ----------
        push/pop rather than one id, because the New category sheet opens over
        Manage and has to close back to it (the mockup's `data-open="back"`). */
@@ -301,8 +374,8 @@
     var exportInfo = data ? data.exportInfo : null;
     var dataLabel = ui.format.exportLabel(exportInfo, tick);
 
-    /* Phase 2 gives Log a real screen; the other five are still the designed
-       empty state, and both take the same cross-fade classes.
+    /* Log and Where it went are real screens; the other four are still the
+       designed empty state, and all take the same cross-fade classes.
 
        A plain function, not a component: a component declared inside App would
        be a new function identity on every render, so Preact would tear the
@@ -324,6 +397,16 @@
             onEditEntry=${function (entry) { pushSheet({ kind: 'entry', entry: entry }); }}
             onDeleteEntry=${function (id2) { store.deleteEntry(id2); }}
             onManage=${function () { pushSheet({ kind: 'manage' }); }} />`;
+      }
+
+      /* With no entries at all there is no range to pick, so the screen is
+         its designed empty state; a range with no entries in it is the
+         screen's own empty panel (spec §12). */
+      if (id === 'went' && (data.entries || []).length) {
+        return html`
+          <${ui.Went} key=${key} className=${className} state=${data}
+            today=${todayKey} minDay=${wentBounds.minDay}
+            view=${wentView} actions=${wentActions} />`;
       }
 
       return html`

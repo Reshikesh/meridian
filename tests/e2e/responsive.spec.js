@@ -3,6 +3,7 @@ const { test, expect } = require('@playwright/test');
 const { APP_URL } = require('./lib/app-url');
 const { auditInPage, formatAudit } = require('./lib/audit');
 const { installState } = require('./lib/seed-state');
+const { transientStates } = require('./lib/states');
 
 // QUALITY-BAR §2 mandates 360 / 768 / 1024 / 1280 / 1440 / 1920. Each also
 // appears minus a 15 px classic scrollbar, because headed Edge on Windows
@@ -30,6 +31,11 @@ const MIN_LEAVES = 14;
 // browser to UTC, and page.clock takes an ABSOLUTE instant — a bare
 // 'YYYY-MM-DDTHH:mm:ss' would be parsed in Node's timezone, so always pass ...Z.
 const FROZEN = new Date('2026-06-07T12:00:00Z');
+
+// Six screens plus fifteen audited states, two of which reload the page, is
+// about a minute of work per test on the owner's machine — well past the
+// default 30 s. This is a cap against a hang, not a budget.
+test.describe.configure({ timeout: 180000 });
 
 for (const width of WIDTHS) {
   test.describe(`${width}px`, () => {
@@ -87,92 +93,9 @@ for (const width of WIDTHS) {
             await page.screenshot({ path: file, fullPage: true, animations: 'disabled' });
           }
         }
-        // QUALITY-BAR §2 says "every screen AND sheet open". Every sheet AND every
-        // state that only exists after a click — a row menu, an inline confirm,
-        // a row editor — is opened here, one after another, at every width and
-        // theme. The transient ones are in this list because the row-menu defect
-        // the owner found at the Phase 2 checkpoint lived in exactly the gap
-        // between "audited every screen" and "audited every state".
-        const esc = async () => page.keyboard.press('Escape');
-        const openLog = async () => page.click('[data-nav="log"]');
-        const openManage = async () => { await openLog(); await page.click('.btn--quiet'); };
-
-        const STATES = [
-          {
-            id: 'sheet-data',
-            open: () => page.click('[data-data-open]'),
-            ready: '.sheet__card',
-            close: esc,
-          },
-          {
-            id: 'sheet-entry',
-            open: async () => {
-              await openLog();
-              await page.click('.quickadd__open');
-              // The tallest state of the sheet: a goal picked, so the category
-              // is locked and the projection panel is on screen.
-              await page.locator('.seg').first().getByText('2 h', { exact: true }).click();
-              await page.locator('.seg').nth(1).getByText('Learn Python').click();
-            },
-            ready: '.sheet__card',
-            close: esc,
-          },
-          {
-            id: 'sheet-manage',
-            open: openManage,
-            ready: '.sheet--wide .sheet__card',
-            close: esc,
-          },
-          {
-            id: 'sheet-manage-editing',
-            open: async () => {
-              await openManage();
-              await page.locator('.manage__rowwrap').first()
-                .getByRole('button', { name: 'edit' }).click();
-            },
-            ready: '.manage__editor',
-            close: esc,
-          },
-          {
-            id: 'sheet-manage-confirm',
-            open: async () => {
-              await openManage();
-              await page.locator('.manage__rowwrap').first()
-                .getByRole('button', { name: 'archive' }).click();
-            },
-            ready: '.confirm--row',
-            close: esc,
-          },
-          {
-            id: 'sheet-category',
-            open: async () => {
-              await openManage();
-              await page.click('.sheet__tools .btn--brand');
-            },
-            ready: '.sheet--stacked .sheet__card',
-            // Two sheets deep, so two Escapes.
-            close: async () => { await esc(); await esc(); },
-          },
-          {
-            id: 'rowmenu-last',
-            open: async () => {
-              await openLog();
-              await page.locator('.logrow--entry').last().locator('.rowmenu__btn').click();
-            },
-            ready: '.rowmenu__panel',
-            close: esc,
-          },
-          {
-            id: 'rowmenu-confirm',
-            open: async () => {
-              await openLog();
-              await page.locator('.logrow--entry').last().locator('.rowmenu__btn').click();
-              await page.click('.rowmenu__item--warn');
-            },
-            ready: '.confirm--menu',
-            close: esc,
-          },
-        ];
+        // Every sheet and every state that only exists after a click, from
+        // lib/states.js, shared with zoom.spec.js.
+        const STATES = transientStates(page);
 
         for (const state of STATES) {
           await state.open();

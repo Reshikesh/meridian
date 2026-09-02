@@ -107,7 +107,7 @@
     var roving = useRoving(ids, props.value, props.onChange);
 
     return html`
-      <div class="seg" role="radiogroup" ref=${roving.ref}
+      <div class=${'seg' + (props.className ? ' ' + props.className : '')} role="radiogroup" ref=${roving.ref}
         aria-labelledby=${props.labelledBy || null} aria-label=${props.label || null}
         onKeyDown=${roving.onKeyDown}>
         ${options.map(function (o, i) {

@@ -2,6 +2,7 @@ const { test, expect } = require('@playwright/test');
 const { APP_URL } = require('./lib/app-url');
 const { auditInPage, formatAudit } = require('./lib/audit');
 const { installState } = require('./lib/seed-state');
+const { transientStates } = require('./lib/states');
 
 /* QUALITY-BAR §2 requires no horizontal scrollbar, no overlap and no clipped
    text "at every width from 360 px to 2560 px, AND at browser zoom 90 %, 100 %,
@@ -20,6 +21,9 @@ const SCREENS = ['log', 'went', 'progress', 'goals', 'plan', 'lessons'];
 
 const FROZEN = new Date('2026-06-07T12:00:00Z');
 const MIN_LEAVES = 14;
+
+// See responsive.spec.js: the same walk, so the same cap.
+test.describe.configure({ timeout: 180000 });
 
 for (const zoom of ZOOMS) {
   for (const width of WIDTHS) {
@@ -50,6 +54,22 @@ for (const zoom of ZOOMS) {
               `${css}css/${theme}/${screen}: audit saw only ${res.counts.leaves} leaves`)
               .toBeGreaterThanOrEqual(MIN_LEAVES);
             failures.push(...formatAudit(res, `${width}@${zoom}/${theme}/${screen}`));
+          }
+
+          // The same transient states as the width matrix (lib/states.js):
+          // a row that fits at 100% can still overflow at 150%.
+          for (const state of transientStates(page)) {
+            await state.open();
+            await expect(page.locator(state.ready).last()).toBeVisible();
+            await page.waitForFunction(
+              () => document.getAnimations().every((a) => a.playState === 'finished'));
+            const res = await page.evaluate(auditInPage);
+            expect(res.counts.leaves,
+              `${css}css/${theme}/${state.id}: audit saw only ${res.counts.leaves} leaves`)
+              .toBeGreaterThanOrEqual(MIN_LEAVES);
+            failures.push(...formatAudit(res, `${width}@${zoom}/${theme}/${state.id}`));
+            await state.close();
+            await expect(page.locator(state.ready)).toHaveCount(0);
           }
 
           expect(failures, failures.join('\n')).toEqual([]);

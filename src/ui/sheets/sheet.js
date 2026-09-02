@@ -144,4 +144,8 @@
   }
 
   ui.Sheet = Sheet;
+
+  /* Whether any sheet is open. The Where-it-went screen's Escape (which
+     aborts a pick) defers to a sheet's own Escape while one is up. */
+  ui.sheetOpen = function () { return OPEN.length > 0; };
 })();
