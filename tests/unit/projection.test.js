@@ -252,3 +252,136 @@ test('the analysis range is clamped to [first data day, today] (rule §8.15)', a
     assert.deepEqual(r, { start: TODAY, end: TODAY });
   });
 });
+
+/* ---------- the Goals screen (spec §4h, §6, §12) ---------- */
+
+test('goalRows is one projection per goal, live first and archived after', async (t) => {
+  function two() {
+    const state = stateWith(daily(14, 60));
+    state.goals.push({
+      id: 'goal_run', short_name: 'Half-marathon training', category_id: 'cat_learn',
+      target_amount: 60, target_unit: 'h', by_date: '2026-10-31', archived: false,
+    });
+    return state;
+  }
+
+  await t.test('every goal gets a row, carrying the category that feeds it', () => {
+    const rows = projection.goalRows(two(), NOW);
+    assert.deepEqual(rows.map((r) => r.goal.id), ['goal_py', 'goal_run']);
+    assert.equal(rows[0].category.name, 'Learning');
+    assert.equal(rows[0].banked, 14);
+    assert.equal(rows[1].banked, 0, 'nothing is logged to the second goal');
+  });
+
+  await t.test('an archived goal keeps its row, at the end', () => {
+    const state = two();
+    state.goals[0].archived = true;
+    const rows = projection.goalRows(state, NOW);
+    assert.deepEqual(rows.map((r) => r.goal.id), ['goal_run', 'goal_py']);
+    assert.equal(rows[1].banked, 14, 'archiving keeps every hour (rule §8.10)');
+  });
+
+  await t.test('no goals is no rows, not a throw', () => {
+    assert.deepEqual(projection.goalRows({ goals: [], entries: [] }, NOW), []);
+  });
+});
+
+test('goalCounts drives the headline (spec §6)', async (t) => {
+  await t.test('a goal landing past its date is slipping', () => {
+    // 14 h banked at 7 h a week, 116 left, against a date three weeks out.
+    const state = stateWith(daily(14, 60), { by_date: dates.dayKey(dates.addDays(TODAY, 21)) });
+    assert.deepEqual(projection.goalCounts(state, NOW), { open: 1, slipping: 1, archived: 0 });
+  });
+
+  await t.test('a goal landing before its date is not', () => {
+    const state = stateWith(daily(14, 60), { target_amount: 21, by_date: '2026-07-31' });
+    assert.deepEqual(projection.goalCounts(state, NOW), { open: 1, slipping: 0, archived: 0 });
+  });
+
+  await t.test('too little history to project counts as open and nothing more', () => {
+    const state = stateWith(daily(3, 60), { by_date: dates.dayKey(dates.addDays(TODAY, 1)) });
+    assert.deepEqual(projection.goalCounts(state, NOW), { open: 1, slipping: 0, archived: 0 });
+  });
+
+  await t.test('archived goals are counted apart, and never slip', () => {
+    const state = stateWith(daily(14, 60), { archived: true });
+    assert.deepEqual(projection.goalCounts(state, NOW), { open: 0, slipping: 0, archived: 1 });
+  });
+
+  await t.test('an empty dataset is three zeroes', () => {
+    assert.deepEqual(projection.goalCounts({ goals: [], entries: [] }, NOW),
+      { open: 0, slipping: 0, archived: 0 });
+  });
+});
+
+test('reachability answers the New goal sheet from the feeding category', async (t) => {
+  const draft = { category_id: 'cat_learn', target_amount: 130, by_date: '2026-09-30' };
+
+  await t.test('the pace quoted is the category’s, not the goal’s', () => {
+    /* The entries below are logged to a DIFFERENT goal in the same category.
+       A goal being created has no history of its own, so the sentence "You've
+       given Learning 7.0 h a week" can only mean the category. */
+    const state = stateWith(daily(14, 60), { id: 'goal_other' });
+    const r = projection.reachability(state, draft, NOW);
+    assert.equal(r.hasHistory, true);
+    assert.equal(r.pace, 7);
+    assert.equal(r.paceBlocks, 2);
+    assert.equal(r.banked, 0, 'a goal that does not exist yet has banked nothing');
+    assert.equal(r.required, 7.91, '130 h over the 115 days to 30 September');
+    assert.equal(dates.dayKey(r.landing), '2026-10-15');
+  });
+
+  await t.test('with fewer than seven logged days there is no pace to quote', () => {
+    const state = stateWith(daily(6, 60), { id: 'goal_other' });
+    const r = projection.reachability(state, draft, NOW);
+    assert.equal(r.hasHistory, false);
+    assert.equal(r.loggedDays, 6);
+    assert.equal(r.pace, 0);
+    assert.equal(r.landing, null, 'never a date from a pace that is not there');
+    assert.equal(r.required, 7.91, 'what the date asks for is still knowable');
+  });
+
+  await t.test('editing an existing goal counts what it has already banked', () => {
+    const state = stateWith(daily(14, 60));
+    const r = projection.reachability(state, Object.assign({ id: 'goal_py' }, draft), NOW);
+    assert.equal(r.banked, 14);
+    assert.equal(r.remaining, 116);
+    assert.equal(r.required, 7.06, 'the remainder over the weeks left, not the whole target');
+  });
+
+  await t.test('a target already banked asks for nothing more', () => {
+    const state = stateWith(daily(14, 60));
+    const r = projection.reachability(state,
+      { id: 'goal_py', category_id: 'cat_learn', target_amount: 10, by_date: '2026-09-30' }, NOW);
+    assert.equal(r.done, true);
+    assert.equal(r.remaining, 0);
+    assert.equal(r.required, null);
+    assert.equal(r.landing, null);
+  });
+
+  await t.test('a date already gone gives no required rate', () => {
+    const state = stateWith(daily(14, 60), { id: 'goal_other' });
+    const r = projection.reachability(state,
+      Object.assign({}, draft, { by_date: '2026-01-01' }), NOW);
+    assert.equal(r.daysLeft < 0, true);
+    assert.equal(r.required, null, 'never a negative rate per week');
+    assert.ok(r.landing, 'the pace still lands somewhere');
+  });
+
+  await t.test('an unreadable date is simply an unknown one', () => {
+    const state = stateWith(daily(14, 60), { id: 'goal_other' });
+    const r = projection.reachability(state,
+      Object.assign({}, draft, { by_date: 'nonsense' }), NOW);
+    assert.equal(r.byDate, null);
+    assert.equal(r.required, null);
+  });
+
+  await t.test('no category picked yet is answerable without throwing', () => {
+    const state = stateWith(daily(14, 60), { id: 'goal_other' });
+    const r = projection.reachability(state, { category_id: null, target_amount: '', by_date: '' }, NOW);
+    assert.equal(r.category, null);
+    assert.equal(r.hasHistory, false);
+    assert.equal(r.pace, 0);
+    assert.equal(r.required, null);
+  });
+});

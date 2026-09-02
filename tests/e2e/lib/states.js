@@ -9,13 +9,17 @@
 // Shared by responsive.spec.js (the width axis) and zoom.spec.js (the zoom
 // axis) so the two can never drift apart.
 
-const { DATA_KEY, demoState } = require('./seed-state');
-const { gappedState } = require('./datasets');
+const { DATA_KEY, demoState, emptyState } = require('./seed-state');
+const { gappedState, stressState } = require('./datasets');
 
 function transientStates(page) {
   const esc = async () => page.keyboard.press('Escape');
   const openLog = async () => page.click('[data-nav="log"]');
   const openManage = async () => { await openLog(); await page.click('.btn--quiet'); };
+  const openGoals = async () => {
+    await page.click('[data-nav="goals"]');
+    await page.locator('main.screen[data-s="goals"] .goaltable').waitFor();
+  };
   const openWent = async () => {
     await page.click('[data-nav="went"]');
     await page.locator('main.screen[data-s="went"]').waitFor();
@@ -211,6 +215,93 @@ function transientStates(page) {
         }
       },
       ready: '.went__empty',
+      close: async () => { await loadState(demoState()); },
+    },
+
+    // ---------- Goals (Phase 4) ----------
+    {
+      // The New goal sheet at its tallest: everything filled, so IS THAT
+      // REACHABLE carries both of its lines rather than the waiting one.
+      id: 'sheet-goal',
+      open: async () => {
+        await openGoals();
+        await page.click('[data-goal-new]');
+        await page.locator('.sheet__card').waitFor();
+        await page.locator('.fld--identity').fill('someone who can build their own tools');
+        await page.locator('.fld--goalname').fill('Learn Postgres');
+        await page.locator('.select--sheet select').selectOption({ label: 'Learning' });
+        await page.locator('.fld--goalnum').first().fill('130');
+        await page.locator('.fld--goalnum').last().fill('30 Sep 2026');
+      },
+      ready: '.reach__tail',
+      close: esc,
+    },
+    {
+      // The same sheet as the editor, prefilled from a goal that exists.
+      id: 'sheet-goal-edit',
+      open: async () => {
+        await openGoals();
+        await page.locator('.goalrow__label').first().click();
+      },
+      ready: '.sheet__card:has-text("EDIT GOAL")',
+      close: esc,
+    },
+    {
+      // The row menu on the last goal, and then its archive confirm — the two
+      // states that escape the table's own scroller.
+      id: 'goals-rowmenu',
+      open: async () => {
+        await openGoals();
+        await page.locator('.goalrow .rowmenu__btn').last().click();
+      },
+      ready: '.rowmenu__panel',
+      close: esc,
+    },
+    {
+      id: 'goals-confirm',
+      open: async () => {
+        await openGoals();
+        await page.locator('.goalrow .rowmenu__btn').last().click();
+        await page.getByRole('menuitem', { name: 'Archive' }).click();
+      },
+      ready: '.confirm--menu',
+      close: esc,
+    },
+    {
+      // An archived goal's muted row, under the ghost row.
+      id: 'goals-archived',
+      open: async () => {
+        await openGoals();
+        await page.locator('.goalrow .rowmenu__btn').last().click();
+        await page.getByRole('menuitem', { name: 'Archive' }).click();
+        await page.click('.confirm--menu .btn--warn');
+      },
+      ready: '.goals__archived .goalrow',
+      close: async () => {
+        await page.locator('.goals__archived').getByRole('button', { name: 'restore' }).click();
+        await page.locator('.goals__archived').waitFor({ state: 'detached' });
+      },
+    },
+    {
+      // QUALITY-BAR §2's long content, on the grid most likely to break under
+      // it: twelve goals with thirty-character names, all landing on one date.
+      id: 'goals-long',
+      open: async () => {
+        await loadState(stressState());
+        await openGoals();
+      },
+      ready: '.goaltable__rows > .goalrow',
+      close: async () => { await loadState(demoState()); },
+    },
+    {
+      // No goals at all: the head, the ghost row and the footer, and nothing
+      // else (spec §12).
+      id: 'goals-empty',
+      open: async () => {
+        await loadState(emptyState());
+        await openGoals();
+      },
+      ready: '.goalrow--ghost',
       close: async () => { await loadState(demoState()); },
     },
   ];

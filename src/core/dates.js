@@ -234,16 +234,21 @@
 
   /* A year the caller did not type. The mockup hard-codes its rule to its own
      2026 horizon; generalised here: the current year, unless that lands in the
-     future, in which case the year before. */
-  function withYear(day, mon, yearText, today) {
+     future, in which case the year before.
+
+     `future` turns the rule round, for a field that can only mean a date ahead
+     — the goal sheet's BY. There, `30 Sep` typed in October means next year's
+     September, and the backward rule would answer with a date already gone. */
+  function withYear(day, mon, yearText, today, future) {
     if (yearText != null && yearText !== '') {
       var y = +yearText;
       return makeDay(y < 100 ? 2000 + y : y, mon, day);
     }
     if (!today) return null;
     var here = makeDay(today.getFullYear(), mon, day);
-    if (here && here > today) return makeDay(today.getFullYear() - 1, mon, day);
-    return here;
+    if (!here) return null;
+    if (future) return here < today ? makeDay(today.getFullYear() + 1, mon, day) : here;
+    return here > today ? makeDay(today.getFullYear() - 1, mon, day) : here;
   }
 
   /* spec §3: parse what the owner types into a date field.
@@ -251,12 +256,15 @@
      Forms, in the order they are tried: ISO `Y-M-D`; `7 Jun [2026]`; `Jun 7`;
      day-first numeric `D/M[/Y]` with `/`, `.` or `-` between the parts — so
      `7/6` is 7 June, business rule §8.16.
-     Anything else returns null and the caller silently reverts the field. */
+     Anything else returns null and the caller silently reverts the field.
+
+     `opts.future` resolves a missing year forwards instead of back (withYear). */
   function parseUserDate(text, opts) {
     if (typeof text !== 'string') return null;
     var s = text.trim().replace(/\s+/g, ' ');
     if (!s) return null;
     var today = (opts && opts.today && toDate(opts.today)) || null;
+    var future = !!(opts && opts.future);
     var m;
 
     m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(s);
@@ -265,17 +273,17 @@
     m = /^(\d{1,2})[ -]([A-Za-z]{3,9})\.?(?:[ ,-]+(\d{2}|\d{4}))?$/.exec(s);
     if (m) {
       var mo = monthIndex(m[2]);
-      return mo ? withYear(+m[1], mo, m[3], today) : null;
+      return mo ? withYear(+m[1], mo, m[3], today, future) : null;
     }
 
     m = /^([A-Za-z]{3,9})\.? ?(\d{1,2})(?:[ ,]+(\d{2}|\d{4}))?$/.exec(s);
     if (m) {
       var mo2 = monthIndex(m[1]);
-      return mo2 ? withYear(+m[2], mo2, m[3], today) : null;
+      return mo2 ? withYear(+m[2], mo2, m[3], today, future) : null;
     }
 
     m = /^(\d{1,2})[/.-](\d{1,2})(?:[/.-](\d{2}|\d{4}))?$/.exec(s);
-    if (m) return withYear(+m[1], +m[2], m[3], today);
+    if (m) return withYear(+m[1], +m[2], m[3], today, future);
 
     return null;
   }

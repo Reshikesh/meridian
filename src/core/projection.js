@@ -207,6 +207,114 @@
     return project(next, goalId, now);
   }
 
+  /* ---------- the Goals screen (spec §4h, §6, §12) ---------- */
+
+  function categoryOf(state, categoryId) {
+    var list = state.categories || [];
+    for (var i = 0; i < list.length; i++) if (list[i].id === categoryId) return list[i];
+    return null;
+  }
+
+  /* One projection per goal, live first and archived after, each row carrying
+     the category that feeds it. The screen does no arithmetic of its own: the
+     table and the entry sheet's SAVING THIS MOVES read the same `project()`,
+     so two clicks apart they cannot disagree.
+
+     Within each half the order is the state's own, which workbook.canonical
+     fixes, so a row never moves because something else was edited. */
+  function goalRows(state, now) {
+    var live = [];
+    var archived = [];
+    (state.goals || []).forEach(function (g) {
+      var row = project(state, g.id, now);
+      if (!row) return;
+      row.category = categoryOf(state, g.category_id);
+      (g.archived ? archived : live).push(row);
+    });
+    return live.concat(archived);
+  }
+
+  /* The headline's "Three open. One slipping." (spec §6). Slipping is a live
+     goal whose landing falls after the date it was given; a goal with too
+     little history to project is neither slipping nor on time, so it counts as
+     open and nothing more. */
+  function goalCounts(state, now) {
+    var open = 0, slipping = 0, archived = 0;
+    goalRows(state, now).forEach(function (row) {
+      if (row.goal.archived) { archived++; return; }
+      open++;
+      if (row.slippageDays !== null && row.slippageDays > 0) slipping++;
+    });
+    return { open: open, slipping: slipping, archived: archived };
+  }
+
+  /* The New goal sheet's IS THAT REACHABLE (spec §6):
+
+       "You've given Learning 7.0 h a week for 11 weeks. This needs 10.0 h."
+       "At 7.0 h it lands 14 Oct. Meridian will keep both dates in view
+        instead of just the one you typed."
+
+     The pace quoted is the FEEDING CATEGORY's, not the goal's — that is what
+     the copy says, and a goal being created has no history of its own to
+     quote. `banked` is zero for a new goal and the goal's own hours when an
+     existing one is being edited, so the sentence stays true after two weeks
+     of logging rather than restating the untouched target.
+
+     Takes a draft rather than a saved goal, so the panel answers while the
+     owner is still typing. */
+  function reachability(state, draft, now) {
+    var todayKey = dates.dayKey(dates.logicalDay(now));
+    var categoryId = draft && draft.category_id;
+    var category = categoryOf(state, categoryId);
+
+    var entries = state.entries || [];
+    var subject = categoryId ? byCategory(entries, categoryId) : [];
+    var loggedDays = aggregate.distinctDays(subject);
+    var hasHistory = loggedDays >= MIN_LOGGED_DAYS;
+
+    var p = pace(subject, todayKey);
+    var rate = hasHistory ? p.pace : 0;
+
+    var banked = draft && draft.id
+      ? aggregate.hours(aggregate.sumMinutes(byGoal(entries, draft.id)))
+      : 0;
+    var target = Number(draft && draft.target_amount) || 0;
+    var remaining = Math.max(0, Math.round((target - banked) * 100) / 100);
+    var done = target > 0 && banked >= target;
+
+    var byDate = dates.parseDayKey(draft && draft.by_date);
+    var daysLeft = byDate ? dates.diffDays(todayKey, byDate) : null;
+
+    var required = null;
+    if (!done && byDate && daysLeft > 0) {
+      required = Math.round(remaining / (daysLeft / DAYS_PER_WEEK) * 100) / 100;
+    }
+
+    /* The same arithmetic as project(), on the category's pace: the date the
+       goal lands if the category keeps doing what it has been doing. */
+    var landing = null;
+    if (!done && rate > 0) {
+      var exactDays = Math.round(remaining / rate * DAYS_PER_WEEK * 1e6) / 1e6;
+      landing = dates.addDays(todayKey, Math.ceil(exactDays));
+    }
+
+    return {
+      category: category,
+      hasHistory: hasHistory,
+      loggedDays: loggedDays,
+      pace: rate,
+      paceBlocks: hasHistory ? p.blocks : 0,
+      banked: banked,
+      target: target,
+      remaining: remaining,
+      done: done,
+      byDate: byDate,
+      daysLeft: daysLeft,
+      required: required,
+      landing: landing
+    };
+  }
+
   /* Business rule §8.15: the analysis range is clamped to [first data day,
      today] and future days are never selectable. The rule itself lives in
      range.js since Phase 3 built the calendar; this is the same rule with the
@@ -225,6 +333,9 @@
     weeksRunning: weeksRunning,
     project: project,
     projectWithDelta: projectWithDelta,
+    goalRows: goalRows,
+    goalCounts: goalCounts,
+    reachability: reachability,
     clampRange: clampRange
   };
 });

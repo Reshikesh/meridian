@@ -205,6 +205,21 @@ test('typed dates parse the way the mockup parses them (spec §3)', async (t) =>
   await t.test('without a today, a yearless date cannot be resolved', () => {
     assert.equal(dates.parseUserDate('7 Jun', {}), null);
   });
+
+  /* The goal sheet's BY can only mean a date ahead, so a missing year is
+     resolved forwards there — the same rule turned round. */
+  await t.test('`future` resolves a missing year forwards, not back', () => {
+    const f = (s) => {
+      const d = dates.parseUserDate(s, { today, future: true });
+      return d ? dates.dayKey(d) : null;
+    };
+    assert.equal(f('30 Sep'), '2026-09-30', 'later this year');
+    assert.equal(f('30/9'), '2026-09-30');
+    assert.equal(f('1 Jan'), '2027-01-01', 'already gone this year, so next year');
+    assert.equal(f('7 Jun'), '2026-06-07', 'today itself is not moved a year on');
+    assert.equal(f('30 Sep 2025'), '2025-09-30', 'a typed year still wins');
+    assert.equal(f('31 Feb'), null, 'nonsense stays nonsense');
+  });
 });
 
 test('display formats match the mockup (spec §6)', () => {

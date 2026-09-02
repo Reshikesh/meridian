@@ -343,6 +343,14 @@
       popSheet();
     }
 
+    /* ---------- goals ---------- */
+
+    function saveGoal(sheetState, input) {
+      if (sheetState.goal) store.updateGoal(sheetState.goal.id, input);
+      else store.addGoal(input);
+      popSheet();
+    }
+
     var stackNodes = stack.map(function (item, i) {
       var key = item.kind + ':' + i;
 
@@ -363,6 +371,14 @@
             onRestore=${function (id) { store.restoreCategory(id); }}
             onDelete=${function (id) { store.deleteCategory(id); }}
             onClose=${clearStack} />`;
+      }
+
+      if (item.kind === 'goal') {
+        return html`
+          <${ui.GoalSheet} key=${key} state=${data} now=${tick}
+            goal=${item.goal || null}
+            onSave=${function (input) { saveGoal(item, input); }}
+            onClose=${popSheet} />`;
       }
 
       return html`
@@ -403,6 +419,18 @@
             onEditEntry=${function (entry) { pushSheet({ kind: 'entry', entry: entry }); }}
             onDeleteEntry=${function (id2) { store.deleteEntry(id2); }}
             onManage=${function () { pushSheet({ kind: 'manage' }); }} />`;
+      }
+
+      /* Spec §12: with no goals the screen is still the screen — the head, the
+         table and the ghost row that says how one gets filled — so it never
+         falls through to the shared empty state. */
+      if (id === 'goals') {
+        return html`
+          <${ui.Goals} key=${key} className=${className} state=${data} now=${tick}
+            onNew=${function () { pushSheet({ kind: 'goal' }); }}
+            onEdit=${function (goal) { pushSheet({ kind: 'goal', goal: goal }); }}
+            onArchive=${function (id2) { store.archiveGoal(id2); }}
+            onRestore=${function (id2) { store.restoreGoal(id2); }} />`;
       }
 
       /* With no entries at all there is no range to pick, so the screen is

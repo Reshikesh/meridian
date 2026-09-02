@@ -494,7 +494,8 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .catgrid {
+  .catgrid,
+  .goalgrid {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -569,5 +570,248 @@
   .rail__top,
   .cal {
     max-width: 340px;
+  }
+}
+
+/* ---------- Goals (spec §4h, §6, deck-04-goals.png) ----------
+   The mockup's five columns at their mockup widths, plus a sixth 40px track
+   for the `…` menu — the Log table's own ending, and where BUILD-PLAN puts
+   archiving a goal. Below the min-width the table scrolls inside its own
+   container, as the Log's does (QUALITY-BAR §2). */
+
+.goals__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-8);
+  padding: var(--sp-11) var(--gutter) var(--sp-8);
+  flex-wrap: wrap;
+}
+
+.goals__title {
+  min-width: 0;
+}
+
+.goals__title .t-eyebrow {
+  margin-bottom: var(--sp-4);
+}
+
+.goals__slipping {
+  color: var(--warn);
+}
+
+.goaltable__scroll {
+  overflow-x: auto;
+}
+
+.goalrow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 96px 118px minmax(0, 1fr) 118px 40px;
+  gap: var(--sp-5);
+  align-items: center;
+  /* Two 1fr tracks at 129px each below this; the fixed four and the five gaps
+     take the rest. Narrower than that and the container scrolls. */
+  min-width: 700px;
+}
+
+.goaltable__head {
+  padding: var(--sp-4) var(--gutter);
+  border-bottom: 1px solid var(--line);
+  min-width: 756px;                       /* 700 + the two gutters */
+}
+
+.goaltable__right {
+  text-align: right;
+}
+
+.goaltable__rows {
+  padding: 0 var(--gutter);
+  min-width: 756px;
+}
+
+.goaltable__rows > .goalrow,
+.goals__archived .goalrow {
+  padding: var(--sp-7) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+/* ---------- one row ---------- */
+
+.goalrow__name {
+  min-width: 0;
+}
+
+/* The mockup's `data-fld` dashed underline on the goal's name, with the editor
+   the mockup never had behind it — the Log's activity cell, same treatment.
+   TARGET and BY carry the same underline in the mockup and deliberately do not
+   here: they are edited in the sheet, and a dashed promise with nothing behind
+   it is the defect spec Appendix A names. */
+.goalrow__label {
+  display: block;
+  width: 100%;
+  font: 600 17px/1.2 var(--font);
+  color: var(--ink);
+  text-align: left;
+  border: 0;
+  border-bottom: 1px dashed var(--line);
+  background: transparent;
+  padding: 2px 0;
+  cursor: text;
+  overflow-wrap: anywhere;
+  transition: border-color var(--m-hover) var(--ease);
+}
+
+.goalrow__label:hover {
+  border-bottom-color: var(--brand);
+}
+
+.goalrow__label--flat {
+  cursor: default;
+  border-bottom-color: transparent;
+}
+
+.goalrow__identity {
+  font: 400 12px/1.4 var(--font);
+  color: var(--ink2);
+  margin-top: 5px;
+  text-wrap: pretty;
+}
+
+.goalrow__target,
+.goalrow__by {
+  font: 500 14px/1.2 var(--font);
+  font-variant-numeric: tabular-nums;
+}
+
+.goalrow__progress {
+  min-width: 0;
+}
+
+/* spec §4h: 7px --pale track, --brand fill = progress fraction. */
+.goalbar {
+  height: 7px;
+  background: var(--pale);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: var(--sp-2);
+}
+
+.goalbar__fill {
+  height: 100%;
+  background: var(--brand);
+  border-radius: var(--radius);
+  transition: width var(--m-chart) var(--ease);
+}
+
+.goalrow__sub {
+  font: 500 11.5px/1.35 var(--font);
+  color: var(--ink2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* min-width on both, so the column keeps to its track and the reason line
+   wraps inside it. A flex item defaults to min-width:auto, which would let
+   "after a week of logging" push out to the left, into the gap it shares with
+   the progress sub-line. */
+.goalrow__lands {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  text-align: right;
+  min-width: 0;
+}
+
+.goalrow__date {
+  font: 600 15px/1.2 var(--font);
+  font-variant-numeric: tabular-nums;
+}
+
+.goalrow__date--warn { color: var(--warn); }
+.goalrow__date--good { color: var(--good); }
+.goalrow__date--none { color: var(--axis); }
+
+.goalrow__slip {
+  font: 500 11.5px/1.3 var(--font);
+  color: var(--ink2);
+  min-width: 0;
+  text-wrap: pretty;
+}
+
+.goalrow__slip--warn {
+  color: var(--warn);
+}
+
+/* ---------- the ghost row ----------
+   Static in the mockup ("becomes editor", spec §2). It is the way in to the
+   sheet, so it is a real button; the hint takes the empty LANDS cell beside
+   it rather than wrapping inside its own column. */
+
+.goalrow--ghost {
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  cursor: pointer;
+  transition: background var(--m-hover) var(--ease);
+}
+
+.goalrow--ghost:hover {
+  background: var(--line2);
+}
+
+.goalrow__ghostname {
+  font: 600 17px/1.2 var(--font);
+  color: var(--ink2);
+}
+
+.goalrow--ghost .goalrow__target,
+.goalrow--ghost .goalrow__by {
+  color: var(--ink2);
+}
+
+.goalrow__hint {
+  grid-column: 4 / 6;
+}
+
+/* ---------- archived goals ----------
+   Decision: they keep a row rather than vanishing ("Archived goals keep their
+   hours. Nothing is deleted."), in the Manage sheet's treatment of an archived
+   category — dimmed, the hours it kept, and a way back. */
+
+.goals__archived {
+  padding-top: var(--sp-8);
+}
+
+.goals__archivedlabel {
+  padding-bottom: var(--sp-3);
+}
+
+.goalrow--archived .goalrow__label,
+.goalrow--archived .goalrow__target,
+.goalrow--archived .goalrow__by {
+  color: var(--ink2);
+}
+
+.goals__foot {
+  padding: var(--sp-9) var(--gutter) 30px;
+  font: 400 12.5px/1.5 var(--font);
+  color: var(--ink2);
+}
+
+/* Below the design width the fixed columns give up what they can spare before
+   the container starts scrolling: TARGET and BY hold `130.0 h` and `30 Sep`. */
+@media (max-width: 1023.98px) {
+  .goalrow {
+    grid-template-columns: minmax(0, 1fr) 84px 96px minmax(0, 1fr) 104px 40px;
+    min-width: 640px;
+  }
+
+  .goaltable__head,
+  .goaltable__rows {
+    min-width: 672px;
   }
 }
