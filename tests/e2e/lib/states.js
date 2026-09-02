@@ -167,12 +167,23 @@ function transientStates(page) {
     {
       // A range with nothing in it: the panel's own empty state.
       id: 'went-empty',
+      // Each date is checked as it lands, so a failure here names the step
+      // rather than a panel that never came.
       open: async () => {
         await loadState(gappedState());
-        await page.locator('#rangeStart').fill('2/6');
-        await page.locator('#rangeStart').press('Enter');
-        await page.locator('#rangeEnd').fill('4/6');
-        await page.locator('#rangeEnd').press('Enter');
+        const start = page.locator('#rangeStart');
+        const end = page.locator('#rangeEnd');
+        await start.fill('2/6');
+        await start.press('Enter');
+        await start.waitFor();
+        if ((await start.inputValue()) !== '2 Jun 2026') {
+          throw new Error(`went-empty: start did not land, reads "${await start.inputValue()}"`);
+        }
+        await end.fill('4/6');
+        await end.press('Enter');
+        if ((await end.inputValue()) !== '4 Jun 2026') {
+          throw new Error(`went-empty: end did not land, reads "${await end.inputValue()}"`);
+        }
       },
       ready: '.went__empty',
       close: async () => { await loadState(demoState()); },
