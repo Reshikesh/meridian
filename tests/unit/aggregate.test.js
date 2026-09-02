@@ -224,6 +224,117 @@ test('coverage is measured against the whole day (decision 17, as amended)', asy
   });
 });
 
+/* ---------- the Where-it-went screen (spec §4a–§4d) ---------- */
+
+test('chartNodes is the mockup buildNodes on real data', async (t) => {
+  const cats = CATEGORIES.concat([
+    { id: 'cat_old', name: 'Side project', direction: 'more', weekly_plan_hours: 5, archived: true },
+  ]);
+  const goals = GOALS.concat([{ id: 'goal_old', short_name: 'Old goal', category_id: 'cat_old', archived: true }]);
+  const entries = [
+    entry('2026-06-01', 540, 'cat_work'),
+    entry('2026-06-02', 120, 'cat_scroll'),
+    entry('2026-06-03', 90, 'cat_learn', 'goal_py'),
+    entry('2026-06-04', 60, 'cat_learn'),
+    entry('2026-06-05', 30, 'cat_old', 'goal_old'),
+  ];
+
+  await t.test('category split: ascending puts the smallest at the top, archived included', () => {
+    const nodes = aggregate.chartNodes(entries, cats, goals, 'cat', 'asc');
+    assert.deepEqual(nodes.map((n) => n.id), ['cat:cat_old', 'cat:cat_scroll', 'cat:cat_learn', 'cat:cat_work']);
+    assert.deepEqual(nodes.map((n) => n.direction), ['more', 'less', 'more', 'upkeep']);
+    assert.equal(nodes[0].archived, true, 'archived categories stay in the history (§8.11)');
+    assert.equal(nodes[0].sub, null);
+    assert.equal(nodes[3].hours, 9);
+  });
+
+  await t.test('descending is the reverse', () => {
+    const nodes = aggregate.chartNodes(entries, cats, goals, 'cat', 'desc');
+    assert.deepEqual(nodes.map((n) => n.id), ['cat:cat_work', 'cat:cat_learn', 'cat:cat_scroll', 'cat:cat_old']);
+  });
+
+  await t.test('goal split: every goal with hours plus "No goal", coloured as the mockup colours them', () => {
+    const nodes = aggregate.chartNodes(entries, cats, goals, 'goal', 'asc');
+    assert.deepEqual(nodes.map((n) => n.id), ['goal:goal_old', 'goal:goal_py', 'goal:none']);
+    assert.deepEqual(nodes.map((n) => n.direction), ['more', 'more', 'upkeep'],
+      'goal bands are always More, "No goal" is always Upkeep');
+    assert.equal(nodes[1].sub, 'Learning', 'the sub-line is the feeding category');
+    assert.equal(nodes[2].name, 'No goal');
+    assert.equal(nodes[2].sub, 'across every category');
+    assert.equal(nodes[2].minutes, 720);
+    assert.equal(nodes[0].archived, true, 'archived goals keep their hours (spec §6)');
+  });
+
+  await t.test('a category with no hours in the selection has no band', () => {
+    const nodes = aggregate.chartNodes(entries.slice(0, 1), cats, goals, 'cat', 'asc');
+    assert.deepEqual(nodes.map((n) => n.id), ['cat:cat_work']);
+  });
+
+  await t.test('ties break by name so the order is stable', () => {
+    const tied = [entry('2026-06-01', 60, 'cat_work'), entry('2026-06-01', 60, 'cat_learn')];
+    const nodes = aggregate.chartNodes(tied, cats, goals, 'cat', 'asc');
+    assert.deepEqual(nodes.map((n) => n.name), ['Learning', 'Work']);
+  });
+});
+
+test('heat shades a day by the node\'s hours against its busiest day in all of history (spec §4d)', async (t) => {
+  const entries = [
+    entry('2026-05-01', 240, 'cat_learn', 'goal_py'),   // the busiest Learning day, outside any June range
+    entry('2026-06-01', 60, 'cat_learn', 'goal_py'),
+    entry('2026-06-01', 30, 'cat_learn'),
+    entry('2026-06-02', 120, 'cat_work'),
+    entry('2026-06-09', 600, 'cat_learn'),               // after today: never shown, never the maximum
+  ];
+
+  await t.test('a category node', () => {
+    const h = aggregate.heat(entries, 'cat:cat_learn', '2026-06-07');
+    assert.deepEqual(Object.assign({}, h.byDay), { '2026-05-01': 240, '2026-06-01': 90 });
+    assert.equal(h.max, 240, 'the maximum scans the full history, not the range');
+  });
+
+  await t.test('a goal node and the "No goal" node', () => {
+    assert.equal(aggregate.heat(entries, 'goal:goal_py', '2026-06-07').byDay['2026-06-01'], 60);
+    const none = aggregate.heat(entries, 'goal:none', '2026-06-07');
+    assert.deepEqual(Object.assign({}, none.byDay), { '2026-06-01': 30, '2026-06-02': 120 });
+    assert.equal(none.max, 120);
+  });
+
+  await t.test('an unknown node shades nothing', () => {
+    assert.equal(aggregate.heat(entries, 'cat:nope', '2026-06-07').max, 0);
+  });
+});
+
+test('rangeSummary is the header in one call', () => {
+  const entries = [
+    entry('2026-06-01', 540, 'cat_work'),
+    entry('2026-06-02', 120, 'cat_scroll'),
+    entry('2026-06-03', 90, 'cat_learn', 'goal_py'),
+    entry('2026-06-09', 60, 'cat_learn'),
+  ];
+  const s = aggregate.rangeSummary(entries, CATEGORIES, { start: '2026-06-01', end: '2026-06-07' });
+  assert.equal(s.days, 7);
+  assert.equal(s.entries.length, 3);
+  assert.equal(s.minutes, 750);
+  assert.equal(s.hours, 12.5);
+  assert.equal(s.coverage.totalHours, 168, 'days × 24 (decision 17, as amended)');
+  assert.equal(s.coverage.pct, 7);
+  assert.equal(s.coverage.unloggedHours, 155.5);
+  assert.equal(s.split.upHours, 1.5);
+  assert.equal(s.split.downHours, 2);
+  assert.equal(s.split.keepHours, 9);
+});
+
+test('grouped hours: one decimal and a thousands separator, locale-free', () => {
+  assert.equal(aggregate.formatHoursGrouped(61140), '1,019.0');
+  assert.equal(aggregate.formatHoursGrouped(122640), '2,044.0');
+  assert.equal(aggregate.formatHoursGrouped(5730), '95.5');
+  assert.equal(aggregate.formatHoursGrouped(9), '0.2');
+  assert.equal(aggregate.formatHoursGrouped(0), '0.0');
+  assert.equal(aggregate.groupHours(1019), '1,019.0');
+  assert.equal(aggregate.groupHours(1234567.85), '1,234,567.9');
+  assert.equal(aggregate.groupHours(0.25), '0.3');
+});
+
 test('a Less category’s cap is its plan unless the workbook says otherwise (decision 13)', () => {
   assert.equal(aggregate.capHours({ weekly_plan_hours: 14, weekly_cap_hours: null }), 14);
   assert.equal(aggregate.capHours({ weekly_plan_hours: 14, weekly_cap_hours: '' }), 14);

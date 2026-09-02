@@ -1,0 +1,287 @@
+'use strict';
+
+const test = require('node:test');
+const assert = require('node:assert');
+const range = require('../../src/core/range.js');
+
+/* The mockup's own today and the demo dataset's fortnight. */
+const TODAY = '2026-06-07';
+const MIN = '2026-05-25';
+const OPTS = { today: TODAY, minDay: MIN };
+
+const r = (start, end) => ({ start, end });
+
+/* ---------- bounds and clamping (rule §8.15) ---------- */
+
+test('bounds: the range lives between the first logged day and today', async (t) => {
+  await t.test('the first entry sets the floor', () => {
+    const b = range.bounds([{ date: '2026-06-01' }, { date: '2026-05-25' }, { date: '2026-06-07' }], TODAY);
+    assert.deepEqual(b, { minDay: MIN, today: TODAY });
+  });
+
+  await t.test('an entry dated after today (a hand-edited workbook) moves nothing', () => {
+    const b = range.bounds([{ date: '2026-06-09' }, { date: '2026-06-01' }], TODAY);
+    assert.equal(b.minDay, '2026-06-01');
+    assert.equal(range.bounds([{ date: '2026-06-09' }], TODAY).minDay, TODAY,
+      'only future entries: the horizon is today alone');
+  });
+
+  await t.test('no entries: today alone', () => {
+    assert.deepEqual(range.bounds([], TODAY), { minDay: TODAY, today: TODAY });
+  });
+});
+
+test('clamp pulls a range inside the bounds rather than discarding it (D5)', () => {
+  assert.deepEqual(range.clamp(r('2026-05-01', '2026-06-30'), MIN, TODAY), r(MIN, TODAY));
+  assert.deepEqual(range.clamp(r('2026-06-01', '2026-06-03'), MIN, TODAY), r('2026-06-01', '2026-06-03'));
+  assert.deepEqual(range.clamp(r('2026-06-03', '2026-06-01'), MIN, TODAY), r('2026-06-01', '2026-06-03'),
+    'a backwards range is put in order');
+  assert.deepEqual(range.clamp(r('2026-01-01', '2026-01-10'), MIN, TODAY), r(MIN, MIN),
+    'wholly before the first day collapses to the first day');
+  assert.deepEqual(range.clamp(r('2026-07-01', '2026-07-10'), MIN, TODAY), r(TODAY, TODAY),
+    'wholly after today collapses to today');
+  assert.deepEqual(range.clamp(null, MIN, TODAY), r(MIN, TODAY), 'nothing means everything');
+  assert.deepEqual(range.clamp(r('2026-06-01', '2026-06-03'), '2026-06-09', TODAY), r(TODAY, TODAY),
+    'a floor after today cannot invert the range');
+});
+
+/* ---------- presets (mockup setPreset / activePreset) ---------- */
+
+test('presets count back from today and clamp to the first logged day', async (t) => {
+  const wide = { today: TODAY, minDay: '2025-07-01' };
+
+  await t.test('on a long history the four presets are distinct', () => {
+    assert.deepEqual(range.presetRange('30', wide.today, wide.minDay), r('2026-05-09', TODAY));
+    assert.deepEqual(range.presetRange('90', wide.today, wide.minDay), r('2026-03-10', TODAY));
+    assert.deepEqual(range.presetRange('ytd', wide.today, wide.minDay), r('2026-01-01', TODAY));
+    assert.deepEqual(range.presetRange('all', wide.today, wide.minDay), r('2025-07-01', TODAY));
+  });
+
+  await t.test('on the 14-day demo every preset clamps to the same fortnight', () => {
+    for (const id of range.PRESETS) {
+      assert.deepEqual(range.presetRange(id, TODAY, MIN), r(MIN, TODAY), id);
+    }
+  });
+
+  await t.test('in January YTD is a few days long and clamps like the others', () => {
+    assert.deepEqual(range.presetRange('ytd', '2027-01-04', '2025-07-01'), r('2027-01-01', '2027-01-04'));
+    assert.deepEqual(range.presetRange('ytd', '2027-01-04', '2027-01-03'), r('2027-01-03', '2027-01-04'));
+  });
+
+  await t.test('an unknown preset is null', () => {
+    assert.equal(range.presetRange('7', TODAY, MIN), null);
+  });
+});
+
+test('the lit preset is the mockup rule, verbatim: exact arithmetic, first match in order', async (t) => {
+  const wide = '2025-07-01';
+
+  await t.test('each preset on a long history lights itself', () => {
+    for (const id of range.PRESETS) {
+      assert.equal(range.activePreset(range.presetRange(id, TODAY, wide), TODAY, wide), id, id);
+    }
+  });
+
+  await t.test('a range that does not end today lights nothing', () => {
+    assert.equal(range.activePreset(r('2026-05-09', '2026-06-06'), TODAY, wide), null);
+  });
+
+  await t.test('a hand-picked range lights nothing', () => {
+    assert.equal(range.activePreset(r('2026-06-01', TODAY), TODAY, wide), null);
+  });
+
+  await t.test('on the 14-day demo a 30D click lights ALL, because ALL is what the range is', () => {
+    const after30 = range.presetRange('30', TODAY, MIN);
+    assert.equal(range.activePreset(after30, TODAY, MIN), 'all');
+  });
+
+  await t.test('when 1 January is the first logged day, YTD wins over ALL by order', () => {
+    const first = '2026-01-01';
+    assert.equal(range.activePreset(r(first, TODAY), TODAY, first), 'ytd');
+  });
+});
+
+test('the default range is thirty days clamped to the first logged day (Q1)', () => {
+  assert.deepEqual(range.defaultRange(TODAY, MIN), r(MIN, TODAY));
+  assert.deepEqual(range.defaultRange(TODAY, '2025-07-01'), r('2026-05-09', TODAY));
+});
+
+/* ---------- the stored shape (spec §1) ---------- */
+
+test('meridian:range is {s, e} in epoch days and round-trips', async (t) => {
+  await t.test('round trip', () => {
+    const stored = range.toStored(r(MIN, TODAY));
+    assert.deepEqual(stored, { s: 20598, e: 20611 });
+    assert.deepEqual(range.fromStored(stored), r(MIN, TODAY));
+    assert.deepEqual(range.fromStored(JSON.stringify(stored)), r(MIN, TODAY));
+  });
+
+  await t.test('a swapped pair is put in order', () => {
+    assert.deepEqual(range.fromStored({ s: 20611, e: 20598 }), r(MIN, TODAY));
+  });
+
+  await t.test('anything unreadable is null so the caller can fall back', () => {
+    for (const bad of ['{not json', '', null, undefined, {}, { s: 1 }, { s: 'a', e: 2 },
+      { s: 1.5, e: 2 }, { s: NaN, e: 2 }, { s: 1e12, e: 1e12 }, [], 42, 'null']) {
+      assert.equal(range.fromStored(bad), null, JSON.stringify(bad));
+    }
+  });
+});
+
+/* ---------- the picker (mockup onDay / landRange / undoRange / commitDate) ---------- */
+
+const start = () => range.emptyView(r('2026-05-30', '2026-06-03'));
+
+test('the two-click pick', async (t) => {
+  await t.test('the first click shows that one day, remembers what it replaced, writes nothing', () => {
+    const v = range.pick(start(), '2026-06-01', OPTS);
+    assert.deepEqual(v.range, r('2026-06-01', '2026-06-01'));
+    assert.equal(v.pending, true);
+    assert.deepEqual(v.prev, r('2026-05-30', '2026-06-03'));
+    assert.equal(v.undo, null);
+    assert.equal(range.status(v), 'PICK END DAY');
+    assert.equal(range.showUndo(v), false);
+  });
+
+  await t.test('the second click lands the pair in order, with the pre-pick range as the undo', () => {
+    const v = range.pick(range.pick(start(), '2026-06-05', OPTS), '2026-06-02', OPTS);
+    assert.deepEqual(v.range, r('2026-06-02', '2026-06-05'));
+    assert.equal(v.pending, false);
+    assert.equal(v.prev, null);
+    assert.deepEqual(v.undo, r('2026-05-30', '2026-06-03'));
+    assert.equal(range.status(v), '4 DAYS');
+    assert.equal(range.showUndo(v), true);
+  });
+
+  await t.test('picking the same range again arms no undo', () => {
+    const v = range.pick(range.pick(start(), '2026-05-30', OPTS), '2026-06-03', OPTS);
+    assert.deepEqual(v.range, r('2026-05-30', '2026-06-03'));
+    assert.equal(v.undo, null);
+  });
+
+  await t.test('a future day and a day before the first entry are ignored', () => {
+    const v = start();
+    assert.strictEqual(range.pick(v, '2026-06-08', OPTS), v, 'the same view comes back, untouched');
+    assert.strictEqual(range.pick(v, '2026-05-24', OPTS), v);
+    assert.equal(range.pick(v, TODAY, OPTS).pending, true, 'today itself is selectable');
+    assert.equal(range.pick(v, MIN, OPTS).pending, true, 'so is the first logged day');
+  });
+
+  await t.test('Escape restores the pre-pick range with no undo armed (D6)', () => {
+    const v = range.abort(range.pick(start(), '2026-06-01', OPTS));
+    assert.deepEqual(v.range, r('2026-05-30', '2026-06-03'));
+    assert.equal(v.pending, false);
+    assert.equal(v.undo, null);
+    const idle = start();
+    assert.strictEqual(range.abort(idle), idle, 'Escape with no pick open is a no-op');
+  });
+});
+
+test('landing arms the undo only when the range actually changed', async (t) => {
+  await t.test('a change arms it', () => {
+    const v = range.land(start(), r(MIN, TODAY));
+    assert.deepEqual(v.undo, r('2026-05-30', '2026-06-03'));
+  });
+
+  await t.test('an unchanged landing clears an undo that was showing', () => {
+    const armed = range.land(start(), r(MIN, TODAY));
+    const again = range.land(armed, r(MIN, TODAY));
+    assert.equal(again.undo, null);
+  });
+
+  await t.test('undo restores the prior range once', () => {
+    const armed = range.land(start(), r(MIN, TODAY));
+    const back = range.undo(armed);
+    assert.deepEqual(back.range, r('2026-05-30', '2026-06-03'));
+    assert.equal(back.undo, null);
+    assert.strictEqual(range.undo(back).range, back.range, 'nothing to undo is a no-op');
+  });
+});
+
+test('presets land, clear the focus, and undo against whatever was showing', async (t) => {
+  await t.test('a preset clears the focus even when the band is still there', () => {
+    const focused = range.toggleFocus(start(), 'cat:cat_work');
+    const v = range.preset(focused, 'all', OPTS);
+    assert.deepEqual(v.range, r(MIN, TODAY));
+    assert.equal(v.focus, null);
+    assert.deepEqual(v.undo, r('2026-05-30', '2026-06-03'));
+  });
+
+  await t.test('a preset during a pick undoes to the pending day, as the mockup does', () => {
+    const v = range.preset(range.pick(start(), '2026-06-01', OPTS), 'all', OPTS);
+    assert.equal(v.pending, false);
+    assert.deepEqual(v.undo, r('2026-06-01', '2026-06-01'));
+  });
+
+  await t.test('an unknown preset changes nothing', () => {
+    const v = start();
+    assert.strictEqual(range.preset(v, 'x', OPTS), v);
+  });
+});
+
+test('a focused band that leaves the range is dropped, one that stays is kept', async (t) => {
+  const nodeIds = (rng) => (rng.start === MIN ? ['cat:a', 'cat:b'] : ['cat:a']);
+  const opts = Object.assign({ nodeIds }, OPTS);
+
+  await t.test('land', () => {
+    const focused = range.toggleFocus(start(), 'cat:b');
+    assert.equal(range.land(focused, r(MIN, TODAY), opts).focus, 'cat:b');
+    assert.equal(range.land(focused, r('2026-06-01', TODAY), opts).focus, null);
+  });
+
+  await t.test('second click and undo apply the same rule', () => {
+    const focused = range.toggleFocus(start(), 'cat:b');
+    const landed = range.pick(range.pick(focused, '2026-06-01', opts), TODAY, opts);
+    assert.equal(landed.focus, null);
+    const kept = range.pick(range.pick(focused, MIN, opts), TODAY, opts);
+    assert.equal(kept.focus, 'cat:b');
+    assert.equal(range.undo(range.land(focused, r(MIN, TODAY), opts), opts).focus, null,
+      'undo back to a range without the node drops it');
+  });
+
+  await t.test('without a nodeIds function the focus is left alone', () => {
+    const focused = range.toggleFocus(start(), 'cat:b');
+    assert.equal(range.land(focused, r('2026-06-01', TODAY)).focus, 'cat:b');
+  });
+});
+
+test('typed dates (mockup commitDate; spec §12 bad input)', async (t) => {
+  await t.test('7/6 lands 7 June, day-first, and the range is put in order', () => {
+    const out = range.commitTyped(start(), 'end', '7/6', OPTS);
+    assert.deepEqual(out.view.range, r('2026-05-30', '2026-06-07'));
+    assert.equal(out.day, '2026-06-07');
+    assert.deepEqual(out.view.undo, r('2026-05-30', '2026-06-03'), 'a typed date arms the undo');
+  });
+
+  await t.test('a start after the end swaps', () => {
+    const out = range.commitTyped(start(), 'start', '6 Jun', OPTS);
+    assert.deepEqual(out.view.range, r('2026-06-03', '2026-06-06'));
+  });
+
+  await t.test('nonsense, 31 Feb and out-of-bounds dates are null so the field reverts', () => {
+    for (const bad of ['foo', '31 Feb', '2026-02-31', '', '24/5', '8/6', '1 Jan', '2025-12-31']) {
+      assert.equal(range.commitTyped(start(), 'start', bad, OPTS), null, JSON.stringify(bad));
+    }
+  });
+
+  await t.test('the same date typed again lands unchanged and arms no undo', () => {
+    const out = range.commitTyped(start(), 'end', '3 Jun 2026', OPTS);
+    assert.deepEqual(out.view.range, start().range);
+    assert.equal(out.view.undo, null);
+  });
+});
+
+test('split, sort and focus', () => {
+  const v = range.toggleFocus(start(), 'cat:x');
+  assert.equal(v.focus, 'cat:x');
+  assert.equal(range.toggleFocus(v, 'cat:x').focus, null, 'a second click clears');
+  assert.equal(range.toggleFocus(v, 'cat:y').focus, 'cat:y');
+  assert.equal(range.setSplit(v, 'goal').split, 'goal');
+  assert.equal(range.setSplit(v, 'goal').focus, null, 'changing the split clears the focus');
+  assert.equal(range.setSplit(v, 'cat').focus, null, 'even to the same split (mockup setDim)');
+  assert.equal(range.setSplit(v, 'x').split, 'cat', 'an unknown split is ignored');
+  assert.equal(range.setSort(v, 'desc').sort, 'desc');
+  assert.equal(range.setSort(v, 'x').sort, 'asc');
+  assert.equal(range.setSort(v, 'desc').focus, 'cat:x', 'sort keeps the focus');
+  assert.equal(range.UNDO_MS, 6000);
+});

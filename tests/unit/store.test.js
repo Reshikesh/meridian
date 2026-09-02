@@ -314,6 +314,44 @@ test('the leave warning appears only when there is something to lose', () => {
   assert.equal(handlers.beforeunload, undefined);
 });
 
+test('the analysis range has its own key, outside the dataset and the counter (spec §1)', async (t) => {
+  await t.test('round trip, and nothing unexported moves', () => {
+    const storage = fakeStorage();
+    const s = loaded(storage);
+    const before = s.getState().exportInfo.unexported;
+    assert.deepEqual(s.writeRange({ s: 20598, e: 20611 }), { ok: true });
+    assert.deepEqual(s.readRange(), { s: 20598, e: 20611 });
+    assert.equal(storage.getItem('meridian:range'), '{"s":20598,"e":20611}');
+    assert.equal(s.getState().exportInfo.unexported, before, 'a view preference is not an edit');
+    assert.equal(saved(storage).exportInfo.unexported, before);
+  });
+
+  await t.test('nothing stored, or something unreadable, is null', () => {
+    const storage = fakeStorage();
+    const s = loaded(storage);
+    assert.equal(s.readRange(), null);
+    storage.setItem('meridian:range', '{not json');
+    assert.equal(s.readRange(), null);
+    storage.setItem('meridian:range', '42');
+    assert.equal(s.readRange(), null);
+  });
+
+  await t.test('writing null clears it', () => {
+    const storage = fakeStorage();
+    const s = loaded(storage);
+    s.writeRange({ s: 1, e: 2 });
+    s.writeRange(null);
+    assert.equal(storage.getItem('meridian:range'), null);
+  });
+
+  await t.test('a failed write is reported, not raised as a data error', () => {
+    const storage = fakeStorage({ failWith: 'full' });
+    const s = store.createStore({ storage, now: clock });
+    assert.deepEqual(s.writeRange({ s: 1, e: 2 }), { ok: false, reason: 'full' });
+    assert.equal(s.getError(), null);
+  });
+});
+
 test('the localStorage keys are the mandated ones', () => {
   assert.deepEqual(store.KEYS, {
     data: 'meridian:data',

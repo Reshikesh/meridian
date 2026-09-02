@@ -180,6 +180,16 @@ test('typed dates parse the way the mockup parses them (spec §3)', async (t) =>
     assert.equal(p('2026-06-07'), '2026-06-07');
   });
 
+  await t.test('the mockup\'s two looser forms: a dash between numbers, a month by its first three letters', () => {
+    assert.equal(p('7-6'), '2026-06-07');
+    assert.equal(p('7-6-26'), '2026-06-07');
+    assert.equal(p('7-6-2026'), '2026-06-07');
+    assert.equal(p('sept 7'), '2025-09-07', 'September is ahead of a June today, so last year');
+    assert.equal(p('7 sept'), '2025-09-07');
+    assert.equal(p('7 september 2025'), '2025-09-07');
+    assert.equal(p('ju 7'), null, 'two letters are not a month');
+  });
+
   await t.test('a missing year is this year, or last year if that is in the future', () => {
     assert.equal(p('7 Jun'), '2026-06-07', 'today itself is not in the future');
     assert.equal(p('8 Jun'), '2025-06-08', 'tomorrow would be ahead, so it means last year');

@@ -375,6 +375,28 @@
         return commit(s, 1);
       },
 
+      /* ---------- the analysis range (spec §1) ----------
+         Its own key, outside the dataset: it is a view preference, not data,
+         so it is not an unexported change and is not in the workbook. The
+         shape is the caller’s (src/core/range.js toStored); a failed write
+         is not data loss, so it is reported and not treated as an error. */
+
+      readRange: function () {
+        var raw = storage.getItem(KEYS.range);
+        if (!raw) return null;
+        try {
+          var o = JSON.parse(raw);
+          return o && typeof o === 'object' ? o : null;
+        } catch (e) {
+          return null;
+        }
+      },
+
+      writeRange: function (stored) {
+        if (!stored) return storage.removeItem(KEYS.range);
+        return storage.setItem(KEYS.range, JSON.stringify(stored));
+      },
+
       /* ---------- settings ---------- */
 
       setSettings: function (patch, opts2) {

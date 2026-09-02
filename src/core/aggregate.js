@@ -318,6 +318,123 @@
     return Number(cap) || 0;
   }
 
+  /* ---------- the Where-it-went screen (spec §4a–§4d) ---------- */
+
+  function categoryNamed(categories, id) {
+    for (var i = 0; i < (categories || []).length; i++) {
+      if (categories[i].id === id) return categories[i].name;
+    }
+    return null;
+  }
+
+  function goalNamed(goals, id) {
+    for (var i = 0; i < (goals || []).length; i++) if (goals[i].id === id) return goals[i];
+    return null;
+  }
+
+  /* The ribbon chart's nodes (mockup buildNodes, on real data). Category split:
+     every category with hours in the selection, archived ones included
+     (§8.11). Goal split: every goal with hours plus the "No goal" node; a
+     goal's sub-line is the name of the category that feeds it. Goal bands are
+     always More and "No goal" is always Upkeep, exactly as the mockup colours
+     them. Node ids are 'cat:<id>', 'goal:<id>' and 'goal:none'.
+
+     Ascending is the mockup's default: smallest at the top, the biggest band
+     at the bottom. Ties break by name so the order is stable. */
+  function chartNodes(entries, categories, goals, split, sort) {
+    var nodes;
+    if (split === 'goal') {
+      nodes = totalsByGoal(entries, goals).map(function (r) {
+        var goal = r.id ? goalNamed(goals, r.id) : null;
+        return {
+          id: r.id ? 'goal:' + r.id : 'goal:none',
+          name: r.name,
+          sub: r.id ? categoryNamed(categories, goal && goal.category_id) : r.sub,
+          direction: r.id ? 'more' : 'upkeep',
+          minutes: r.minutes,
+          hours: r.hours,
+          archived: r.archived
+        };
+      });
+    } else {
+      nodes = totalsByCategory(entries, categories).map(function (r) {
+        return {
+          id: 'cat:' + r.id,
+          name: r.name,
+          sub: null,
+          direction: r.direction === 'more' || r.direction === 'less' ? r.direction : 'upkeep',
+          minutes: r.minutes,
+          hours: r.hours,
+          archived: r.archived
+        };
+      });
+    }
+    var dir = sort === 'desc' ? -1 : 1;
+    nodes.sort(function (a, b) {
+      return dir * (a.minutes - b.minutes) || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
+    });
+    return nodes;
+  }
+
+  function nodeMatches(entry, nodeId) {
+    if (nodeId === 'goal:none') return !entry.goal_id;
+    var p = nodeId.indexOf(':');
+    var kind = nodeId.slice(0, p), id = nodeId.slice(p + 1);
+    if (kind === 'cat') return entry.category_id === id;
+    if (kind === 'goal') return entry.goal_id === id;
+    return false;
+  }
+
+  /* spec §4d: with a band focused, each in-range day is shaded by that node's
+     hours on the day, against the node's busiest day over the FULL history —
+     not the range — so the shading is comparable from one range to the next.
+     Days after `today` cannot be shown, so they do not set the maximum. */
+  function heat(entries, nodeId, today) {
+    var byDayMap = Object.create(null), max = 0;
+    for (var i = 0; i < entries.length; i++) {
+      var e = entries[i];
+      if (today && e.date > today) continue;
+      if (!nodeMatches(e, nodeId)) continue;
+      var m = (byDayMap[e.date] || 0) + (Number(e.duration_min) || 0);
+      byDayMap[e.date] = m;
+      if (m > max) max = m;
+    }
+    return { byDay: byDayMap, max: max };
+  }
+
+  /* Everything the screen's header needs for one range. */
+  function rangeSummary(entries, categories, range) {
+    var selected = inRange(entries, range.start, range.end);
+    var days = dates.daySpan(range.start, range.end) || 0;
+    var minutes = sumMinutes(selected);
+    return {
+      days: days,
+      entries: selected,
+      minutes: minutes,
+      hours: hours(minutes),
+      coverage: coverage(minutes, days),
+      split: directionSplit(selected, categories)
+    };
+  }
+
+  /* One decimal with a thousands separator: `1,019.0`. The mockup groups
+     thousands (`2,044 hours logged`); QUALITY-BAR §1 wants one decimal
+     everywhere. Deterministic, so a test never depends on the locale. */
+  function groupTenths(t) {
+    var neg = t < 0;
+    t = Math.abs(t);
+    var whole = String(Math.floor(t / 10)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return (neg ? '-' : '') + whole + '.' + (t % 10);
+  }
+
+  function formatHoursGrouped(minutes) {
+    return groupTenths(tenths(minutes));
+  }
+
+  function groupHours(h) {
+    return groupTenths(Math.round((Number(h) || 0) * 10));
+  }
+
   function activeCategories(categories) {
     return categories.filter(function (c) { return !c.archived; });
   }
@@ -354,6 +471,11 @@
     dayCoverage: dayCoverage,
     capHours: capHours,
     activeCategories: activeCategories,
-    plannedTotal: plannedTotal
+    plannedTotal: plannedTotal,
+    chartNodes: chartNodes,
+    heat: heat,
+    rangeSummary: rangeSummary,
+    formatHoursGrouped: formatHoursGrouped,
+    groupHours: groupHours
   };
 });

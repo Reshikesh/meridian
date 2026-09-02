@@ -221,10 +221,13 @@
     return typeof s === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(s.trim());
   }
 
+  /* A month word is matched on its first three letters, as the mockup does
+     (`n.slice(0, 3)`), so `sept` and `september` both read as September. */
   function monthIndex(word) {
     var w = String(word).toLowerCase();
+    if (w.length < 3) return 0;
     for (var i = 0; i < 12; i++) {
-      if (MONTHS[i].toLowerCase() === w || MONTHS_FULL[i].toLowerCase() === w) return i + 1;
+      if (MONTHS_FULL[i].toLowerCase() === w || MONTHS[i].toLowerCase() === w.slice(0, 3)) return i + 1;
     }
     return 0;
   }
@@ -246,7 +249,8 @@
   /* spec §3: parse what the owner types into a date field.
 
      Forms, in the order they are tried: ISO `Y-M-D`; `7 Jun [2026]`; `Jun 7`;
-     day-first numeric `D/M[/Y]` — so `7/6` is 7 June, business rule §8.16.
+     day-first numeric `D/M[/Y]` with `/`, `.` or `-` between the parts — so
+     `7/6` is 7 June, business rule §8.16.
      Anything else returns null and the caller silently reverts the field. */
   function parseUserDate(text, opts) {
     if (typeof text !== 'string') return null;
@@ -270,7 +274,7 @@
       return mo2 ? withYear(+m[2], mo2, m[3], today) : null;
     }
 
-    m = /^(\d{1,2})[/.](\d{1,2})(?:[/.](\d{2}|\d{4}))?$/.exec(s);
+    m = /^(\d{1,2})[/.-](\d{1,2})(?:[/.-](\d{2}|\d{4}))?$/.exec(s);
     if (m) return withYear(+m[1], +m[2], m[3], today);
 
     return null;

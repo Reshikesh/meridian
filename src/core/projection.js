@@ -25,11 +25,12 @@
   var isNode = typeof module === 'object' && module.exports;
   var api = factory(
     isNode ? require('./dates.js') : root.Meridian.dates,
-    isNode ? require('./aggregate.js') : root.Meridian.aggregate
+    isNode ? require('./aggregate.js') : root.Meridian.aggregate,
+    isNode ? require('./range.js') : root.Meridian.range
   );
   if (isNode) module.exports = api;
   else (root.Meridian = root.Meridian || {}).projection = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (dates, aggregate) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (dates, aggregate, range) {
   'use strict';
 
   /* BUILD-PLAN § Phase 1: "not enough history" is fewer than seven logged days.
@@ -207,20 +208,13 @@
   }
 
   /* Business rule §8.15: the analysis range is clamped to [first data day,
-     today] and future days are never selectable. The calendar is Phase 3; the
-     rule is core. */
-  function clampRange(state, range, now) {
+     today] and future days are never selectable. The rule itself lives in
+     range.js since Phase 3 built the calendar; this is the same rule with the
+     clock resolved, kept so there is one implementation, not two. */
+  function clampRange(state, rng, now) {
     var todayKey = dates.dayKey(dates.logicalDay(now));
-    var first = aggregate.firstDay(state.entries || []) || todayKey;
-    var lo = first < todayKey ? first : todayKey;
-
-    var s = (range && range.start) || lo;
-    var e = (range && range.end) || todayKey;
-    if (s > e) { var t = s; s = e; e = t; }
-    if (s < lo) s = lo;
-    if (e > todayKey) e = todayKey;
-    if (s > e) s = e;
-    return { start: s, end: e };
+    var b = range.bounds(state.entries || [], todayKey);
+    return range.clamp(rng, b.minDay, b.today);
   }
 
   return {
