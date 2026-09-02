@@ -253,9 +253,14 @@
   /* spec §4b. Upkeep is the residual, never summed independently for display:
      rounding each of three parts on its own lets the labels total 101 % and the
      caption's hours miss the total by an hour. Deriving the third part from the
-     first two makes both reconcile by construction. The bar's own width uses
-     the unrounded remainder, clamped, so a rounding residual can never paint a
-     negative segment. */
+     first two makes both reconcile by construction.
+
+     The residual is clamped at zero. With nothing in Upkeep and More and Less
+     both rounding up — nine minutes each, say — the residual would read
+     −0.1 h and −1 %, which is a wrong statement; in that one case the three
+     figures may exceed the total by a tenth of an hour, a rounding artefact,
+     rather than show a negative duration. The bar's own width uses the
+     unrounded remainder, clamped the same way. */
   function directionSplit(entries, categories) {
     var mins = directionMinutes(entries, categories);
     var total = mins.more + mins.less + mins.upkeep;
@@ -263,7 +268,7 @@
     var loggedT = tenths(total);
     var upT = tenths(mins.more);
     var downT = tenths(mins.less);
-    var keepT = loggedT - upT - downT;
+    var keepT = Math.max(0, loggedT - upT - downT);
 
     var pct = function (m) { return total > 0 ? Math.round(m / total * 100) : 0; };
     var upPct = pct(mins.more);
@@ -281,7 +286,7 @@
       keepHours: keepT / 10,
       upPct: upPct,
       downPct: downPct,
-      keepPct: total > 0 ? 100 - upPct - downPct : 0,
+      keepPct: total > 0 ? Math.max(0, 100 - upPct - downPct) : 0,
       upWidth: width(mins.more),
       downWidth: width(mins.less),
       keepWidth: width(Math.max(0, total - mins.more - mins.less))
@@ -290,7 +295,9 @@
 
   /* The donut and the "{n}% coverage · {n} h unlogged" caption (spec §4a).
      The percentage is never clamped — 105 % coverage is a real thing to say
-     about a day someone over-logged — but the arc geometry is, in the chart.  */
+     about a day someone over-logged — but the arc geometry is, in the chart.
+     `fraction` is the arc's exact, unrounded input (mockup covArc), clamped
+     only where it is drawn. */
   function coverage(minutes, dayCount) {
     var totalHours = HOURS_PER_DAY * Math.max(0, dayCount);
     var loggedT = tenths(minutes);
@@ -299,7 +306,8 @@
       loggedHours: loggedT / 10,
       totalHours: totalHours,
       unloggedHours: Math.max(0, totalT - loggedT) / 10,
-      pct: totalHours > 0 ? Math.round(loggedT / totalT * 100) : 0
+      pct: totalHours > 0 ? Math.round(loggedT / totalT * 100) : 0,
+      fraction: totalHours > 0 ? (Number(minutes) || 0) / (totalHours * 60) : 0
     };
   }
 

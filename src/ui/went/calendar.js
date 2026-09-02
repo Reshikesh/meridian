@@ -129,17 +129,22 @@
     var minDay = props.minDay, today = props.today;
     var efield = props.efield;
 
-    /* Scroll to the month asked for. On mount that is the range start, and
-       again once the fonts are in, because the swap can move every band. */
+    /* Scroll to the month asked for. */
     var request = props.scrollTo;
     useLayoutEffect(function () {
       if (request && request.day) scrollToDay(scrollRef.current, request.day);
     }, [request]);
 
+    /* On mount, the range start — before the first paint, so a long history
+       never shows its first month and then jumps (QUALITY-BAR §3). */
+    useLayoutEffect(function () {
+      scrollToDay(scrollRef.current, range.start);
+    }, []);
+
+    /* And again once the fonts are in, because the swap can move every band. */
     useEffect(function () {
       var alive = true;
       var start = range.start;
-      scrollToDay(scrollRef.current, start);
       if (document.fonts && document.fonts.ready) {
         document.fonts.ready.then(function () {
           if (alive) scrollToDay(scrollRef.current, start);

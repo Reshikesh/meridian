@@ -146,6 +146,17 @@ function transientStates(page) {
       close: async () => { await page.locator('.ribbon__band--on').click(); },
     },
     {
+      // A band reached by keyboard: the focus ring on its bar and name.
+      id: 'went-bandfocus',
+      open: async () => {
+        await openWent();
+        await page.locator('.seg--small').nth(1).locator('[data-active="1"]').focus();
+        await page.keyboard.press('Tab');
+      },
+      ready: '.ribbon__band:focus-visible',
+      close: async () => { await page.evaluate(() => document.activeElement.blur()); },
+    },
+    {
       // The goal split, with its sub-lines and the "No goal" band.
       id: 'went-goal',
       open: async () => {

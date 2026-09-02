@@ -55,9 +55,7 @@
     }
 
     var cov = summary.coverage;
-    var totalHours = summary.days * aggregate.HOURS_PER_DAY;
-    var fraction = totalHours > 0 ? summary.minutes / (totalHours * 60) : 0;
-    var donutLabel = cov.pct + '% of the ' + aggregate.groupHours(totalHours) + ' h in this range are logged';
+    var donutLabel = cov.pct + '% of the ' + aggregate.groupHours(cov.totalHours) + ' h in this range are logged';
     var caption = (dates.formatLong(view.range.start) + ' – ' + dates.formatLong(view.range.end)).toUpperCase();
     var note = cov.pct + '% coverage · ' + aggregate.groupHours(cov.unloggedHours) + ' h unlogged';
 
@@ -102,7 +100,7 @@
       <main class=${props.className} data-s="went">
         <div class="went__head">
           <div class="went__title">
-            <${ui.Donut} fraction=${fraction} label=${donutLabel} />
+            <${ui.Donut} fraction=${cov.fraction} label=${donutLabel} />
             <h1 class="t-h1 went__h1">${aggregate.formatHoursGrouped(summary.minutes)} hours logged</h1>
           </div>
           <${ui.Split} split=${summary.split} />

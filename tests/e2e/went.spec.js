@@ -287,8 +287,23 @@ test('a band click shades the calendar by that node, a second click clears, a sp
   await expect(band(page, 'goal:goal_py').locator('.ribbon__sub')).toHaveText('Learning');
 });
 
-test('the keyboard reaches the bands; sort reorders', async ({ page }) => {
+test('the keyboard reaches the bands, with a ring that stays inside the chart; sort reorders', async ({ page }) => {
   await open(page);
+  // Tab from the sort control lands on the first band.
+  await page.locator('.seg--small').nth(1).locator('[data-active="1"]').focus();
+  await page.keyboard.press('Tab');
+  const first = page.locator('.ribbon__band').first();
+  await expect(first).toBeFocused();
+  await expect(first).toHaveAttribute('data-node', 'cat:cat_reading');
+  // The ring is the band's own bar and name, never an outline the scroller
+  // could clip or that could cross the next row.
+  const ring = await first.evaluate((g) => ({
+    outline: getComputedStyle(g).outlineStyle,
+    bar: getComputedStyle(g.querySelector('.ribbon__bar')).stroke,
+    name: getComputedStyle(g.querySelector('.ribbon__name')).textDecorationLine,
+  }));
+  expect(ring).toEqual({ outline: 'none', bar: 'rgb(140, 28, 43)', name: 'underline' });
+
   await band(page, 'cat:cat_family').focus();
   await page.keyboard.press('Enter');
   await expect(band(page, 'cat:cat_family')).toHaveClass(/ribbon__band--on/);
@@ -446,6 +461,10 @@ test('the stress dataset: 20 categories, 30-character names, 12 goals, 365 days'
   await open(page, stressState());
   await expect(page.locator('.ribbon__band')).toHaveCount(20);
 
+  // The calendar is already at the range's month on the first paint, not at
+  // June 2025 with a jump to follow (QUALITY-BAR §3).
+  expect(await page.locator('.cal__scroll').evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+
   // Every preset is a different range on a year of data, and only one lights.
   const starts = {};
   for (const id of ['30', '90', 'ytd', 'all']) {
@@ -486,7 +505,10 @@ test('the stress dataset: 20 categories, 30-character names, 12 goals, 365 days'
         return { text: c.textContent, inside: r.left >= box.left - 1 && r.right <= box.right + 1 && r.top >= box.top - 1 && r.bottom <= box.bottom + 1 };
       });
     });
-    expect(chips.filter((c) => c.text.includes(starts[id].split(' ')[0])).every((c) => c.inside), `${id}: ${JSON.stringify(chips)}`).toBe(true);
+    // `starts[id]` is the start input's text, which is the chip's text verbatim.
+    const startChip = chips.filter((c) => c.text === starts[id]);
+    expect(startChip, `${id}: ${JSON.stringify(chips)}`).toHaveLength(1);
+    expect(startChip[0].inside, `${id}: ${JSON.stringify(chips)}`).toBe(true);
   }
 });
 

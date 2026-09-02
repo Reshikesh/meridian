@@ -384,7 +384,13 @@
     function renderScreen(id, mode) {
       var className = 'screen' +
         (mode === 'leaving' ? ' screen--leaving' : mode === 'entering' ? ' screen--entering' : '');
-      var key = (mode === 'leaving' ? 'out:' : '') + id;
+      /* The same key in both modes, so the instance that was on screen is the
+         one that fades out — its calendar scroll, hover and focus intact —
+         and only the incoming screen mounts. A distinct key for the leaving
+         copy made Preact unmount the live screen and mount a fresh one to
+         fade, which on a long history showed the calendar's first month for
+         the length of the fade. */
+      var key = id;
 
       if (id === 'log') {
         return html`

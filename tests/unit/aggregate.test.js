@@ -174,6 +174,30 @@ test('the direction split derives upkeep as the residual (spec §4b)', async (t)
     assert.equal(s.upPct + s.downPct + s.keepPct, 100);
   });
 
+  await t.test('the residual never goes negative when More and Less both round up', () => {
+    // Nine minutes each: tenths(18) = 3 but tenths(9) = 2 twice, so the raw
+    // residual is −1. A negative duration is a wrong statement; here the three
+    // figures may exceed the total by a tenth instead.
+    const s = aggregate.directionSplit([
+      entry('2026-06-01', 9, 'cat_learn'),
+      entry('2026-06-01', 9, 'cat_scroll'),
+    ], CATEGORIES);
+    assert.equal(s.keepHours, 0);
+    assert.equal(aggregate.groupHours(s.keepHours), '0.0');
+    assert.ok(s.upHours >= 0 && s.downHours >= 0 && s.keepHours >= 0);
+
+    // 99 and 101 minutes: 49.5 % and 50.5 % both round up, so the residual
+    // percentage would be −1.
+    const p = aggregate.directionSplit([
+      entry('2026-06-01', 99, 'cat_learn'),
+      entry('2026-06-01', 101, 'cat_scroll'),
+    ], CATEGORIES);
+    assert.equal(p.keepPct, 0);
+    assert.equal(p.upPct, 50);
+    assert.equal(p.downPct, 51);
+    assert.equal(p.keepWidth, '0.000%');
+  });
+
   await t.test('an empty range divides by nothing and stays at zero', () => {
     const s = aggregate.directionSplit([], CATEGORIES);
     assert.deepEqual(
@@ -215,12 +239,20 @@ test('coverage is measured against the whole day (decision 17, as amended)', asy
     const c = aggregate.coverage(1500, 1);   // 25 h on a 24 h day
     assert.equal(c.pct, 104);
     assert.equal(c.unloggedHours, 0, 'hours to go cannot go negative');
+    assert.ok(Math.abs(c.fraction - 1500 / 1440) < 1e-9, 'the arc input is exact and unclamped here');
+  });
+
+  await t.test('the donut arc takes the exact fraction, not the rounded percentage', () => {
+    const c = aggregate.coverage(5700, 7);
+    assert.ok(Math.abs(c.fraction - 5700 / 10080) < 1e-9);
+    assert.equal(aggregate.coverage(9, 1).fraction, 9 / 1440);
   });
 
   await t.test('an empty range does not divide by zero', () => {
     const c = aggregate.coverage(0, 0);
     assert.equal(c.pct, 0);
     assert.equal(c.totalHours, 0);
+    assert.equal(c.fraction, 0);
   });
 });
 
@@ -319,6 +351,7 @@ test('rangeSummary is the header in one call', () => {
   assert.equal(s.coverage.totalHours, 168, 'days × 24 (decision 17, as amended)');
   assert.equal(s.coverage.pct, 7);
   assert.equal(s.coverage.unloggedHours, 155.5);
+  assert.ok(Math.abs(s.coverage.fraction - 750 / 10080) < 1e-9);
   assert.equal(s.split.upHours, 1.5);
   assert.equal(s.split.downHours, 2);
   assert.equal(s.split.keepHours, 9);

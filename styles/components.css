@@ -1755,14 +1755,16 @@
   cursor: default;
 }
 
-/* Only colour and opacity move (QUALITY-BAR §3: heat 160ms, hover 80ms); the
-   corner marks and the ring never animate. */
+/* Only colour and opacity move (QUALITY-BAR §3): the colour swap is the hover,
+   80ms in and out; the opacity is the heat, 160ms. Each property carries its
+   one duration on the base rule so leaving a cell fades as fast as entering
+   it. The corner marks and the ring never animate. */
 .cal__fill {
   position: absolute;
   inset: 0 1px 2px 1px;
   border-radius: 1px;
   background: var(--pale);
-  transition: background-color var(--m-chart) var(--ease),
+  transition: background-color var(--m-hover) var(--ease),
               opacity var(--m-chart) var(--ease);
 }
 
@@ -1791,7 +1793,6 @@
   background: var(--brand);
   opacity: 1;
   border: 0;
-  transition-duration: var(--m-hover);
 }
 
 .cal__num {
@@ -1996,9 +1997,22 @@
   outline: none;
 }
 
-.ribbon__band:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: 2px;
+/* The keyboard focus ring is drawn on the band's own right bar and name, not
+   as an outline round the group: the group's box reaches the chart's right
+   edge, where the panel's scroller clips an outline, and spans the trunk's
+   rows, where it crosses the next band's figures. The bar sits in its own
+   row with 9px of air either side, so a 2px brand stroke is never clipped
+   and never crosses anything. */
+.ribbon__band:focus-visible .ribbon__bar {
+  stroke: var(--brand);
+  stroke-width: 2;
+}
+
+.ribbon__band:focus-visible .ribbon__name {
+  text-decoration: underline;
+  text-decoration-color: var(--brand);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
 }
 
 .ribbon__name {
