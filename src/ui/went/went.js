@@ -115,7 +115,7 @@
     };
 
     return html`
-      <main class=${props.className} data-s="went">
+      <main class=${props.className} data-s="went" inert=${props.inert ? true : null}>
         <div class="went__head">
           <div class="went__title">
             <${ui.Donut} fraction=${pending ? 0 : cov.fraction} label=${donutLabel} />

@@ -272,8 +272,28 @@
         onInput=${function (e) { props.onInput(e.currentTarget.value); }} />`;
   }
 
+  /* A paragraph's worth of text — the lesson sheet's. The same input recipe
+     as the rail's date fields (a bordered box), because a dashed underline
+     under five lines of prose reads as a rule through the text. */
+  function TextArea(props) {
+    return html`
+      <textarea class=${'input input--area' + (props.className ? ' ' + props.className : '')}
+        id=${props.id || null} rows=${props.rows || 5}
+        value=${props.value === null || props.value === undefined ? '' : props.value}
+        placeholder=${props.placeholder || ''}
+        maxLength=${props.maxLength || 2000}
+        aria-label=${props.label || null}
+        aria-labelledby=${props.labelledBy || null}
+        aria-invalid=${props.invalid ? 'true' : null}
+        aria-describedby=${props.describedBy || null}
+        data-autofocus=${props.autofocus ? '' : null}
+        ref=${props.inputRef || null}
+        onInput=${function (e) { props.onInput(e.currentTarget.value); }} />`;
+  }
+
   ui.fields = {
     SWATCHES: SWATCHES,
+    TextArea: TextArea,
     DIRECTIONS: DIRECTIONS,
     Field: Field,
     Select: Select,

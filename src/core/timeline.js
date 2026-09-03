@@ -170,6 +170,26 @@
 
     labels.forEach(function (l) { l.y = TOP + l.lane * LANE_H + 12; });
 
+    /* A marker line rises to the top of its own label's band, as the mockup's
+       TARGET line does — unless a label in a band below crosses its x, in
+       which case it stops under the bands rather than run through the text. */
+    var bandBottom = TOP + lanes * LANE_H - 4;
+    function lineTop(label) {
+      if (!label) return bandBottom;
+      for (var i = 0; i < labels.length; i++) {
+        var o = labels[i];
+        if (o === label || o.lane <= label.lane) continue;
+        if (o.left - 2 <= label.x && label.x <= o.right + 2) return bandBottom;
+      }
+      return TOP + label.lane * LANE_H;
+    }
+    function labelFor(id, kind) {
+      for (var i = 0; i < labels.length; i++) {
+        if (labels[i].id === id && labels[i].kind === kind) return labels[i];
+      }
+      return null;
+    }
+
     /* ---- per goal ---- */
     var goals = lines.map(function (s) {
       var history = s.points.map(function (p) {
@@ -205,8 +225,12 @@
           : null,
         now: lastPoint,
         projection: projection,
-        target: s.byDate ? { x: xDay(s.byDate) } : null,
-        landing: s.landing ? { x: x(Math.min(capEpoch, dates.epochDay(s.landing))), y: projection ? projection.to.y : null } : null,
+        target: s.byDate ? { x: xDay(s.byDate), top: lineTop(labelFor(s.goal.id, 'target')) } : null,
+        landing: s.landing ? {
+          x: x(Math.min(capEpoch, dates.epochDay(s.landing))),
+          y: projection ? projection.to.y : null,
+          top: lineTop(labelFor(s.goal.id, 'landing'))
+        } : null,
         band: band,
         done: !!s.done,
         late: !!s.late

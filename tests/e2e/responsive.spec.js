@@ -14,7 +14,7 @@ const { transientStates } = require('./lib/states');
 const WIDTHS = [345, 360, 753, 768, 1009, 1024, 1181, 1265, 1280, 1425, 1440, 1905, 1920];
 
 const THEMES = ['paper', 'graphite', 'blueprint'];
-const SCREENS = ['log', 'went', 'progress', 'goals', 'plan', 'lessons'];
+const SCREENS = ['log', 'went', 'progress', 'goals', 'lessons'];
 
 // Screenshots only at the narrow and the reference width: 2 widths x 3 themes
 // x 6 screens = 36 PNGs per project. The other 11 widths still run all three

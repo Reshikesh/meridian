@@ -130,18 +130,24 @@
      the projections do not move with the weekday of first run. */
   var TODAY_CATEGORIES = ['cat_work', 'cat_family', 'cat_learn', 'cat_exercise'];
 
+  /* Decision 25: a journal. One titled and pinned, one untitled, so the
+     demo wall shows both kinds of card. */
   var LESSONS = [
     {
       id: 'l_01',
       weeksAgo: 1,
+      title: 'Before eight',
       text: 'Python only happens before 8am. Every evening attempt this month became scrolling.',
-      tags: ['goal_py']
+      tags: ['goal_py'],
+      pinned: true
     },
     {
       id: 'l_02',
       weeksAgo: 2,
+      title: null,
       text: 'Two hours with family beat six hours of "available". Presence is not duration.',
-      tags: ['cat_family']
+      tags: ['cat_family'],
+      pinned: false
     }
   ];
 
@@ -254,8 +260,11 @@
         id: l.id,
         iso_week: dates.weekKey(monday),
         date: dates.dayKey(sunday),
+        title: l.title,
         text: l.text,
-        tags: l.tags.slice()
+        tags: l.tags.slice(),
+        pinned: l.pinned,
+        archived: false
       };
     });
 

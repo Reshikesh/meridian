@@ -369,6 +369,14 @@ test('grouped hours: one decimal and a thousands separator, locale-free', () => 
 });
 
 test('a Less category’s cap is its plan unless the workbook says otherwise (decision 13)', () => {
+  // Decision 26: over the cap, in tenths, for Less alone.
+  const less = { direction: 'less', weekly_plan_hours: 14, weekly_cap_hours: null };
+  assert.equal(aggregate.overCapHours(less, 16.5 * 60), 2.5);
+  assert.equal(aggregate.overCapHours(less, 14 * 60), 0, 'at the cap is not over it');
+  assert.equal(aggregate.overCapHours(less, 3 * 60), 0);
+  assert.equal(aggregate.overCapHours({ direction: 'more', weekly_plan_hours: 2 }, 600), 0, 'a floor, not a cap');
+  assert.equal(aggregate.overCapHours({ direction: 'upkeep', weekly_plan_hours: 2 }, 600), 0);
+  assert.equal(aggregate.overCapHours(null, 600), 0);
   assert.equal(aggregate.capHours({ weekly_plan_hours: 14, weekly_cap_hours: null }), 14);
   assert.equal(aggregate.capHours({ weekly_plan_hours: 14, weekly_cap_hours: '' }), 14);
   assert.equal(aggregate.capHours({ weekly_plan_hours: 14, weekly_cap_hours: 10 }), 10);

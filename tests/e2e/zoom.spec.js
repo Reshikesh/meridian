@@ -17,7 +17,7 @@ const { transientStates } = require('./lib/states');
 const ZOOMS = [0.9, 1.25, 1.5];      // 100% is responsive.spec.js's whole axis
 const WIDTHS = [360, 768, 1280, 1920, 2560];
 const THEMES = ['paper', 'graphite', 'blueprint'];
-const SCREENS = ['log', 'went', 'progress', 'goals', 'plan', 'lessons'];
+const SCREENS = ['log', 'went', 'progress', 'goals', 'lessons'];
 
 const FROZEN = new Date('2026-06-07T12:00:00Z');
 const MIN_LEAVES = 14;

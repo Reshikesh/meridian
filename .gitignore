@@ -8,3 +8,4 @@ dist/meridian-v1/
 .DS_Store
 Thumbs.db
 tests/e2e/report/
+.claude/

@@ -220,6 +220,32 @@ test('date labels never overlap: a label that would is moved to the next band', 
     g.labels.forEach((l) => assert.equal(l.y, 24 + l.lane * 19 + 12));
   });
 
+  await t.test('a marker line never runs through a label in the band below it', () => {
+    const state = {
+      goals: [goal('a'), goal('b', { by_date: '2026-10-01' })],
+      entries: daily('a', 14, 60).concat(daily('b', 14, 60)),
+    };
+    const g = timeline.layout([line(state, 'a'), line(state, 'b')], OPTS);
+    const bandBottom = 24 + g.lanes * 19 - 4;
+    g.goals.forEach((gl) => {
+      [['target', gl.target], ['landing', gl.landing]].forEach(([kind, m]) => {
+        const label = g.labels.find((l) => l.id === gl.id && l.kind === kind);
+        const crossed = g.labels.some((o) => o !== label && o.lane > label.lane
+          && o.left - 2 <= label.x && label.x <= o.right + 2);
+        assert.equal(m.top, crossed ? bandBottom : 24 + label.lane * 19, `${gl.id} ${kind}`);
+      });
+    });
+    // And the seed-shaped case does exercise the rule at least once.
+    assert.ok(g.goals.some((gl) => gl.target.top === bandBottom || gl.landing.top === bandBottom));
+  });
+
+  await t.test('with one band the line rises to the top of it, as the mockup draws TARGET', () => {
+    const state = { goals: [goal('a', { by_date: '2026-08-31' })], entries: daily('a', 14, 60) };
+    const g = timeline.layout([line(state, 'a')], OPTS).goals[0];
+    assert.equal(g.target.top, 24);
+    assert.equal(g.landing.top, 24);
+  });
+
   await t.test('a landing at the far right anchors to the left so it stays on the chart', () => {
     const state = { goals: [goal('a', { by_date: '2026-06-20' })], entries: daily('a', 14, 60) };
     const g = timeline.layout([line(state, 'a')], { today: TODAY, width: 320 });

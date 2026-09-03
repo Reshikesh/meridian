@@ -126,8 +126,9 @@
     var line;
     if (!after.enoughHistory) {
       /* BUILD-PLAN § Phase 2: "or 'no projection yet' when history is short".
-         projection.js gates on seven distinct logged days for this goal. */
-      line = html`<span class="preview__flat">No landing date yet — seven logged days are needed.</span>`;
+         Decision 27: the estimate arrives with the second logged day, so the
+         entry being previewed is the first. */
+      line = html`<span class="preview__flat">No landing date yet — it arrives with the second logged day.</span>`;
     } else if (after.done) {
       line = html`<span class="preview__flat">Target reached.</span>`;
     } else if (!before.landing && after.landing) {
@@ -153,6 +154,8 @@
           <span class="preview__to">${after.banked.toFixed(1)} h</span>
         </div>
         <div class="preview__row preview__row--lands">${line}</div>
+        ${after.landing && projection.earlyLabel(after) ? html`
+          <div class="preview__early">${projection.earlyLabel(after)}</div>` : null}
       </div>`;
   }
 

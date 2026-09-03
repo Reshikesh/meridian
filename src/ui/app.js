@@ -419,6 +419,18 @@
             onClose=${popSheet} />`;
       }
 
+      if (item.kind === 'lesson') {
+        return html`
+          <${ui.LessonSheet} key=${key} state=${data} now=${tick}
+            lesson=${item.lesson || null}
+            onSave=${function (input) {
+              if (item.lesson) store.updateLesson(item.lesson.id, input);
+              else store.addLesson(input);
+              popSheet();
+            }}
+            onClose=${popSheet} />`;
+      }
+
       return html`
         <${ui.CategorySheet} key=${key} state=${data} theme=${theme}
           fromGoal=${item.from === 'goal'}
@@ -435,8 +447,9 @@
        "nothing may be lost"). */
     var storageError = store.getError();
 
-    /* Log and Where it went are real screens; the other four are still the
-       designed empty state, and all take the same cross-fade classes.
+    /* Every screen is real now; Log and Where it went fall back to the
+       designed empty state with nothing logged, and all take the same
+       cross-fade classes.
 
        A plain function, not a component: a component declared inside App would
        be a new function identity on every render, so Preact would tear the
@@ -452,10 +465,16 @@
          fade, which on a long history showed the calendar's first month for
          the length of the fade. */
       var key = id;
+      /* A leaving screen is still in the DOM for the length of the fade, and
+         its controls were still in the tab order: a Tab pressed inside that
+         window landed on a control that then unmounted, and focus fell to
+         <body>. Inert takes it out of the tab order and the accessibility
+         tree for the frame it is painted. */
+      var inert = mode === 'leaving';
 
       if (id === 'log') {
         return html`
-          <${ui.Log} key=${key} className=${className} state=${data} now=${tick}
+          <${ui.Log} key=${key} className=${className} inert=${inert} state=${data} now=${tick}
             day=${day} today=${todayKey}
             draft=${quick} onDraft=${setQuick}
             onStepDay=${stepDay}
@@ -471,11 +490,33 @@
          falls through to the shared empty state. */
       if (id === 'goals') {
         return html`
-          <${ui.Goals} key=${key} className=${className} state=${data} now=${tick}
+          <${ui.Goals} key=${key} className=${className} inert=${inert} state=${data} now=${tick}
             onNew=${function () { pushSheet({ kind: 'goal' }); }}
             onEdit=${function (goal) { pushSheet({ kind: 'goal', goal: goal }); }}
             onArchive=${function (id2) { store.archiveGoal(id2); }}
             onRestore=${function (id2) { store.restoreGoal(id2); }} />`;
+      }
+
+      /* Decision 27: every live goal on one chart. With no goals the screen
+         is still the screen, with a line saying so and the way to Goals. */
+      if (id === 'progress') {
+        return html`
+          <${ui.Progress} key=${key} className=${className} inert=${inert} state=${data} now=${tick}
+            theme=${theme} onGoals=${function () { goToScreen('goals'); }} />`;
+      }
+
+      /* Decision 25: a journal, usable from the first minute, so it is never
+         the shared empty state — with nothing written it says so itself. */
+      if (id === 'lessons') {
+        return html`
+          <${ui.Lessons} key=${key} className=${className} inert=${inert} state=${data} now=${tick}
+            visits=${{ read: store.readLessonsVisit, write: store.writeLessonsVisit }}
+            onNew=${function () { pushSheet({ kind: 'lesson' }); }}
+            onEdit=${function (lesson) { pushSheet({ kind: 'lesson', lesson: lesson }); }}
+            onPin=${function (id2) { store.pinLesson(id2); }}
+            onArchive=${function (id2) { store.archiveLesson(id2); }}
+            onRestore=${function (id2) { store.restoreLesson(id2); }}
+            onDelete=${function (id2) { store.deleteLesson(id2); }} />`;
       }
 
       /* With no entries at all there is no range to pick, so the screen is
@@ -483,7 +524,7 @@
          screen's own empty panel (spec §12). */
       if (id === 'went' && (data.entries || []).length) {
         return html`
-          <${ui.Went} key=${key} className=${className} state=${data}
+          <${ui.Went} key=${key} className=${className} inert=${inert} state=${data}
             today=${todayKey} minDay=${wentBounds.minDay}
             view=${wentView} actions=${wentActions} />`;
       }

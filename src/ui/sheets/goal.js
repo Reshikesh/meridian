@@ -59,19 +59,28 @@
 
     var name = r.category.name;
     var needs = r.required === null ? null : hours(r.required);
+    var early = projection.earlyLabel(r);
 
-    var lead = r.hasHistory
+    /* Decision 27: from the second logged day the category has an early
+       estimate, said so in the same words every other screen uses. */
+    var lead = r.settled
       ? 'You’ve given ' + name + ' ' + hours(r.pace) + ' h a week for ' +
         plural(r.paceBlocks, 'week') + '.'
-      : 'Nothing logged to ' + name + ' yet.';
+      : r.early
+        ? 'You’ve given ' + name + ' ' + hours(r.pace) + ' h a week so far, over ' +
+          plural(r.loggedDays, 'logged day') + '.'
+        : r.loggedDays === 1
+          ? 'One day logged to ' + name + ' so far.'
+          : 'Nothing logged to ' + name + ' yet.';
 
     var tail;
     if (r.done) {
       tail = 'Those hours are already banked.';
     } else if (!r.hasHistory) {
-      tail = 'Meridian starts projecting once ' + name + ' has seven logged days.';
+      tail = 'Meridian starts estimating from ' + name + '’s second logged day, and settles after seven.';
     } else if (r.landing) {
       tail = 'At ' + hours(r.pace) + ' h it lands ' + dates.formatDayMonth(r.landing) +
+        (early ? ' (' + early + ')' : '') +
         '. Meridian will keep both dates in view instead of just the one you typed.';
     } else {
       tail = 'Nothing logged to ' + name + ' in the last ' + plural(r.paceBlocks, 'week') +

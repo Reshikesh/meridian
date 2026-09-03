@@ -42,6 +42,26 @@ test('the sheet lists every category against the waking week (decision 17)', asy
   await expect(row(page, 'Learning').locator('.dirtag')).toHaveText('MORE');
 });
 
+test('a Less category past its planned hours says how far over the cap it is (decision 26)', async ({ page }) => {
+  await openManage(page);
+  // Scrolling has 13.0 h this week against a plan of 14: under, so nothing.
+  await expect(row(page, 'Scrolling').locator('.managerow__over')).toHaveCount(0);
+
+  // Plan it at 10 and the same 13.0 h is 3.0 h over the cap (decision 13:
+  // the cap is the planned hours).
+  await row(page, 'Scrolling').getByRole('button', { name: 'edit' }).click();
+  await page.locator('.fld--plan').fill('10');
+  await page.locator('.manage__editoractions .btn--brand').click();
+  await expect(row(page, 'Scrolling').locator('.managerow__over')).toHaveText('3.0 h over cap');
+  await expect(row(page, 'Scrolling').locator('.managerow__hours')).toContainText('13.0 h');
+
+  // A More category is judged against a floor, never a cap (§8.8).
+  await row(page, 'Family').getByRole('button', { name: 'edit' }).click();
+  await page.locator('.fld--plan').fill('1');
+  await page.locator('.manage__editoractions .btn--brand').click();
+  await expect(row(page, 'Family').locator('.managerow__over')).toHaveCount(0);
+});
+
 /* ---------- archive and restore (§8.10, §8.11) ---------- */
 
 test('archiving a category with hours confirms inline, and restore reverses it', async ({ page }) => {

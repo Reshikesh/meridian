@@ -459,12 +459,33 @@ test('the plan sheet insists on Mondays (spec §7)', () => {
 test('lessons carry an ISO week and a tag list', () => {
   const { state, report } = workbook.decode(XLSX, bookOf({
     Categories: ONE_CATEGORY,
-    Lessons: [['id', 'iso_week', 'date', 'text', 'tags'],
-      ['l_01', '2026-W22', '2026-05-31', 'Python only happens before 8am.', 'goal_py,cat_learn'],
-      ['l_02', 'week 22', '2026-05-31', 'bad week', null]],
+    Lessons: [['id', 'iso_week', 'date', 'title', 'text', 'tags', 'pinned', 'archived'],
+      ['l_01', '2026-W22', '2026-05-31', 'Mornings', 'Python only happens before 8am.', 'goal_py,cat_learn', 'TRUE', 'FALSE'],
+      ['l_02', 'week 22', '2026-05-31', null, 'bad week', null, null, null],
+      ['l_03', '2026-W20', '2026-05-17', null, 'Presence is not duration.', null, 'TRUE', 'TRUE']],
   }), { now: NOW });
   assert.deepEqual(state.lessons[0].tags, ['goal_py', 'cat_learn']);
+  assert.equal(state.lessons[0].title, 'Mornings');
+  assert.equal(state.lessons[0].pinned, true);
+  assert.equal(state.lessons[0].archived, false);
   assert.match(report.rejects[0].reason, /is not an ISO week/);
+  // Archived wins over pinned: the archive is off the wall (decision 25).
+  assert.equal(state.lessons[1].archived, true);
+  assert.equal(state.lessons[1].pinned, false);
+});
+
+test('a workbook from before decision 25 imports its lessons untitled, unpinned and live', () => {
+  const { state, report } = workbook.decode(XLSX, bookOf({
+    Categories: ONE_CATEGORY,
+    Lessons: [['id', 'iso_week', 'date', 'text', 'tags'],
+      ['l_01', '2026-W22', '2026-05-31', 'Python only happens before 8am.', 'goal_py']],
+  }), { now: NOW });
+  assert.equal(report.rejects.length, 0);
+  assert.equal(state.lessons[0].title, null);
+  assert.equal(state.lessons[0].pinned, false);
+  assert.equal(state.lessons[0].archived, false);
+  // The three missing columns are not "unknown" — nothing is noted about them.
+  assert.equal(report.notes.some((n) => /Lessons/.test(n) && /column/.test(n)), false);
 });
 
 test('the export filename is the date alone', () => {

@@ -1,20 +1,22 @@
 /* Meridian UI — screen registry and the empty state.
 
-   Phase 0 renders no data, so every screen is its empty state. Log, Where it
-   went and Goals say they are empty; Progress, Plan and Lessons carry the calm
-   "coming after your first full week" line, because they are v1.5 (decision 4).
+   Log and Where it went say they are empty when there is nothing logged.
+   Progress, Goals and Lessons never fall through to here: with nothing in
+   them each is still its own screen with its own line saying so. Their
+   entries below carry the nav label, and a heading kept true in case.
 
    The empty state is built from the mockup's own screen-header recipe (eyebrow +
    h1) followed by a full-bleed --strip band, the same treatment its stat strips
-   use. It is one component, reused by all six screens. */
+   use. It is one component, reused by every screen that needs it. */
 (function () {
   'use strict';
 
   var html = htm.bind(preact.h);
   var ui = (window.Meridian = window.Meridian || {}).ui = window.Meridian.ui || {};
 
-  /* Nav order is the mockup's, left to right (spec §6). */
-  var ORDER = ['log', 'went', 'progress', 'goals', 'plan', 'lessons'];
+  /* Nav order is the mockup's, left to right (spec §6), less Plan: decision
+     26 removes the screen, and Goals is the plan. Five screens. */
+  var ORDER = ['log', 'went', 'progress', 'goals', 'lessons'];
 
   var SCREENS = {
     log: {
@@ -32,8 +34,8 @@
     progress: {
       label: 'Progress',
       eyebrow: 'PROGRESS',
-      heading: 'Coming after your first full week.',
-      note: 'Projections need a few weeks of logged hours behind them.'
+      heading: 'No goals yet.',
+      note: 'A goal turns logged hours into a landing date.'
     },
     goals: {
       label: 'Goals',
@@ -41,17 +43,11 @@
       heading: 'No goals yet.',
       note: 'A goal turns logged hours into a landing date.'
     },
-    plan: {
-      label: 'Plan',
-      eyebrow: 'PLAN',
-      heading: 'Coming after your first full week.',
-      note: 'Planning a week works once there is a lived week to compare it to.'
-    },
     lessons: {
       label: 'Lessons',
       eyebrow: 'LESSONS',
-      heading: 'Coming after your first full week.',
-      note: 'The weekly close-out arrives when the first week closes.'
+      heading: 'Nothing written yet.',
+      note: 'A lesson is anything worth keeping.'
     }
   };
 
@@ -66,7 +62,7 @@
 
     return html`
       <main class=${className} data-s=${props.screen}
-        aria-hidden=${props.leaving ? 'true' : null}>
+        aria-hidden=${props.leaving ? 'true' : null} inert=${props.leaving ? true : null}>
         <div class="empty__head">
           <div class="t-eyebrow empty__eyebrow">${s.eyebrow}</div>
           <h1 class="t-h1">${s.heading}</h1>

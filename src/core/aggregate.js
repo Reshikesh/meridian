@@ -326,6 +326,17 @@
     return Number(cap) || 0;
   }
 
+  /* Decision 26: the Manage row's THIS WEEK column says "{n} h over cap"
+     when a Less category is past its planned hours. Hours over, in tenths,
+     or 0 — for More and Upkeep, always 0, because a cap is a Less thing
+     (rule §8.8). */
+  function overCapHours(category, weekMinutes) {
+    if (!category || category.direction !== 'less') return 0;
+    var cap = capHours(category);
+    var over = hours(weekMinutes) - cap;
+    return over > 0 ? Math.round(over * 10) / 10 : 0;
+  }
+
   /* ---------- the Where-it-went screen (spec §4a–§4d) ---------- */
 
   function categoryNamed(categories, id) {
@@ -478,6 +489,7 @@
     coverage: coverage,
     dayCoverage: dayCoverage,
     capHours: capHours,
+    overCapHours: overCapHours,
     activeCategories: activeCategories,
     plannedTotal: plannedTotal,
     chartNodes: chartNodes,

@@ -313,7 +313,7 @@
     var coverage = aggregate.dayCoverage(state.entries || [], day);
 
     return html`
-      <main class=${props.className} data-s="log">
+      <main class=${props.className} data-s="log" inert=${props.inert ? true : null}>
         <${DayHead} day=${day} today=${props.today} coverage=${coverage}
           onDay=${props.onStepDay} onManage=${props.onManage} />
 

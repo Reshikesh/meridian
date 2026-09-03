@@ -69,7 +69,7 @@ test.describe('the packaged zip', () => {
 
     for (const theme of ['graphite', 'blueprint', 'paper']) {
       await page.click(`[data-theme-btn="${theme}"]`);
-      for (const screen of ['log', 'went', 'progress', 'goals', 'plan', 'lessons']) {
+      for (const screen of ['log', 'went', 'progress', 'goals', 'lessons']) {
         await page.click(`[data-nav="${screen}"]`);
         await expect(page.locator(`main.screen[data-s="${screen}"]`)).toBeVisible();
       }

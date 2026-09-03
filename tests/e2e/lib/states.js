@@ -10,7 +10,7 @@
 // axis) so the two can never drift apart.
 
 const { DATA_KEY, demoState, emptyState } = require('./seed-state');
-const { gappedState, stressState } = require('./datasets');
+const { gappedState, stressState, earlyState, progressState, manyLessonsState } = require('./datasets');
 
 function transientStates(page) {
   const esc = async () => page.keyboard.press('Escape');
@@ -25,6 +25,14 @@ function transientStates(page) {
     await page.locator('main.screen[data-s="went"]').waitFor();
   };
   const day = (label) => page.locator(`.cal__cell[aria-label="${label}"]`);
+  const openProgress = async () => {
+    await page.click('[data-nav="progress"]');
+    await page.locator('main.screen[data-s="progress"]').waitFor();
+  };
+  const openLessons = async () => {
+    await page.click('[data-nav="lessons"]');
+    await page.locator('main.screen[data-s="lessons"]').waitFor();
+  };
 
   // Swap the dataset under the page and come back to Where it went.
   //
@@ -319,6 +327,127 @@ function transientStates(page) {
         await openGoals();
       },
       ready: '.goalrow--ghost',
+      close: async () => { await loadState(demoState()); },
+    },
+
+    // ---------- Progress (Phase 6) ----------
+    {
+      // A goal switched off: its row dimmed, its line gone, the switch unchecked.
+      id: 'progress-off',
+      open: async () => {
+        await openProgress();
+        await page.locator('.pgoal__switch').first().click();
+        await page.mouse.move(0, 0);
+      },
+      ready: '.pgoal--off',
+      close: async () => { await page.locator('.pgoal--off .pgoal__switch').click(); },
+    },
+    {
+      // A row under the pointer: the other lines dimmed.
+      id: 'progress-hover',
+      open: async () => { await openProgress(); await page.locator('.pgoal').last().hover(); },
+      ready: '.pchart__goal',
+      close: async () => { await page.mouse.move(0, 0); },
+    },
+    {
+      // Three goals, one on an early estimate: the label in the list, a third
+      // line, and the date bands at their fullest.
+      id: 'progress-early',
+      open: async () => { await loadState(earlyState()); await openProgress(); },
+      ready: '.pgoal__early',
+      close: async () => { await loadState(demoState()); },
+    },
+    {
+      // A reached goal, a one-day goal and a dashed second goal on Learning.
+      id: 'progress-states',
+      open: async () => { await loadState(progressState()); await openProgress(); },
+      ready: '.pgoal__lands--good',
+      close: async () => { await loadState(demoState()); },
+    },
+    {
+      // QUALITY-BAR §2's twelve goals, on the list and the chart at once.
+      id: 'progress-long',
+      open: async () => { await loadState(stressState()); await openProgress(); },
+      ready: '.pgoal',
+      close: async () => { await loadState(demoState()); },
+    },
+    {
+      // No goals: the line and the way to Goals.
+      id: 'progress-empty',
+      open: async () => { await loadState(emptyState()); await openProgress(); },
+      ready: '.progress__none',
+      close: async () => { await loadState(demoState()); },
+    },
+
+    // ---------- Lessons (Phase 6) ----------
+    {
+      // The New lesson sheet with everything in it: text, a title, a tag.
+      id: 'sheet-lesson',
+      open: async () => {
+        await openLessons();
+        await page.click('[data-lesson-new]');
+        await page.locator('.sheet__card').waitFor();
+        await page.locator('.fld--lesson').fill('Logging at night is guesswork. Log it when it ends.');
+        await page.locator('.fld--goalname').fill('Guesswork');
+        await page.locator('.tagpick__btn').first().click();
+      },
+      ready: '.tagpick__btn[data-active="1"]',
+      close: esc,
+    },
+    {
+      // The card menu, and then its delete confirm, on the last card.
+      id: 'lessons-menu',
+      open: async () => {
+        await openLessons();
+        await page.locator('.lcard .rowmenu__btn').last().click();
+      },
+      ready: '.rowmenu__panel',
+      close: esc,
+    },
+    {
+      id: 'lessons-confirm',
+      open: async () => {
+        await openLessons();
+        await page.locator('.lcard .rowmenu__btn').last().click();
+        await page.getByRole('menuitem', { name: 'Delete' }).click();
+      },
+      ready: '.confirm--menu',
+      close: esc,
+    },
+    {
+      // Forty cards: the trim, the count in the label, the archive switch.
+      id: 'lessons-many',
+      open: async () => { await loadState(manyLessonsState()); await openLessons(); },
+      ready: '.wall--fit .lcard',
+      close: async () => { await loadState(demoState()); },
+    },
+    {
+      // A search over the forty: every match, the page scrolling.
+      id: 'lessons-search',
+      open: async () => {
+        await loadState(manyLessonsState());
+        await openLessons();
+        await page.locator('.lessons__search').fill('python');
+      },
+      ready: '.wall--free .lcard',
+      close: async () => { await loadState(demoState()); },
+    },
+    {
+      // The archive: restore and the delete-for-good menu on each card.
+      id: 'lessons-archived',
+      open: async () => {
+        await loadState(manyLessonsState());
+        await openLessons();
+        await page.getByRole('button', { name: /View archived/ }).click();
+      },
+      ready: '.lcard--archived',
+      close: async () => { await loadState(demoState()); },
+    },
+    {
+      // Nothing written: the line and the way in.
+      id: 'lessons-empty',
+      open: async () => { await loadState(emptyState()); await openLessons(); },
+      ready: '.lessons__none',
       close: async () => { await loadState(demoState()); },
     },
   ];

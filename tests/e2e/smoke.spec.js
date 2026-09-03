@@ -2,7 +2,7 @@ const { test, expect } = require('@playwright/test');
 const { APP_URL } = require('./lib/app-url');
 const { installState } = require('./lib/seed-state');
 
-const SCREENS = ['log', 'went', 'progress', 'goals', 'plan', 'lessons'];
+const SCREENS = ['log', 'went', 'progress', 'goals', 'lessons'];
 const THEMES = ['paper', 'graphite', 'blueprint'];
 
 // Attach every listener BEFORE the first navigation, or load-time console

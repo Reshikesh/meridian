@@ -92,6 +92,8 @@
       if (editing && nameRef.current) nameRef.current.focus();
     }, [editing]);
     var weekHours = aggregate.hours(props.weekMinutes);
+    /* Decision 26: the cap is the planned hours, read here (decision 13). */
+    var overCap = aggregate.overCapHours(c, props.weekMinutes);
     var share = props.weekDenominator > 0
       ? Math.min(100, weekHours / props.weekDenominator * 100) : 0;
     var swatchColour = editing ? props.draft.colour : (c.colour || null);
@@ -149,6 +151,8 @@
             <div class=${'managerow__hours' + (c.direction === 'less' ? ' managerow__hours--warn' : '') +
                 (untouched ? ' managerow__hours--dim' : '')}>
               ${weekHours.toFixed(1)} h
+              ${overCap > 0 ? html`
+                <span class="managerow__over">${overCap.toFixed(1)} h over cap</span>` : null}
             </div>`}
 
           ${archived ? html`

@@ -815,3 +815,186 @@
     min-width: 672px;
   }
 }
+
+/* ---------- Progress (spec §4e, decision 27, deck-03-progress.png) ----------
+   The mockup: a head, a four-block stat strip, then the chart beside a 272px
+   column. Decision 27 folds the strip and the LEVERS panel into that column,
+   which becomes the goal list, so the screen is the head and the two-column
+   body. Below 1024px the list goes above the chart. */
+
+.progress__head {
+  padding: var(--sp-11) var(--gutter) var(--sp-9);
+}
+
+.progress__head .t-eyebrow {
+  margin-bottom: var(--sp-4);
+}
+
+.progress__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 272px;
+  align-items: start;
+  border-top: 1px solid var(--line);
+}
+
+.progress__panel {
+  padding: 22px 26px 26px;
+  border-right: 1px solid var(--line);
+  min-width: 0;
+}
+
+.progress__panelhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.progress__explainer {
+  font: 400 11.5px/1.5 var(--font);
+  color: var(--ink2);
+  margin-top: 10px;
+}
+
+.progress__list {
+  padding: 22px 26px 26px;
+  min-width: 0;
+}
+
+.progress__listlabel {
+  margin-bottom: 6px;
+}
+
+/* No live goals: the strip band the empty state uses, with the way to Goals. */
+.progress__none {
+  padding: 32px var(--gutter) 40px;
+  background: var(--strip);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-7);
+}
+
+.progress__noneline {
+  font: 400 15px/1.5 var(--font);
+  color: var(--ink2);
+  max-width: 58ch;
+}
+
+@media (max-width: 1023.98px) {
+  .progress__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .progress__list {
+    order: -1;
+    padding: 18px var(--gutter);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .progress__panel {
+    border-right: 0;
+    padding: 18px var(--gutter) 22px;
+  }
+}
+
+/* ---------- Lessons (decision 25) ----------
+   The mockup's head (eyebrow + h1), then a --strip bar carrying the fill's
+   label and the archive switch, then the wall. The wall's height is measured
+   in src/ui/lessons.js; here it only gets its gutters. */
+
+.lessons__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-8);
+  padding: var(--sp-11) var(--gutter) var(--sp-8);
+  flex-wrap: wrap;
+}
+
+.lessons__title {
+  min-width: 0;
+}
+
+.lessons__title .t-eyebrow {
+  margin-bottom: var(--sp-4);
+}
+
+.lessons__tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.lessons__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-6);
+  flex-wrap: wrap;
+  padding: 11px var(--gutter);
+  margin-bottom: 18px;
+  background: var(--strip);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+/* The rotation's label is a control: the rail's preset chip, in caps. */
+.lessons__mode {
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: transparent;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  transition: border-color var(--m-hover) var(--ease), color var(--m-hover) var(--ease);
+}
+
+.lessons__mode:hover {
+  border-color: var(--ink2);
+  color: var(--ink);
+}
+
+.lessons__mode--flat {
+  border-color: transparent;
+  padding-left: 0;
+  cursor: default;
+}
+
+.lessons__line {
+  padding: 0 var(--gutter) 40px;
+  font: 400 15px/1.5 var(--font);
+  color: var(--ink2);
+}
+
+.lessons__none {
+  padding: 32px var(--gutter) 40px;
+  background: var(--strip);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-7);
+}
+
+.lessons__noneline {
+  font: 400 15px/1.5 var(--font);
+  color: var(--ink2);
+  max-width: 58ch;
+}
+
+@media (max-width: 1023.98px) {
+  .lessons__search {
+    width: 100%;
+  }
+
+  .lessons__tools {
+    flex: 1 0 100%;
+  }
+}

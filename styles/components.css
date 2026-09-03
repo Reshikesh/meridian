@@ -1399,6 +1399,16 @@
 }
 
 .managerow__hours--warn { color: var(--warn); }
+
+/* Decision 26: "{n} h over cap" under the figure, the Plan screen's reading
+   in the one place the cap still lives. */
+.managerow__over {
+  display: block;
+  margin-top: 3px;
+  font: 500 11px/1.3 var(--font);
+  color: var(--warn);
+  text-wrap: pretty;
+}
 .managerow__hours--dim  { color: var(--ink2); }
 
 .managerow__kept {
@@ -2263,4 +2273,414 @@
 .sheetfoot__actions {
   display: flex;
   gap: var(--sp-3);
+}
+
+/* ---------- Progress: the chart (spec §4e, decision 27) ----------
+   Every coordinate is src/core/timeline.js. Colours are the goals' own
+   category colours, set inline; everything else is a token so a theme switch
+   re-renders the chart with no reload (QUALITY-BAR §7). Focus in the list
+   dims the other lines over --m-chart, as the ribbon does. */
+
+.pchart {
+  overflow-x: auto;
+}
+
+.pchart__svg {
+  display: block;
+}
+
+.pchart text {
+  font-family: var(--font);
+}
+
+.pchart__grid line {
+  stroke: var(--grid);
+  stroke-width: 1;
+}
+
+.pchart__ceiling {
+  stroke: var(--axis);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.pchart__axis {
+  stroke: var(--axis);
+  stroke-width: 1;
+}
+
+.pchart__today {
+  stroke: var(--axis);
+  stroke-width: 1;
+  stroke-dasharray: 2 4;
+}
+
+.pchart__ylabels text,
+.pchart__xlabels text {
+  font: 400 16px/1 var(--font);
+  font-variant-numeric: tabular-nums;
+  fill: var(--axisink);
+}
+
+.pchart__band {
+  fill: var(--warn);
+  opacity: .08;
+}
+
+.pchart__target,
+.pchart__landing {
+  stroke-width: 1;
+  opacity: .8;
+}
+
+.pchart__halo {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.pchart__history {
+  fill: none;
+  stroke-width: 3;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.pchart__projection {
+  fill: none;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  opacity: .55;
+}
+
+.pchart__goal,
+.pchart__mark {
+  transition: opacity var(--m-chart) var(--ease);
+}
+
+.pchart__mark {
+  font: 600 13px/1 var(--font);
+  letter-spacing: .04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.pchart__mark--ink { fill: var(--ink); }
+.pchart__mark--ink2 { fill: var(--ink2); }
+.pchart__mark--warn { fill: var(--warn); }
+
+/* The panel-head legend, the mockup's own: a 16×3 stroke sample and a word. */
+.chartlegend {
+  display: flex;
+  gap: 16px;
+  font: 500 11px/1 var(--font);
+  color: var(--ink2);
+}
+
+.chartlegend__item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.chartlegend__logged,
+.chartlegend__projected {
+  width: 16px;
+  height: 3px;
+  background: var(--ink);
+  flex: none;
+}
+
+.chartlegend__projected {
+  opacity: .45;
+}
+
+/* ---------- Progress: the goal list ----------
+   The mockup's ALL GOALS rows (500 12.5px, 10px apart, --line2 rules), each
+   led by the switch that takes the goal off the chart. */
+
+.pgoals {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.pgoal {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 11px 0;
+  border-top: 1px solid var(--line2);
+}
+
+.pgoal:first-child {
+  border-top: 0;
+}
+
+.pgoal__main {
+  min-width: 0;
+  flex: 1 1 auto;
+  transition: opacity var(--m-chart) var(--ease);
+}
+
+.pgoal--off .pgoal__main {
+  opacity: .45;
+}
+
+.pgoal__switch {
+  flex: none;
+  width: 34px;
+  height: 20px;
+  margin-top: 1px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--strip);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color var(--m-hover) var(--ease);
+}
+
+.pgoal__switch:hover {
+  border-color: var(--ink2);
+}
+
+.pgoal__line {
+  display: block;
+  width: 18px;
+  height: 3px;
+  border-radius: 1px;
+  background: var(--line);
+}
+
+.pgoal__name {
+  font: 600 12.5px/1.3 var(--font);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.pgoal__figs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 6px;
+  margin-top: 3px;
+  font: 500 12px/1.3 var(--font);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink2);
+}
+
+.pgoal__banked {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.pgoal__lands {
+  margin-top: 3px;
+  font: 500 12px/1.3 var(--font);
+  font-variant-numeric: tabular-nums;
+  text-wrap: pretty;
+}
+
+.pgoal__lands--ink { color: var(--ink); }
+.pgoal__lands--warn { color: var(--warn); }
+.pgoal__lands--good { color: var(--good); }
+.pgoal__lands--dim { color: var(--ink2); }
+
+.pgoal__early,
+.goalrow__early,
+.preview__early {
+  font: 500 11px/1.3 var(--font);
+  color: var(--ink2);
+}
+
+.pgoal__early {
+  margin-top: 2px;
+}
+
+.goalrow__early {
+  text-wrap: pretty;
+}
+
+.preview__early {
+  margin-top: 4px;
+}
+
+/* ---------- Lessons: the cards (decision 25) ----------
+   The mockup's close-out box — a --strip card with a --line border and the
+   4px radius — carrying one lesson each: the week and day the mockup's rows
+   lead with, the words, and the --pale tag chips of its history rows. */
+
+.wall {
+  padding: 0 var(--gutter);
+}
+
+.wall__cols {
+  column-width: 300px;
+  column-gap: 18px;
+  column-fill: balance;
+}
+
+/* Filled top to bottom, column by column, so the height the wall was given
+   is used to the last card that fits; balanced columns would leave a strip
+   under the shortest column empty. Anything past the last column overflows
+   sideways, which is what the trim in lessons.js measures. */
+.wall--fit {
+  overflow: hidden;
+}
+
+.wall--fit .wall__cols {
+  height: 100%;
+  column-fill: auto;
+}
+
+/* The pinned cards alone do not fit: the box outside the columns takes the
+   height cap and scrolls, and the columns balance to their full length. */
+.wall--scroll {
+  overflow-y: auto;
+}
+
+.wall--free {
+  padding-bottom: 30px;
+}
+
+.lcard {
+  break-inside: avoid;
+  margin-bottom: 18px;
+  padding: 14px 18px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--strip);
+}
+
+.lcard--pinned {
+  border-color: var(--axis);
+}
+
+.lcard__top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 24px;
+}
+
+.lcard__when {
+  font: 600 12px/1.3 var(--font);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink2);
+  white-space: nowrap;
+}
+
+.lcard__pinned {
+  font: 600 9.5px/1 var(--font);
+  letter-spacing: .12em;
+  color: var(--brand);
+}
+
+.lcard__spacer {
+  flex: 1 1 auto;
+}
+
+.lcard__title {
+  margin: 8px 0 4px;
+  font: 600 17px/1.25 var(--font);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+
+.lcard__text {
+  margin-top: 6px;
+  font: 400 16px/1.45 var(--font);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+  white-space: pre-line;
+}
+
+.lcard--archived .lcard__text,
+.lcard--archived .lcard__title {
+  color: var(--ink2);
+}
+
+.lcard__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.ltag {
+  font: 500 11.5px/1 var(--font);
+  padding: 6px 9px;
+  border-radius: var(--radius);
+  background: var(--pale);
+  color: var(--ink);
+}
+
+/* ---------- Lessons: the tag picker in the sheet ----------
+   The mockup's chip row — "Scrolling" and the dashed "+ tag" — as toggles. */
+
+.tagpick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.tagpick__btn {
+  font: 500 12px/1 var(--font);
+  padding: 7px 11px;
+  border: 1px dashed var(--axis);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--ink2);
+  cursor: pointer;
+  transition: background var(--m-hover) var(--ease), color var(--m-hover) var(--ease),
+              border-color var(--m-hover) var(--ease);
+}
+
+.tagpick__btn:hover {
+  border-color: var(--ink2);
+  color: var(--ink);
+}
+
+.tagpick__btn[data-active="1"] {
+  border-style: solid;
+  border-color: var(--pale);
+  background: var(--pale);
+  color: var(--ink);
+}
+
+.input--area {
+  width: 100%;
+  min-height: 132px;
+  resize: vertical;
+  padding: 10px 12px;
+  font: 400 16px/1.5 var(--font);
+  font-variant-numeric: normal;
+}
+
+.input--area::placeholder {
+  color: var(--axis);
+}
+
+/* ---------- Lessons: the head's search ---------- */
+
+.lessons__search {
+  width: 220px;
+  padding: 9px 12px;
+  font: 500 13px/1.2 var(--font);
+  font-variant-numeric: normal;
+}
+
+.lessons__search::placeholder {
+  color: var(--ink2);
+}
+
+.lessons__search::-webkit-search-cancel-button {
+  cursor: pointer;
 }

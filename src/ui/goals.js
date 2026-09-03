@@ -54,8 +54,10 @@
         </div>`;
     }
 
-    /* Fewer than seven logged days for this goal: there is no honest date to
-       put here yet, and the reason is worth more than a blank cell. */
+    /* Fewer than two logged days for this goal: there is no honest date to
+       put here yet, and the reason is worth more than a blank cell. The
+       owner's own words (Phase 4), now covering only this case — from the
+       second day on there is an early estimate, labelled (decision 27). */
     if (!row.landing) {
       return html`
         <div class="goalrow__lands">
@@ -70,6 +72,7 @@
       : slip > 0 ? '+' + plural(slip, 'day')
       : slip < 0 ? '−' + plural(-slip, 'day')
       : 'on time';
+    var early = projection.earlyLabel(row);
 
     return html`
       <div class="goalrow__lands">
@@ -79,6 +82,7 @@
         ${note ? html`
           <div class=${'goalrow__slip' + (late ? ' goalrow__slip--warn' : '')}>${note}</div>`
           : null}
+        ${early ? html`<div class="goalrow__early">${early}</div>` : null}
       </div>`;
   }
 
@@ -170,7 +174,7 @@
     var archived = rows.filter(function (r) { return r.goal.archived; });
 
     return html`
-      <main class=${props.className} data-s="goals">
+      <main class=${props.className} data-s="goals" inert=${props.inert ? true : null}>
         <div class="goals__head">
           <div class="goals__title">
             <div class="t-eyebrow">GOALS</div>
@@ -223,4 +227,6 @@
   }
 
   ui.Goals = Goals;
+  /* Progress reuses the same headline from the same counts (decision 27). */
+  ui.goalHeadline = headline;
 })();

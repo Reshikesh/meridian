@@ -438,5 +438,5 @@ test('with nothing logged to the category the panel says so, and why', async ({ 
   await expect(page.locator('.reach__lead'))
     .toHaveText('Nothing logged to Learning yet. This needs 7.9 h.');
   await expect(page.locator('.reach__tail'))
-    .toHaveText('Meridian starts projecting once Learning has seven logged days.');
+    .toHaveText('Meridian starts estimating from Learning’s second logged day, and settles after seven.');
 });

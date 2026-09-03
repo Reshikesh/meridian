@@ -114,6 +114,86 @@ function stressState() {
   return s;
 }
 
+// Decision 27: the early estimate. The demo plus a third goal, Read the shelf,
+// with three logged days — and Reading's own seed entries removed, so the
+// category is as young as the goal and the goal sheet quotes an early pace too.
+function earlyState() {
+  const s = demoState();
+  s.entries = s.entries.filter((e) => e.category_id !== 'cat_reading');
+  s.goals.push({
+    id: 'goal_read', short_name: 'Read the shelf', identity: null, category_id: 'cat_reading',
+    target_amount: 40, target_unit: 'h', by_date: '2026-08-31', archived: false,
+  });
+  ['2026-06-07', '2026-06-05', '2026-06-03'].forEach((day, i) => {
+    s.entries.push({
+      id: `e_r${i}`, date: day, duration_min: 60, activity: 'Reading', category_id: 'cat_reading',
+      goal_id: 'goal_read', value: null, created_at: `${day}T21:00:00`,
+    });
+  });
+  return s;
+}
+
+// A goal already reached, a goal with one logged day, and a second goal on
+// Learning — the states decision 27 names one by one.
+function progressState() {
+  const s = demoState();
+  s.goals.push(
+    {
+      id: 'goal_walk', short_name: 'Walk the coast path', identity: null, category_id: 'cat_family',
+      target_amount: 5, target_unit: 'h', by_date: '2026-06-30', archived: false,
+    },
+    {
+      id: 'goal_pg', short_name: 'Learn Postgres', identity: null, category_id: 'cat_learn',
+      target_amount: 40, target_unit: 'h', by_date: '2026-12-31', archived: false,
+    },
+  );
+  // Six hours of Family walks banked to a five-hour goal: reached.
+  s.entries.push({
+    id: 'e_w1', date: '2026-06-06', duration_min: 360, activity: 'Coast path', category_id: 'cat_family',
+    goal_id: 'goal_walk', value: null, created_at: '2026-06-06T18:00:00',
+  });
+  // One logged day on Postgres: no date yet.
+  s.entries.push({
+    id: 'e_p1', date: '2026-06-07', duration_min: 60, activity: 'Postgres docs', category_id: 'cat_learn',
+    goal_id: 'goal_pg', value: null, created_at: '2026-06-07T10:00:00',
+  });
+  return s;
+}
+
+// Decision 25: a wall with more cards than fit. Forty lessons of uneven
+// length — one-liners, paragraphs, some titled, some tagged, three pinned,
+// two archived — so the trim, the rotation and the archive all have
+// something to do.
+const LINES = [
+  'Log it when it ends or do not log it.',
+  'Python only happens before 8am. Every evening attempt this month became scrolling, and the scrolling was never about anything.',
+  'Two hours with family beat six hours of being available. Presence is not duration.',
+  'The deadline was invented. The 38 hours were not wasted.',
+  'A walk after lunch is worth more than the second coffee, and costs the same twenty minutes.',
+  'Reading in bed does not count as reading. It counts as falling asleep with a book.',
+  'The weeks with a plan on Sunday night went better. Not because of the plan. Because of the Sunday night.',
+  'If the first hour of the day is mine, the rest of the day is negotiable.',
+];
+function manyLessonsState() {
+  const s = demoState();
+  const today = dates.logicalDay(REFERENCE_DAY);
+  s.lessons = [];
+  for (let i = 0; i < 40; i++) {
+    const day = dates.addDays(today, -(i * 3 + (i % 2)));
+    s.lessons.push({
+      id: 'l_' + pad(i + 1, 4),
+      iso_week: dates.weekKey(dates.weekStart(day)),
+      date: dates.dayKey(day),
+      title: i % 3 === 0 ? `Lesson ${i + 1}` : null,
+      text: LINES[i % LINES.length] + (i % 5 === 4 ? ' ' + LINES[(i + 3) % LINES.length] : ''),
+      tags: i % 4 === 0 ? ['goal_py'] : i % 4 === 2 ? ['cat_family', 'goal_run'] : [],
+      pinned: i === 1 || i === 7 || i === 20,
+      archived: i === 12 || i === 33,
+    });
+  }
+  return s;
+}
+
 // BUILD-PLAN § Phase 5: "2,000 entries load in under 200 ms to first render".
 // The seed's own eight categories and two goals, so the app behaves exactly as
 // it would for the friend — only the volume is unrealistic. Five entries a day
@@ -164,4 +244,5 @@ function perfState() {
 
 module.exports = {
   gappedState, archivedState, singleCategoryState, stressState, perfState,
+  earlyState, progressState, manyLessonsState,
 };

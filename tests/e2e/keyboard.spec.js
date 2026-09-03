@@ -68,14 +68,14 @@ test('the header is reachable in source order, and every stop shows a ring', asy
   // Nav first, then the themes, then the data control: the order the header is
   // written in, and the order it reads in.
   const labels = seen.map((s) => s.text);
-  expect(labels.slice(0, 6)).toEqual([
-    'Log', 'Where it went', 'Progress', 'Goals', 'Plan', 'Lessons',
+  expect(labels.slice(0, 5)).toEqual([
+    'Log', 'Where it went', 'Progress', 'Goals', 'Lessons',
   ]);
-  expect(labels.slice(6, 9)).toEqual(['PAPER', 'GRAPHITE', 'BLUEPRINT']);
-  expect(seen[9].cls).toContain('datactl');
+  expect(labels.slice(5, 8)).toEqual(['PAPER', 'GRAPHITE', 'BLUEPRINT']);
+  expect(seen[8].cls).toContain('datactl');
 
   // QUALITY-BAR §4: focus rings are visible for keyboard users.
-  for (const s of seen.slice(0, 10)) {
+  for (const s of seen.slice(0, 9)) {
     expect(s.ring, `no focus ring on ${s.text || s.cls}`).toBe(true);
   }
 });
@@ -83,7 +83,7 @@ test('the header is reachable in source order, and every stop shows a ring', asy
 test('every screen can be opened from the keyboard', async ({ page }) => {
   await open(page);
   for (const [name, id] of [
-    ['Log', 'log'], ['Goals', 'goals'], ['Plan', 'plan'],
+    ['Log', 'log'], ['Goals', 'goals'],
     ['Progress', 'progress'], ['Lessons', 'lessons'], ['Where it went', 'went'],
   ]) {
     await page.evaluate(() => document.body.focus());

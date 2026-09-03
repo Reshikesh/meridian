@@ -32,7 +32,8 @@
   var KEYS = {
     data: 'meridian:data',
     theme: 'meridian:theme',      // its own raw string: the pre-paint script in
-    range: 'meridian:range'       // index.html must never JSON.parse
+    range: 'meridian:range',      // index.html must never JSON.parse
+    lessons: 'meridian:lessons'   // the wall's visit count (decision 25)
   };
 
   /* localStorage has three distinct ways of not being there, and two of them
@@ -415,6 +416,84 @@
         return commit(s, 1);
       },
 
+      /* ---------- lessons (decision 25) ----------
+         A journal: written whenever, with or without a title, pinned or not.
+         Archive takes a card off the wall and keeps it; delete is for good,
+         and is the one permanent removal in the app — the owner asked for
+         it on the card and again from the archive, both behind a confirm. */
+
+      addLesson: function (input) {
+        var s = next();
+        var alloc = allocator();
+        var day = input.date || dates.dayKey(dates.logicalDay(clock()));
+        var lesson = {
+          id: input.id || alloc.next(ids.PREFIX.lesson),
+          iso_week: dates.weekKey(dates.toDate(day)),
+          date: day,
+          title: input.title ? String(input.title).trim() || null : null,
+          text: String(input.text || '').trim(),
+          tags: (input.tags || []).slice(),
+          pinned: !!input.pinned,
+          archived: false
+        };
+        s.lessons.push(lesson);
+        var res = commit(workbook.canonical(s), 1);
+        res.lesson = lesson;
+        return res;
+      },
+
+      /* The date and week are when it was written and stay so. */
+      updateLesson: function (id, patch) {
+        var s = next();
+        var i = indexOfId(s.lessons, id);
+        if (i === -1) return { ok: false, error: { code: 'missing' } };
+        var l = s.lessons[i];
+        if (Object.prototype.hasOwnProperty.call(patch, 'title')) {
+          l.title = patch.title ? String(patch.title).trim() || null : null;
+        }
+        if (Object.prototype.hasOwnProperty.call(patch, 'text')) l.text = String(patch.text || '').trim();
+        if (Object.prototype.hasOwnProperty.call(patch, 'tags')) l.tags = (patch.tags || []).slice();
+        var res = commit(workbook.canonical(s), 1);
+        res.lesson = l;
+        return res;
+      },
+
+      pinLesson: function (id, pinned) {
+        var s = next();
+        var i = indexOfId(s.lessons, id);
+        if (i === -1) return { ok: false, error: { code: 'missing' } };
+        s.lessons[i].pinned = pinned === undefined ? !s.lessons[i].pinned : !!pinned;
+        return commit(s, 1);
+      },
+
+      /* Off the wall entirely — nothing faded — and back with restore. A
+         pinned card that is archived is unpinned, so restoring it puts it
+         back among the rest rather than at the front. */
+      archiveLesson: function (id) {
+        var s = next();
+        var i = indexOfId(s.lessons, id);
+        if (i === -1) return { ok: false, error: { code: 'missing' } };
+        s.lessons[i].archived = true;
+        s.lessons[i].pinned = false;
+        return commit(s, 1);
+      },
+
+      restoreLesson: function (id) {
+        var s = next();
+        var i = indexOfId(s.lessons, id);
+        if (i === -1) return { ok: false, error: { code: 'missing' } };
+        s.lessons[i].archived = false;
+        return commit(s, 1);
+      },
+
+      deleteLesson: function (id) {
+        var s = next();
+        var i = indexOfId(s.lessons, id);
+        if (i === -1) return { ok: false, error: { code: 'missing' } };
+        s.lessons.splice(i, 1);
+        return commit(s, 1);
+      },
+
       /* ---------- the analysis range (spec §1) ----------
          Its own key, outside the dataset: it is a view preference, not data,
          so it is not an unexported change and is not in the workbook. The
@@ -435,6 +514,21 @@
       writeRange: function (stored) {
         if (!stored) return storage.removeItem(KEYS.range);
         return storage.setItem(KEYS.range, JSON.stringify(stored));
+      },
+
+      /* ---------- the lessons wall's visit count (decision 25) ----------
+         The fill rotates newest → oldest → random "from one visit to the
+         next", which is only true if the count survives a reload. Like the
+         range: a view preference, its own key, not an unexported change. */
+
+      readLessonsVisit: function () {
+        var raw = storage.getItem(KEYS.lessons);
+        var n = raw === null ? 0 : parseInt(raw, 10);
+        return isFinite(n) && n >= 0 ? n : 0;
+      },
+
+      writeLessonsVisit: function (n) {
+        return storage.setItem(KEYS.lessons, String(Math.max(0, Math.floor(Number(n) || 0))));
       },
 
       /* ---------- settings ---------- */

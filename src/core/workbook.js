@@ -56,7 +56,9 @@
     { name: 'Goals', columns: ['id', 'short_name', 'identity', 'category_id', 'target_amount', 'target_unit', 'by_date', 'archived'] },
     { name: 'Entries', columns: ['id', 'date', 'duration_min', 'activity', 'category_id', 'goal_id', 'value', 'created_at'] },
     { name: 'Plan', columns: ['category_id', 'planned_hours', 'week_effective_from'] },
-    { name: 'Lessons', columns: ['id', 'iso_week', 'date', 'text', 'tags'] }
+    /* Decision 25: title, pinned and archived. An older workbook without
+       them imports untitled, unpinned and live. */
+    { name: 'Lessons', columns: ['id', 'iso_week', 'date', 'title', 'text', 'tags', 'pinned', 'archived'] }
   ];
 
   var SETTING_KEYS = ['theme', 'day_boundary', 'errands_hours_per_week', 'week_start'];
@@ -200,8 +202,11 @@
           id: l.id,
           iso_week: l.iso_week,
           date: l.date,
+          title: nul(l.title),
           text: l.text,
-          tags: (l.tags && l.tags.length) ? l.tags.join(',') : null
+          tags: (l.tags && l.tags.length) ? l.tags.join(',') : null,
+          pinned: bool(l.pinned),
+          archived: bool(l.archived)
         };
       })
     };
@@ -629,8 +634,11 @@
           { key: 'id', read: function (v, f) { return validate.asId(v, f, { required: true }); } },
           { key: 'iso_week', read: function (v, f) { return validate.asText(v, f, { required: true }); } },
           { key: 'date', read: function (v, f) { return validate.asDayKey(v, f, { required: true, parseSerial: ctx.parseSerial }); } },
+          { key: 'title', read: function (v, f) { return validate.asText(v, f); } },
           { key: 'text', read: function (v, f) { return validate.asText(v, f, { required: true }); } },
-          { key: 'tags', read: function (v, f) { return validate.asText(v, f); } }
+          { key: 'tags', read: function (v, f) { return validate.asText(v, f); } },
+          { key: 'pinned', read: function (v, f) { return validate.asBool(v, f); } },
+          { key: 'archived', read: function (v, f) { return validate.asBool(v, f); } }
         ], ctx, errors);
 
         if (!errors.length) {
@@ -643,6 +651,10 @@
 
         seenLessons[l.id] = true;
         l.tags = l.tags ? l.tags.split(',').map(function (t) { return t.trim(); }).filter(Boolean) : [];
+        l.pinned = !!l.pinned;
+        l.archived = !!l.archived;
+        /* A pinned card cannot also be archived: the archive is off the wall. */
+        if (l.archived) l.pinned = false;
         state.lessons.push(l);
         lessonSummary.accepted += 1;
         report.accepted += 1;

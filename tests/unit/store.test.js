@@ -357,7 +357,20 @@ test('the localStorage keys are the mandated ones', () => {
     data: 'meridian:data',
     theme: 'meridian:theme',
     range: 'meridian:range',      // renamed from the mockup's meridian.range
+    lessons: 'meridian:lessons',  // the wall's visit count (decision 25)
   });
+});
+
+test('the lessons visit count has its own key and survives nonsense', () => {
+  const storage = fakeStorage();
+  const s = loaded(storage);
+  assert.equal(s.readLessonsVisit(), 0);
+  s.writeLessonsVisit(3);
+  assert.equal(storage.getItem('meridian:lessons'), '3');
+  assert.equal(s.readLessonsVisit(), 3);
+  storage.map.set('meridian:lessons', 'seven');
+  assert.equal(s.readLessonsVisit(), 0);
+  assert.equal(s.getState().exportInfo.unexported, 0, 'a view preference is not an edit');
 });
 
 test('what the store holds is what the workbook writes', () => {
