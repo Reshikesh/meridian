@@ -33,14 +33,24 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (dates, aggregate, range) {
   'use strict';
 
-  /* BUILD-PLAN § Phase 1: "not enough history" is fewer than seven logged days.
-     Counted per subject, not per dataset — otherwise a goal with a single entry
-     inside a busy month would project confidently from that one entry. Seven
-     distinct days also span at least seven calendar days, so this satisfies
-     spec §12's "once ≥1 full week exists" as well. */
+  /* BUILD-PLAN § Phase 1: a SETTLED pace needs seven logged days. Counted per
+     subject, not per dataset — otherwise a goal with a single entry inside a
+     busy month would project confidently from that one entry. Seven distinct
+     days also span at least seven calendar days, so this satisfies spec §12's
+     "once ≥1 full week exists" as well. */
   var MIN_LOGGED_DAYS = 7;
 
+  /* Decision 27: from the second logged day there is an EARLY estimate — the
+     hours so far over the calendar days so far, scaled to a week — and it is
+     labelled as such until the seventh day, when the whole-week rule above
+     takes over. One logged day is still nothing: a rate needs a duration. */
+  var EARLY_LOGGED_DAYS = 2;
+
   var DAYS_PER_WEEK = 7;
+
+  function round2(n) {
+    return Math.round(n * 100) / 100;
+  }
 
   function byGoal(entries, goalId) {
     return entries.filter(function (e) { return e.goal_id === goalId; });
@@ -70,6 +80,44 @@
       spanDays: span,
       windowStart: windowStart
     };
+  }
+
+  /* The pace behind a projection, and how much to trust it (decision 27):
+
+       settled  seven or more logged days — whole seven-day blocks, pace()
+       early    two to six — hours so far ÷ calendar days since the first
+                entry × 7, flagged so every screen can say so
+       none     fewer than two — no rate, no date
+
+     Calendar days, not logged days, in the early denominator: it is the same
+     denominator the settled rule uses (whole weeks of calendar time), so the
+     figure does not halve on the seventh day for someone who logs twice a
+     week. The label counts logged days, because that is what the gate counts
+     and what the owner can do something about. */
+  function paceMode(subject, todayKey) {
+    var loggedDays = aggregate.distinctDays(subject);
+    if (loggedDays >= MIN_LOGGED_DAYS) {
+      var p = pace(subject, todayKey);
+      return { mode: 'settled', early: false, loggedDays: loggedDays,
+        pace: p.pace, blocks: p.blocks, days: p.spanDays };
+    }
+    if (loggedDays >= EARLY_LOGGED_DAYS) {
+      var first = aggregate.firstDay(subject);
+      var span = dates.diffDays(first, todayKey) + 1;
+      if (!(span >= loggedDays)) span = loggedDays;
+      var hours = aggregate.hours(aggregate.sumMinutes(subject));
+      return { mode: 'early', early: true, loggedDays: loggedDays,
+        pace: round2(hours / span * DAYS_PER_WEEK), blocks: 0, days: span };
+    }
+    return { mode: 'none', early: false, loggedDays: loggedDays, pace: 0, blocks: 0, days: 0 };
+  }
+
+  /* "early estimate — 3 days": the one string the Goals table, the goal
+     sheet, the entry sheet and Progress all show, built here so it cannot be
+     four strings. Null when the pace is settled or absent. */
+  function earlyLabel(p) {
+    if (!p || !p.early) return null;
+    return 'early estimate — ' + p.loggedDays + ' days';
   }
 
   function goalPace(entries, goalId, todayKey) {
@@ -134,11 +182,10 @@
     var remaining = Math.max(0, Math.round((target - bankedHours) * 100) / 100);
     var done = bankedHours >= target && target > 0;
 
-    var loggedDays = aggregate.distinctDays(subject);
-    var enoughHistory = loggedDays >= MIN_LOGGED_DAYS;
-
-    var p = pace(subject, todayKey);
-    var rate = enoughHistory ? p.pace : 0;
+    var p = paceMode(subject, todayKey);
+    var loggedDays = p.loggedDays;
+    var enoughHistory = p.mode !== 'none';
+    var rate = p.pace;
 
     var landing = null, landingDays = null;
     if (!done && enoughHistory && rate > 0) {
@@ -171,8 +218,12 @@
       progressPct: target > 0 ? Math.round(bankedHours / target * 100) : 0,
       loggedDays: loggedDays,
       enoughHistory: enoughHistory,
+      mode: p.mode,
+      early: p.early,
+      settled: p.mode === 'settled',
       pace: rate,
       paceBlocks: p.blocks,
+      paceDays: p.days,
       required: required,
       byDate: byDate,
       daysLeft: daysLeft,
@@ -205,6 +256,52 @@
       }])
     };
     return project(next, goalId, now);
+  }
+
+  /* ---------- the Progress chart (decision 27) ----------
+     One goal's line: the hours banked, adding up day by day from the first
+     entry to today, and the straight projection on to the landing. Points
+     are (day key, hours); the chart scales them to percent of target itself,
+     so a 60-hour and a 130-hour goal can share one axis.
+
+     The history starts at zero on the day before the first entry, so the
+     line rises out of the axis rather than appearing mid-air, and it always
+     ends on today, flat if nothing was logged since, so "to today" is what
+     the chart shows rather than what the caption claims. */
+  function series(state, goalId, now) {
+    var row = project(state, goalId, now);
+    if (!row) return null;
+    var todayKey = dates.dayKey(dates.logicalDay(now));
+    var totals = aggregate.byDay(byGoal(state.entries || [], goalId));
+    var days = Object.keys(totals).filter(function (d) { return d <= todayKey; }).sort();
+
+    var points = [];
+    if (days.length) {
+      points.push({ day: dates.dayKey(dates.addDays(days[0], -1)), hours: 0 });
+      var cum = 0;
+      days.forEach(function (d) {
+        cum += totals[d];
+        points.push({ day: d, hours: aggregate.hours(cum) });
+      });
+      if (days[days.length - 1] !== todayKey) points.push({ day: todayKey, hours: aggregate.hours(cum) });
+    }
+
+    var landingKey = row.landing ? dates.dayKey(row.landing) : null;
+    return {
+      goal: row.goal,
+      row: row,
+      points: points,
+      projection: landingKey ? {
+        from: { day: todayKey, hours: row.banked },
+        to: { day: landingKey, hours: row.target }
+      } : null,
+      target: row.target,
+      byDate: row.byDate ? dates.dayKey(row.byDate) : null,
+      landing: landingKey,
+      late: row.slippageDays !== null && row.slippageDays > 0,
+      done: row.done,
+      early: row.early
+    };
   }
 
   /* ---------- the Goals screen (spec §4h, §6, §12) ---------- */
@@ -269,11 +366,10 @@
 
     var entries = state.entries || [];
     var subject = categoryId ? byCategory(entries, categoryId) : [];
-    var loggedDays = aggregate.distinctDays(subject);
-    var hasHistory = loggedDays >= MIN_LOGGED_DAYS;
-
-    var p = pace(subject, todayKey);
-    var rate = hasHistory ? p.pace : 0;
+    var p = paceMode(subject, todayKey);
+    var loggedDays = p.loggedDays;
+    var hasHistory = p.mode !== 'none';
+    var rate = p.pace;
 
     var banked = draft && draft.id
       ? aggregate.hours(aggregate.sumMinutes(byGoal(entries, draft.id)))
@@ -302,8 +398,12 @@
       category: category,
       hasHistory: hasHistory,
       loggedDays: loggedDays,
+      mode: p.mode,
+      early: p.early,
+      settled: p.mode === 'settled',
       pace: rate,
-      paceBlocks: hasHistory ? p.blocks : 0,
+      paceBlocks: p.blocks,
+      paceDays: p.days,
       banked: banked,
       target: target,
       remaining: remaining,
@@ -327,7 +427,11 @@
 
   return {
     MIN_LOGGED_DAYS: MIN_LOGGED_DAYS,
+    EARLY_LOGGED_DAYS: EARLY_LOGGED_DAYS,
     pace: pace,
+    paceMode: paceMode,
+    earlyLabel: earlyLabel,
+    series: series,
     goalPace: goalPace,
     categoryPace: categoryPace,
     weeksRunning: weeksRunning,

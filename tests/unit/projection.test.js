@@ -107,18 +107,22 @@ test('the projection is straight-line from banked and pace', async (t) => {
   });
 });
 
-test('"not enough history" is counted per goal, not per dataset', async (t) => {
-  await t.test('six logged days is not enough', () => {
+test('history is counted per goal, not per dataset, and settles at seven days', async (t) => {
+  await t.test('six logged days is an early estimate, not a settled pace', () => {
     const p = projection.project(stateWith(daily(6, 60)), 'goal_py', NOW);
     assert.equal(p.loggedDays, 6);
-    assert.equal(p.enoughHistory, false);
-    assert.equal(p.landing, null, 'no date is offered from too little history');
-    assert.equal(p.pace, 0);
+    assert.equal(p.enoughHistory, true);
+    assert.equal(p.mode, 'early');
+    assert.equal(p.early, true);
+    assert.equal(p.settled, false);
+    assert.ok(p.landing, 'decision 27: a date from the second logged day on');
   });
 
-  await t.test('seven is', () => {
+  await t.test('seven is settled, and the label goes', () => {
     const p = projection.project(stateWith(daily(7, 60)), 'goal_py', NOW);
-    assert.equal(p.enoughHistory, true);
+    assert.equal(p.mode, 'settled');
+    assert.equal(p.early, false);
+    assert.equal(projection.earlyLabel(p), null);
     assert.ok(p.landing);
   });
 
@@ -133,21 +137,176 @@ test('"not enough history" is counted per goal, not per dataset', async (t) => {
     });
     const p = projection.project(state, 'goal_new', NOW);
     assert.equal(p.loggedDays, 1);
+    assert.equal(p.mode, 'none');
     assert.equal(p.enoughHistory, false, '30 days of OTHER history proves nothing about this goal');
+    assert.equal(p.landing, null);
+  });
+});
+
+/* ---------- decision 27: the early estimate ---------- */
+
+test('the early estimate runs from the second logged day to the sixth', async (t) => {
+  await t.test('one logged day is nothing: a rate needs a duration', () => {
+    const p = projection.project(stateWith(daily(1, 120)), 'goal_py', NOW);
+    assert.equal(p.mode, 'none');
+    assert.equal(p.pace, 0);
+    assert.equal(p.landing, null);
+    assert.equal(p.slippageDays, null);
+    assert.equal(projection.earlyLabel(p), null);
+  });
+
+  await t.test('two logged days is hours so far over calendar days so far, times seven', () => {
+    // 2 h on each of the last two days: 4 h over 2 days is 14 h a week.
+    const p = projection.project(stateWith(daily(2, 120)), 'goal_py', NOW);
+    assert.equal(p.mode, 'early');
+    assert.equal(p.loggedDays, 2);
+    assert.equal(p.paceDays, 2);
+    assert.equal(p.pace, 14);
+    assert.equal(p.banked, 4);
+    // 126 h left at 14 h a week is nine weeks.
+    assert.equal(p.landingDays, 63);
+    assert.equal(dates.dayKey(p.landing), '2026-08-09');
+    assert.equal(projection.earlyLabel(p), 'early estimate — 2 days');
+  });
+
+  await t.test('the denominator is calendar days, so a gap slows the estimate', () => {
+    // 2 h today and 2 h six days ago: 4 h over seven calendar days.
+    const entries = [
+      { id: 'a', date: TODAY, duration_min: 120, category_id: 'cat_learn', goal_id: 'goal_py' },
+      { id: 'b', date: '2026-06-01', duration_min: 120, category_id: 'cat_learn', goal_id: 'goal_py' },
+    ];
+    const p = projection.project(stateWith(entries), 'goal_py', NOW);
+    assert.equal(p.loggedDays, 2);
+    assert.equal(p.paceDays, 7);
+    assert.equal(p.pace, 4);
+    assert.equal(projection.earlyLabel(p), 'early estimate — 2 days',
+      'the label counts logged days, which is what the gate counts');
+  });
+
+  await t.test('the label counts up to six and is gone at seven', () => {
+    for (let n = 2; n <= 6; n++) {
+      const p = projection.project(stateWith(daily(n, 60)), 'goal_py', NOW);
+      assert.equal(projection.earlyLabel(p), `early estimate — ${n} days`);
+    }
+    assert.equal(projection.earlyLabel(projection.project(stateWith(daily(7, 60)), 'goal_py', NOW)), null);
+  });
+
+  await t.test('an early estimate already past its date is slipping, like any other', () => {
+    const state = stateWith(daily(2, 60), { by_date: dates.dayKey(dates.addDays(TODAY, 7)) });
+    const p = projection.project(state, 'goal_py', NOW);
+    assert.ok(p.slippageDays > 0);
+    assert.deepEqual(projection.goalCounts(state, NOW), { open: 1, slipping: 1, archived: 0 });
+  });
+
+  await t.test('a goal reached inside its first week projects nothing', () => {
+    const p = projection.project(stateWith(daily(3, 600), { target_amount: 20 }), 'goal_py', NOW);
+    assert.equal(p.done, true);
+    assert.equal(p.early, true, 'the pace is still an early one');
+    assert.equal(p.landing, null);
+  });
+
+  await t.test('the preview, the goal sheet and the table read the same call', () => {
+    const state = stateWith(daily(3, 60));
+    const row = projection.goalRows(state, NOW)[0];
+    const before = projection.project(state, 'goal_py', NOW);
+    const after = projection.projectWithDelta(state, 'goal_py', 60, NOW);
+    assert.equal(row.mode, 'early');
+    assert.equal(dates.dayKey(row.landing), dates.dayKey(before.landing));
+    assert.equal(after.early, true);
+    assert.equal(projection.earlyLabel(after), 'early estimate — 3 days',
+      'an hour added today is a fourth entry, not a fourth day');
+  });
+
+  await t.test('the reachability panel takes the same rule on the category', () => {
+    const state = stateWith(daily(3, 60), { id: 'goal_other' });
+    const r = projection.reachability(state,
+      { category_id: 'cat_learn', target_amount: 130, by_date: '2026-09-30' }, NOW);
+    assert.equal(r.hasHistory, true);
+    assert.equal(r.mode, 'early');
+    assert.equal(r.loggedDays, 3);
+    assert.equal(r.pace, 7, '3 h over 3 days is 7 h a week');
+    assert.ok(r.landing);
+    assert.equal(projection.earlyLabel(r), 'early estimate — 3 days');
+  });
+});
+
+/* ---------- decision 27: the chart's series ---------- */
+
+test('series is the banked line from the first entry to today, and the projection on', async (t) => {
+  await t.test('cumulative hours, one point per logged day, from zero the day before', () => {
+    const s = projection.series(stateWith(daily(3, 60)), 'goal_py', NOW);
+    assert.deepEqual(s.points, [
+      { day: '2026-06-04', hours: 0 },
+      { day: '2026-06-05', hours: 1 },
+      { day: '2026-06-06', hours: 2 },
+      { day: '2026-06-07', hours: 3 },
+    ]);
+    assert.equal(s.projection.from.day, TODAY);
+    assert.equal(s.projection.from.hours, 3);
+    assert.equal(s.projection.to.hours, 130);
+    assert.equal(s.projection.to.day, s.landing);
+    assert.equal(s.byDate, '2026-09-30');
+    assert.equal(s.early, true);
+  });
+
+  await t.test('the line reaches today even when nothing was logged since', () => {
+    const s = projection.series(stateWith(daily(3, 60, 4)), 'goal_py', NOW);
+    const last = s.points[s.points.length - 1];
+    assert.equal(last.day, TODAY);
+    assert.equal(last.hours, 3, 'flat to today, not a claim of new hours');
+  });
+
+  await t.test('one logged day draws a line and no projection', () => {
+    const s = projection.series(stateWith(daily(1, 90)), 'goal_py', NOW);
+    assert.equal(s.points.length, 2);
+    assert.equal(s.projection, null);
+    assert.equal(s.landing, null);
+  });
+
+  await t.test('a reached goal keeps its history and projects nothing', () => {
+    const s = projection.series(stateWith(daily(14, 600), { target_amount: 100 }), 'goal_py', NOW);
+    assert.equal(s.done, true);
+    assert.equal(s.projection, null);
+    assert.equal(s.points[s.points.length - 1].hours, 140);
+  });
+
+  await t.test('a date already passed still marks the target and is late', () => {
+    const s = projection.series(stateWith(daily(14, 60), { by_date: '2026-05-01' }), 'goal_py', NOW);
+    assert.equal(s.byDate, '2026-05-01');
+    assert.equal(s.late, true);
+    assert.ok(s.projection);
+  });
+
+  await t.test('zero pace is a line with nothing after it', () => {
+    const s = projection.series(stateWith([]), 'goal_py', NOW);
+    assert.deepEqual(s.points, []);
+    assert.equal(s.projection, null);
+  });
+
+  await t.test('an unknown goal is null', () => {
+    assert.equal(projection.series(stateWith([]), 'goal_nope', NOW), null);
   });
 });
 
 test('the edge cases are decided here, not left to each caller', async (t) => {
   await t.test('zero pace gives no landing date, never Infinity', () => {
-    // The only way to reach a zero pace is too little history: the pace window
-    // is the last k whole weeks of a span that starts at the first entry, so at
-    // most six days of history can ever fall outside it — never seven.
-    const p = projection.project(stateWith(daily(3, 60, 400)), 'goal_py', NOW);
+    // The only way to reach a zero pace is too little history: with one
+    // logged day there is no rate, and from two on the early estimate spans
+    // every entry, so the pace is positive whenever the hours are.
+    const p = projection.project(stateWith(daily(1, 60, 400)), 'goal_py', NOW);
     assert.equal(p.enoughHistory, false);
     assert.equal(p.pace, 0);
     assert.equal(p.landing, null);
     assert.equal(p.slippageDays, null);
     assert.ok(Number.isFinite(p.required), 'a required rate does not need history');
+  });
+
+  await t.test('old sparse history is an early estimate stretched thin, not a blank', () => {
+    // Three hours logged four hundred days ago: 3 h over 403 days.
+    const p = projection.project(stateWith(daily(3, 60, 400)), 'goal_py', NOW);
+    assert.equal(p.mode, 'early');
+    assert.equal(p.pace, 0.05);
+    assert.ok(p.landing, 'a date, years out, with the label on it');
   });
 
   await t.test('a goal already reached is done, and the number is not clamped', () => {
@@ -299,7 +458,7 @@ test('goalCounts drives the headline (spec §6)', async (t) => {
   });
 
   await t.test('too little history to project counts as open and nothing more', () => {
-    const state = stateWith(daily(3, 60), { by_date: dates.dayKey(dates.addDays(TODAY, 1)) });
+    const state = stateWith(daily(1, 60), { by_date: dates.dayKey(dates.addDays(TODAY, 1)) });
     assert.deepEqual(projection.goalCounts(state, NOW), { open: 1, slipping: 0, archived: 0 });
   });
 
@@ -331,11 +490,11 @@ test('reachability answers the New goal sheet from the feeding category', async 
     assert.equal(dates.dayKey(r.landing), '2026-10-15');
   });
 
-  await t.test('with fewer than seven logged days there is no pace to quote', () => {
-    const state = stateWith(daily(6, 60), { id: 'goal_other' });
+  await t.test('with fewer than two logged days there is no pace to quote', () => {
+    const state = stateWith(daily(1, 60), { id: 'goal_other' });
     const r = projection.reachability(state, draft, NOW);
     assert.equal(r.hasHistory, false);
-    assert.equal(r.loggedDays, 6);
+    assert.equal(r.loggedDays, 1);
     assert.equal(r.pace, 0);
     assert.equal(r.landing, null, 'never a date from a pace that is not there');
     assert.equal(r.required, 7.91, 'what the date asks for is still knowable');
