@@ -7,7 +7,7 @@ Status: **all resolved on 30 Aug 2026.** These override `MERIDIAN-SPEC-v1.1.md` 
 | 1 | Durations only, or start/end clock times? | **Durations only.** Entries have a date and a duration in minutes; no clock times, no overlap logic. Consequence accepted: no time-of-day views on this data. |
 | 2 | When does the logging day end? | **04:00.** "Today" = local clock minus 4 h; an entry belongs to the day it is logged on. No splitting. |
 | 3 | Profiles | **One profile.** No profile UI, no `profile_id` column. |
-| 4 | v1 screens | **Log + New entry sheet; Where it went; Manage categories + New category sheet; Goals + New goal sheet; import/export/first-run; all three themes; seed data.** Plan, Progress, Lessons are v1.5 (nav items present but render a calm "coming after your first full week" state, styled like the app, not a placeholder). |
+| 4 | v1 screens | **Amended 3 Sep 2026 — see 25, 26, 27 below.** **Log + New entry sheet; Where it went; Manage categories + New category sheet; Goals + New goal sheet; import/export/first-run; all three themes; seed data.** Plan, Progress, Lessons are v1.5 (nav items present but render a calm "coming after your first full week" state, styled like the app, not a placeholder). |
 | 5 | May the friend hand-edit the workbook? | **Yes.** Import validates every row and reports rejects; nothing fails silently. |
 | 6 | Target browsers | **Chromium (Chrome/Edge) and Firefox, current versions, desktop.** Download is the primary save path. File System Access direct save is a Chromium-only enhancement, added only in Phase 5 if time allows. |
 | 7 | Felt score | **None.** |
@@ -15,8 +15,8 @@ Status: **all resolved on 30 Aug 2026.** These override `MERIDIAN-SPEC-v1.1.md` 
 | 9 | Initial categories | **Seed the 8 sample categories:** Work (upkeep), Scrolling (less), Family (more), Idle TV (less), Learning (more), Exercise (more), Reading (more), Everything else (upkeep) — colours and planned hours per spec §9. |
 | 10 | Value dots (1–5 per entry) | **Cut from v1.** No dots in the quick-add row or Log table; the VALUE column is removed and its width goes to ACTIVITY. The `value` column stays in the workbook, always blank. |
 | 11 | Themes | **All three** (paper, graphite, blueprint), tokens verbatim from spec §5. Choice persists in localStorage and is applied before first paint. |
-| 12 | Explanatory mode | **No chip.** The one gated line ("Projected from logged hours, not from your plan.") ships always-on when Progress ships (v1.5). |
-| 13 | Weekly cap for Less categories | **Cap = that category's planned hours.** No separate input; `weekly_cap_hours` column exists, blank means equal to plan. |
+| 12 | Explanatory mode | **No chip.** The one gated line ("Projected from logged hours, not from your plan.") ships always-on when Progress ships — now Phase 6, per 27. |
+| 13 | Weekly cap for Less categories | **Cap = that category's planned hours.** No separate input; `weekly_cap_hours` column exists, blank means equal to plan. Stands after 26: the cap lives in Manage categories, and is read there. |
 | 14 | Non-hour goal units | **Hours only.** `target_unit` is always `h` in v1; the column stays for later. |
 | 15 | Local data and an imported workbook both exist | **Prompt: "Replace local data" / "Keep local, discard import".** Never merge. |
 | 16 | Category rename history | **Rename in place.** Archive sets `archived_on`; restore clears it. Effective-dated rename chains are deferred to the GitHub version. |
@@ -124,3 +124,96 @@ was a submit-time error naming it.
 fires on arrow-key traversal and is announced as a value), and disabling Less
 and Upkeep in the stacked sheet (it would make one fidelity-locked sheet into
 two). Rule §8.3 is explained, not enforced by amputation.
+
+### 25 — Lessons is a journal, not a weekly close-out
+
+Added on 3 Sep 2026, at the Phase 5 checkpoint, when the owner revisited
+decision 4.
+
+**Was:** a weekly close-out queue — a prompt the app generated from the
+difference between the plan and the week ("Scrolling took 6 h more than you
+planned…", "W23 CLOSE-OUT — 1 OF 3", Skip / Save & next) — followed by a
+history of past lessons with tags. Spec §10 left open when the queue fires and
+what prompts 2 and 3 are.
+
+**Now:** a free-form journal. The owner writes whatever they like — a lesson, a
+musing, a piece of philosophy — whenever they like; the app generates nothing.
+Lessons show as cards: every one while there are few, and past a dozen a
+sample that is half the most recent and half the oldest, reshuffled on each
+visit, with every pinned card always present. A card can be pinned, and the
+whole journal can be searched. A card may carry tags naming a goal or a
+category, as the data already allows.
+
+**Why:** the close-out trigger and the second and third prompts were never
+decided, and a journal has no trigger. It is also usable from the first
+minute, which a weekly close-out never is in a few-day test. The owner's own
+words: lessons "should be independent of anything".
+
+**Not taken:** a visit-count split — half the most visited, half the least. In
+the first weeks every card has been seen zero or one times, so the split means
+nothing; mixing by date gives the "an old one resurfaces" effect from day two
+without tracking anything. Visit-based resurfacing can be added once there is
+enough history for it to mean something.
+
+**Consequences:** spec §6's Lessons copy, `deck-06-lessons.png`, business rule
+§8's close-out prompt and §10's open row are superseded; Appendix B item 7 is
+moot. The Lessons workbook sheet keeps `id`, `iso_week`, `date`, `text`, `tags`
+and gains `pinned`; an older workbook without the column imports as unpinned.
+No queue or skip state is needed.
+
+### 26 — there is no Plan screen; Goals is the plan
+
+**Was:** a Plan screen of weekly planned-versus-lived hours per category,
+zero-sum inside 168 − sleep − work − errands ("52 hours are actually yours"),
+a Save plan with next-week versioning, readings ("3 h short", "6 h over cap"),
+and two landing dates side by side — at this plan, at last week's pace.
+
+**Now:** planning is setting a goal — a target and a date — and logging against
+it. The Plan nav item is removed; the app has five screens. The weekly cap for
+a Less category keeps its meaning through the category's planned hours
+(decision 13), edited in Manage categories as now, and the Manage row's THIS
+WEEK column says "over cap" when a Less category is past it.
+
+**Why:** everything the screen promised that matters already lives in Goals: a
+required rate against real pace ("You've given Learning 7.0 h a week. This
+needs 10.0 h.") and a landing date, which is decision 5's pair of dates kept
+in view. What remained was the 168-hour budget — which decision 17's
+amendment had already made uncomputable, since without a sleep figure
+168 − 45 − 15 is 108, not 52 — plus the zero-sum rule, plan versioning and a
+dozen details the mockup never settled. "Why make it more complicated?"
+
+**Consequences:** spec §4g, §6's Plan copy, rules §8.6, §8.7 and §8.9, the
+plan halves of §8.5 and §8.8, and `deck-05-plan.png` are superseded. Decision
+13 stands. The Plan workbook sheet stays so a workbook round-trips, but nothing
+reads it; `errands_hours_per_week` stays dormant. Decision 12's explainer
+line still ships on Progress — it is still true.
+
+### 27 — Progress projects from the second logged day, marked early until the seventh
+
+**Was:** no landing date until a goal had seven distinct logged days (the
+`MIN_LOGGED_DAYS` rule from Phase 1), and Progress deferred to v1.5 because it
+"needs ≥2–3 weeks of pace history".
+
+**Now:** the banked line — hours adding up — draws from the first entry. From
+the second distinct logged day, pace is hours so far ÷ days so far × 7, and the
+projection line and landing date show with the label "early estimate — N days".
+From the seventh day the whole-week rule already built takes over and the label
+goes. The Goals table, the New goal sheet's reachability panel and the entry
+sheet's preview use the same rule and the same label, so no two screens ever
+disagree about a date.
+
+**Why:** a blank screen for a week is worse than an honest early guess. The
+seven-day gate existed because two days can swing a date by months; the label
+carries that warning instead of hiding the date.
+
+**Consequences:** spec §4e's hard-coded chart becomes computed — the axes
+range from the first logged day to the later of the target date and the
+landing date, and to the target's hours — and its four stat blocks and hero
+sentence are computed from pace and required. This also retires the mockup's
+own sample figures, which contradict rule §8.4: at 42 h banked and 7.0 h a
+week the app lands on 3 September, 27 days early, not 14 October, 25 days
+late. The LEVERS panel is not built: nothing in the data model says an hour
+not scrolled becomes an hour learned. ALL GOALS stays; a goal picker is added
+(spec §10's gap). The owner's Phase 4 answer that a young goal shows "— /
+after a week of logging" is superseded by the early estimate and its label;
+that copy now covers only a goal with fewer than two logged days.

@@ -143,12 +143,34 @@ Phase 5. Read CLAUDE.md and docs/BUILD-PLAN.md § Phase 5, then docs/QUALITY-BAR
 
 ---
 
-## v1.5 backlog (after the friend's feedback)
+## Phase 6 — Lessons, Progress, and the end of Plan
 
-- Plan screen (planned vs lived, readings, zero-sum footer, Save plan with next-week versioning).
-- Progress screen (projection chart, levers, all-goals list, the always-on explainer line).
-- Lessons (close-out queue generation from plan deltas, history, tags).
-- Whatever the friend's feedback changes in Log / Where it went / Goals.
+Decisions 25, 26 and 27 (3 Sep 2026) reshape the three deferred screens into
+things a friend can use in a few days, so they ship before the handover rather
+than after it.
+
+**Prompt**
+```
+Phase 6. Read CLAUDE.md and docs/BUILD-PLAN.md § Phase 6, then DECISIONS 25–27, spec §4e and §6 (Progress, Lessons), and decision-log 177–192. Plan first, wait for approval.
+```
+
+**Scope**
+- Plan (decision 26): remove the nav item — five screens; `states.js`, the header, the matrix and the keyboard spec follow. The Manage row's THIS WEEK column says `{n} h over cap` when a Less category is past its planned hours. The Plan workbook sheet still round-trips; nothing reads it.
+- Lessons (decision 25): `src/ui/lessons.js`. Cards — every one while there are twelve or fewer, else half the most recent and half the oldest, reshuffled per visit, pinned cards always present. Pin/unpin, search over text and tags, a New lesson sheet (text, optional tags to a goal or category), edit and delete via the `…` menu with inline confirm. Store reducers for lessons; `pinned` in the Lessons sheet, older workbooks importing as unpinned. A designed empty state. Copy is new, in the app's voice, and goes to DECISIONS.
+- Progress (decision 27): `src/ui/progress.js`. A goal picker; the hero sentence, four stat blocks and the explainer line (decision 12) computed from the projection; the chart as SVG from real data — banked line from the first entry, pace line to the landing, the target marker, the warn band when late, axes auto-ranged; ALL GOALS. No levers. In core: an early-estimate mode in `projection.js` (from the second distinct logged day to the sixth: banked ÷ days × 7, flagged `early`), a `series()` for the chart's cumulative points, and a pure, tested chart layout beside `ribbon.js`. The Goals table, the goal sheet's reachability and the entry sheet's preview all take the early estimate and its label from the same call.
+- Tests: unit for the early-estimate rule, the series and the chart layout, including zero pace, target reached, date passed, one logged day; Playwright for lessons (create, pin, search, shuffle, delete) and progress (early, settled, reached, late, no goals); matrix states for both screens and the lessons sheet; `dist.spec.js` against a re-cut zip.
+- Docs: README-for-tester and CHANGELOG updated for five screens; decision log.
+
+**Acceptance**: QUALITY-BAR §8 for the two new screens; the same landing date and label on Goals, the goal sheet, the entry sheet and Progress for any goal; fidelity against `deck-03-progress.png` for layout and tokens, with the copy computed; the responsive and zoom matrices green with the new states; the zip re-cut and `dist.spec.js` green.
+
+**Checkpoint (owner)**: start fresh. Write two lessons, pin one, search for the other. Create a goal, log against it on two different days, open Progress and read the early estimate and its label. Import a workbook with a week of entries against it and watch the label go. Set a Less category's planned hours below what you have logged this week and find "over cap" in Manage.
+
+## Backlog (after the friend's feedback)
+
+- Whatever the friend's feedback changes in Log / Where it went / Goals / Lessons / Progress.
+- Lessons: visit-based resurfacing, once there is enough history for it to mean anything (decision 25, not taken).
+- Firefox, tested by hand until Playwright's build launches on this machine.
+- Load SheetJS on demand (decision-log 189): ~50 ms of first render.
 
 ## Checkpoint report template (Claude Code writes this at every checkpoint)
 
