@@ -137,12 +137,15 @@ history of past lessons with tags. Spec §10 left open when the queue fires and
 what prompts 2 and 3 are.
 
 **Now:** a free-form journal. The owner writes whatever they like — a lesson, a
-musing, a piece of philosophy — whenever they like; the app generates nothing.
-Lessons show as cards: every one while there are few, and past a dozen a
-sample that is half the most recent and half the oldest, reshuffled on each
-visit, with every pinned card always present. A card can be pinned, and the
-whole journal can be searched. A card may carry tags naming a goal or a
-category, as the data already allows.
+musing, a piece of philosophy — with or without a title, whenever they like;
+the app generates nothing. Lessons show as cards sized by what is in them, as
+many as fit the screen: pinned cards always, and the rest chosen by a fill that
+rotates between newest, oldest and random from one visit to the next, with a
+small label saying which and a click to move it on. A search shows every match,
+with no limit. A card can be pinned, archived or deleted. Archived cards leave
+the wall entirely — nothing is shown faded — and a *View archived* switch shows
+them with restore and delete-for-good. A card may carry tags naming a goal or
+a category, as the data already allows.
 
 **Why:** the close-out trigger and the second and third prompts were never
 decided, and a journal has no trigger. It is also usable from the first
@@ -151,15 +154,16 @@ words: lessons "should be independent of anything".
 
 **Not taken:** a visit-count split — half the most visited, half the least. In
 the first weeks every card has been seen zero or one times, so the split means
-nothing; mixing by date gives the "an old one resurfaces" effect from day two
-without tracking anything. Visit-based resurfacing can be added once there is
-enough history for it to mean something.
+nothing. Visit-based resurfacing can be added once there is enough history for
+it to mean something. (Refined 3 Sep 2026: an earlier draft of this decision
+filled the wall with half recent, half old; the owner chose the rotating fill
+and content-sized cards instead.)
 
 **Consequences:** spec §6's Lessons copy, `deck-06-lessons.png`, business rule
 §8's close-out prompt and §10's open row are superseded; Appendix B item 7 is
 moot. The Lessons workbook sheet keeps `id`, `iso_week`, `date`, `text`, `tags`
-and gains `pinned`; an older workbook without the column imports as unpinned.
-No queue or skip state is needed.
+and gains `title`, `pinned` and `archived`; an older workbook without them
+imports untitled, unpinned and live. No queue or skip state is needed.
 
 ### 26 — there is no Plan screen; Goals is the plan
 
@@ -202,6 +206,15 @@ goes. The Goals table, the New goal sheet's reachability panel and the entry
 sheet's preview use the same rule and the same label, so no two screens ever
 disagree about a date.
 
+The chart is the screen, and it carries every live goal at once: each goal is
+a line in its own colour, banked history solid to today and the projection on
+to its landing, with its target marked. A list beside the chart names each
+goal with its colour and its figures, and switches it off and on. With no live
+goals there is no chart, only a line saying so. A goal already reached keeps
+its history and projects nothing, so a screen whose goals are all reached
+shows the timeline and the histories with no projection. Whatever sits beside
+or above the chart serves it, or is removed.
+
 **Why:** a blank screen for a week is worse than an honest early guess. The
 seven-day gate existed because two days can swing a date by months; the label
 carries that warning instead of hiding the date.
@@ -213,7 +226,8 @@ sentence are computed from pace and required. This also retires the mockup's
 own sample figures, which contradict rule §8.4: at 42 h banked and 7.0 h a
 week the app lands on 3 September, 27 days early, not 14 October, 25 days
 late. The LEVERS panel is not built: nothing in the data model says an hour
-not scrolled becomes an hour learned. ALL GOALS stays; a goal picker is added
-(spec §10's gap). The owner's Phase 4 answer that a young goal shows "— /
+not scrolled becomes an hour learned. The mockup's single-goal hero sentence,
+stat blocks and ALL GOALS list fold into the goal list beside the chart; the
+"which goal" picker spec §10 asks for is that list. The owner's Phase 4 answer that a young goal shows "— /
 after a week of logging" is superseded by the early estimate and its label;
 that copy now covers only a goal with fewer than two logged days.
