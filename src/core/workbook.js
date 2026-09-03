@@ -29,6 +29,21 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (dates, validate, aggregate) {
   'use strict';
 
+  /* The spreadsheet row a decoded row came from, carried non-enumerably so it
+     never reaches Object.keys, the blank check, or the imported data.
+
+     Rejects used to be numbered by position in the decoded array, which is not
+     the row Excel shows the moment a sheet contains a blank line — and
+     `src/ui/report.js` promises the friend the opposite ("the header is row 1,
+     so the first data row is row 2") while decision 5 invites them to go and
+     fix the row in Excel. Found by the Phase 5 audit. */
+  var ROW_KEY = '__row';
+
+  function rowNumber(row, i) {
+    var n = row ? row[ROW_KEY] : null;
+    return typeof n === 'number' ? n : i + 2;
+  }
+
   var SCHEMA_VERSION = 1;
   var APP_VERSION = '1.0.0';
 
@@ -345,7 +360,7 @@
       noteUnknownColumns(report, 'Settings', settingsSheet.headers, ['key', 'value']);
       settingsSheet.rows.forEach(function (r, i) {
         var k = validate.blank(r.key) ? '' : String(r.key).trim();
-        var rowNo = i + 2;
+        var rowNo = rowNumber(r, i);
         if (SETTING_KEYS.indexOf(k) === -1) {
           if (RETIRED_SETTINGS[k]) report.notes.push(RETIRED_SETTINGS[k]);
           else if (k) report.notes.push('Settings: ignored unknown setting "' + k + '".');
@@ -382,7 +397,7 @@
     noteUnknownColumns(report, 'Categories', catSheet.headers, SHEETS[2].columns);
     var seenCats = Object.create(null);
     catSheet.rows.forEach(function (r, i) {
-      var rowNo = i + 2;
+      var rowNo = rowNumber(r, i);
       var errors = [];
       var c = readRow(r, [
         { key: 'id', read: function (v, f) { return validate.asId(v, f, { required: true }); } },
@@ -437,7 +452,7 @@
       var pastGoals = 0;
       var todayKey = dates.dayKey(dates.logicalDay((opts && opts.now) || new Date()));
       goalSheet.rows.forEach(function (r, i) {
-        var rowNo = i + 2;
+        var rowNo = rowNumber(r, i);
         var errors = [];
         var g = readRow(r, [
           { key: 'id', read: function (v, f) { return validate.asId(v, f, { required: true }); } },
@@ -493,7 +508,7 @@
       noteUnknownColumns(report, 'Entries', entrySheet.headers, SHEETS[4].columns);
       var seenEntries = Object.create(null);
       entrySheet.rows.forEach(function (r, i) {
-        var rowNo = i + 2;
+        var rowNo = rowNumber(r, i);
         var errors = [];
         var e = readRow(r, [
           { key: 'id', read: function (v, f) { return validate.asId(v, f, { required: true }); } },
@@ -570,7 +585,7 @@
     } else {
       noteUnknownColumns(report, 'Plan', planSheet.headers, SHEETS[5].columns);
       planSheet.rows.forEach(function (r, i) {
-        var rowNo = i + 2;
+        var rowNo = rowNumber(r, i);
         var errors = [];
         var p = readRow(r, [
           { key: 'category_id', read: function (v, f) { return validate.asText(v, f, { required: true }); } },
@@ -608,7 +623,7 @@
       noteUnknownColumns(report, 'Lessons', lessonSheet.headers, SHEETS[6].columns);
       var seenLessons = Object.create(null);
       lessonSheet.rows.forEach(function (r, i) {
-        var rowNo = i + 2;
+        var rowNo = rowNumber(r, i);
         var errors = [];
         var l = readRow(r, [
           { key: 'id', read: function (v, f) { return validate.asId(v, f, { required: true }); } },
@@ -716,18 +731,27 @@
     SHEETS.forEach(function (def) {
       var ws = wb.Sheets[def.name];
       if (!ws) return;
-      var aoa = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null, blankrows: false });
+      /* blankrows: true so an index into `aoa` IS the spreadsheet row, minus
+         one for the header. Compacting first and numbering afterwards is what
+         made a reject point at the wrong line in Excel. */
+      var aoa = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null, blankrows: true });
       var headers = (aoa[0] || []).map(function (h) {
         return h === null || h === undefined ? '' : String(h).trim();
       });
       var rows = [];
       for (var i = 1; i < aoa.length; i++) {
+        var cells = aoa[i] || [];
         var row = {};
         for (var c = 0; c < headers.length; c++) {
-          if (headers[c]) row[headers[c]] = aoa[i][c] === undefined ? null : aoa[i][c];
+          if (headers[c]) row[headers[c]] = cells[c] === undefined ? null : cells[c];
         }
+        /* A row whose known columns are all blank is what Excel leaves behind
+           when someone selects a row and presses Delete. It is skipped, but the
+           rows after it keep their real numbers. */
         var allBlank = Object.keys(row).every(function (k) { return validate.blank(row[k]); });
-        if (!allBlank) rows.push(row);
+        if (allBlank) continue;
+        Object.defineProperty(row, ROW_KEY, { value: i + 1, enumerable: false });
+        rows.push(row);
       }
       sheets[def.name] = { headers: headers, rows: rows };
     });

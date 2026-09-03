@@ -61,13 +61,17 @@
           <${Themes} theme=${props.theme} onTheme=${props.onTheme} />
           ${compact ? null : html`
             <button type="button" class="datactl" data-data-open data-demo=${props.demo ? '1' : '0'}
-              aria-label=${'Data — ' + props.dataLabel}
+              data-error=${props.error ? '1' : '0'}
+              aria-label=${props.error ? props.error.message : 'Data — ' + props.dataLabel}
               onClick=${props.onOpenData}>
               <span class="datactl__label">${props.demo ? 'DEMO' : 'DATA'}</span>
               <span class="datactl__sep" aria-hidden="true">·</span>
-              <span class=${'datactl__state' + (props.unexported ? ' datactl__state--live' : '')}>
-                ${props.dataLabel}
-              </span>
+              ${props.error ? html`
+                <span class="datactl__state datactl__state--error">NOT SAVING</span>`
+              : html`
+                <span class=${'datactl__state' + (props.unexported ? ' datactl__state--live' : '')}>
+                  ${props.dataLabel}
+                </span>`}
             </button>`}
           <span class="stamp">${props.stamp}</span>
         </div>

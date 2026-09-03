@@ -114,4 +114,54 @@ function stressState() {
   return s;
 }
 
-module.exports = { gappedState, archivedState, singleCategoryState, stressState };
+// BUILD-PLAN § Phase 5: "2,000 entries load in under 200 ms to first render".
+// The seed's own eight categories and two goals, so the app behaves exactly as
+// it would for the friend — only the volume is unrealistic. Five entries a day
+// over four hundred days, well inside the 24 h day cap.
+function perfState() {
+  const s = seed.buildEmpty(REFERENCE_DAY);
+  const cats = s.categories.map((c) => c.id);
+  const goals = seed.GOALS.map((g) => ({
+    id: g.id,
+    short_name: g.short_name,
+    identity: g.identity,
+    category_id: g.category_id,
+    target_amount: g.target_amount,
+    target_unit: 'h',
+    by_date: dates.dayKey(dates.addDays(dates.logicalDay(REFERENCE_DAY), g.weeks * 7)),
+    archived: false,
+  }));
+
+  const entries = [];
+  const today = dates.logicalDay(REFERENCE_DAY);
+  const DAYS = 400;
+  const PER_DAY = 5;
+  for (let d = DAYS - 1; d >= 0; d--) {
+    const day = dates.dayKey(dates.addDays(today, -d));
+    for (let k = 0; k < PER_DAY; k++) {
+      const n = entries.length;
+      const cat = cats[(d * PER_DAY + k) % cats.length];
+      const goal = goals.find((g) => g.category_id === cat);
+      entries.push({
+        id: 'e_' + pad(n + 1, 5),
+        date: day,
+        // 30 min to 3 h, deterministic: five of these is at most 12 h a day.
+        duration_min: 30 + ((d * PER_DAY + k) * 13) % 151,
+        activity: k === 0 ? 'A sixty character activity line, to load the Log row fully' : null,
+        category_id: cat,
+        goal_id: goal && k % 2 === 0 ? goal.id : null,
+        value: null,
+        created_at: day + 'T12:00:00',
+      });
+    }
+  }
+
+  s.source = 'demo';
+  s.goals = goals;
+  s.entries = entries;
+  return s;
+}
+
+module.exports = {
+  gappedState, archivedState, singleCategoryState, stressState, perfState,
+};

@@ -312,6 +312,68 @@
   to   { opacity: 1; transform: none; }
 }
 
+/* A press, acknowledged. QUALITY-BAR §4 asks for hover, active, focus-visible
+   and disabled on every interactive element; the app had the other three and
+   nothing at all between hover and result, which on the two slow actions
+   (Import, Export) is the whole gap the friend waits in. One rule per family,
+   from tokens only, inside §3's 80 ms hover/active budget. */
+.btn:active,
+.actbtn:active,
+.rowmenu__item:active,
+.preset:active,
+.seg__btn:active,
+.nav__btn:active,
+.themes__btn:active,
+.datactl:active,
+.option:active,
+.sheet__close:active,
+.swatches__btn:active,
+.dir:active {
+  transform: translateY(1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn:active,
+  .actbtn:active,
+  .rowmenu__item:active,
+  .preset:active,
+  .seg__btn:active,
+  .nav__btn:active,
+  .themes__btn:active,
+  .datactl:active,
+  .option:active,
+  .sheet__close:active,
+  .swatches__btn:active,
+  .dir:active {
+    transform: none;
+    opacity: .75;
+  }
+}
+
+/* The × is the most obvious way out of every sheet and had no hover at all. */
+.sheet__close:hover {
+  color: var(--ink);
+}
+
+.swatches__btn:hover .swatch {
+  box-shadow: 0 0 0 2px var(--line);
+}
+
+/* The header's saving-has-failed state. It replaces the export label rather
+   than sitting beside it: there is no useful "3 unexported changes" to report
+   when the changes are not reaching disk at all. */
+.datactl__state--error {
+  color: var(--warn);
+}
+
+.datactl[data-error="1"] .datactl__label {
+  color: var(--warn);
+}
+
+.firstrun__error {
+  max-width: 52ch;
+}
+
 /* ---------- Inputs ---------- */
 
 .input {
@@ -330,6 +392,18 @@
 .input:focus {
   border-color: var(--brand);
   background: var(--bg);
+}
+
+/* The brand border above is the mockup's focus treatment (spec §2, "Date
+   input ... focus (brand border)") and it is kept for a pointer. But `.input`
+   sets `outline: none`, which also took away the app's own focus ring for
+   anyone arriving by Tab — one control quietly weaker than every other, in the
+   only way QUALITY-BAR §4 names explicitly. The ring comes back for keyboard
+   focus alone, so both readings hold: nothing extra on a click, a real ring on
+   a Tab. */
+.input:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
 }
 
 /* Visually hidden, but still read out.
@@ -2154,6 +2228,10 @@
   font: 600 17px/1.35 var(--font);
   margin-bottom: var(--sp-3);
   text-wrap: pretty;
+  /* The mockup wraps both hour figures in this sentence; the port had it only
+     on the required-hours span. On the whole line it reaches the pace figure
+     too, which is the one that changes as FED BY changes. */
+  font-variant-numeric: tabular-nums;
 }
 
 .reach__needs {

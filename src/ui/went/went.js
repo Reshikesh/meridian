@@ -80,6 +80,10 @@
       if (!view.pending) return undefined;
       function onKey(event) {
         if (event.key !== 'Escape') return;
+        /* A sheet owns its own Escape (decision-log #86). Both checks: the flag
+           covers the case where this listener happens to run after the sheet's
+           has already closed it, and the open check covers running before. */
+        if (event.meridianSheetClosed) return;
         if (ui.sheetOpen && ui.sheetOpen()) return;
         var t = event.target;
         if (t && t.classList && t.classList.contains('rail__input')) return;

@@ -207,6 +207,7 @@
 
           <button type="button" class="btn btn--brand quickadd__open"
             aria-label=${complete() ? 'Add this entry' : 'Open the full entry sheet'}
+            disabled=${disabled}
             onClick=${addOrOpen}>+</button>
         </div>
 

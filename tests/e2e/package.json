@@ -5,7 +5,8 @@
   "type": "commonjs",
   "description": "Playwright end-to-end suite for Meridian. Installed here only, so the app stays dependency-free.",
   "scripts": {
-    "test": "playwright test"
+    "test": "playwright test",
+    "perf": "playwright test --project=perf --workers=1"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1"

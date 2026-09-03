@@ -9,6 +9,8 @@
     "test:unit": "node --test \"tests/unit/**/*.test.js\"",
     "test:unit:watch": "node --test --watch \"tests/unit/**/*.test.js\"",
     "test:e2e": "npm --prefix tests/e2e run test",
+    "test:perf": "npm --prefix tests/e2e run perf",
+    "package": "node scripts/package.mjs",
     "e2e:setup": "npm --prefix tests/e2e install && npm --prefix tests/e2e exec -- playwright install chromium"
   }
 }

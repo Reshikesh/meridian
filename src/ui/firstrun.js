@@ -83,6 +83,12 @@
 
           ${props.message ? html`
             <p class="field__error" role="alert">${props.message}</p>` : null}
+          ${/* Saved data that could not be read, or a browser that will not let
+                Meridian save at all. It was only visible inside the Data sheet,
+                which nobody opens before they have started — so the friend
+                would have picked a path and lost the lot without being told. */
+            props.error ? html`
+            <p class="field__error firstrun__error" role="alert">${props.error.message}</p>` : null}
 
           <div class="firstrun__options">
             ${OPTIONS.map(function (o) {

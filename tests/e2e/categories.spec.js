@@ -252,8 +252,13 @@ test('with every category gone, the row says so instead of failing quietly', asy
   // spec §12 asks for is reachable rather than hypothetical.
   await page.evaluate(() => {
     const store = window.Meridian.store;
+    store.getState().entries.slice().forEach((e) => store.deleteEntry(e.id));
+    /* A goal pins the category that feeds it (validate.canDeleteCategory, added
+       by the phase 5 audit) and there is no delete-a-goal path by design, so
+       the goals go first — otherwise two of the eight categories survive and
+       the zero-categories state is unreachable. */
     const s = store.getState();
-    s.entries.slice().forEach((e) => store.deleteEntry(e.id));
+    store.replaceAll(Object.assign({}, s, { goals: [] }), s.source);
     store.getState().categories.slice().forEach((c) => store.deleteCategory(c.id));
   });
 

@@ -204,8 +204,36 @@ test('a category with hours is archived, never deleted (rule §8.10)', () => {
   const used = state({
     entries: [{ id: 'e_1', date: TODAY, duration_min: 60, category_id: 'cat_learn' }],
   });
-  assert.deepEqual(validate.canDeleteCategory(used, 'cat_learn'), { ok: false, minutes: 60 });
-  assert.deepEqual(validate.canDeleteCategory(used, 'cat_scroll'), { ok: true, minutes: 0 });
+  // The base state carries a goal fed by cat_learn, so that one is doubly
+  // undeletable; cat_scroll has neither hours nor a goal.
+  assert.deepEqual(validate.canDeleteCategory(used, 'cat_learn'),
+    { ok: false, minutes: 60, goals: ['Learn Python'] });
+  assert.deepEqual(validate.canDeleteCategory(used, 'cat_scroll'),
+    { ok: true, minutes: 0, goals: [] });
+});
+
+/* Phase 5 audit: deleting a category with no hours but a goal fed by it left
+   the goal naming an id that no longer existed. The app went on showing it,
+   no hour could ever reach it because every picker filters on a category that
+   is gone, and an export of that state would not import — the Goals row is
+   rejected on its foreign key, so the round trip QUALITY-BAR §6 requires was
+   broken by a delete the Manage sheet called safe. */
+test('a category with no hours but a goal fed by it is not deletable', () => {
+  const clean = state({ entries: [] });
+  assert.deepEqual(validate.canDeleteCategory(clean, 'cat_learn'),
+    { ok: false, minutes: 0, goals: ['Learn Python'] });
+
+  // Archived goals count: "Archived goals keep their hours" is only true while
+  // the category they name still exists.
+  const archived = state({ entries: [] });
+  archived.goals[0].archived = true;
+  assert.equal(validate.canDeleteCategory(archived, 'cat_learn').ok, false);
+
+  // With the goal moved off it, the category is free to go.
+  const moved = state({ entries: [] });
+  moved.goals[0].category_id = 'cat_other';
+  assert.deepEqual(validate.canDeleteCategory(moved, 'cat_learn'),
+    { ok: true, minutes: 0, goals: [] });
 });
 
 test('workbook cells coerce the way Excel hands them over', async (t) => {

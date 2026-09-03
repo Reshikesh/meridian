@@ -9,6 +9,7 @@
   var html = htm.bind(preact.h);
   var useState = preactHooks.useState;
   var useEffect = preactHooks.useEffect;
+  var useRef = preactHooks.useRef;
   var dates = window.Meridian.dates;
   var aggregate = window.Meridian.aggregate;
   var range = window.Meridian.range;
@@ -54,6 +55,7 @@
   store.load();
   window.Meridian.store = store;
   window.Meridian.installUnloadGuard(store, window);
+  window.Meridian.installStorageWatch(store, window);
 
   function App() {
     var stateHolder = useState(store.getState());
@@ -187,7 +189,9 @@
 
     function handleFile(file) {
       if (!ui.io.isWorkbook(file)) {
-        patchSheet({ open: true, view: 'idle', message: 'That is not an .xlsx workbook.' });
+        /* On first run the message belongs on the first-run screen: opening the
+           Data sheet there offers to export a dataset that does not exist yet. */
+        patchSheet({ open: !firstRun, view: 'idle', message: 'That is not an .xlsx workbook.' });
         return;
       }
       patchSheet({ open: true, view: 'busy', message: null });
@@ -236,6 +240,18 @@
     /* ---------- the Log screen ---------- */
 
     var todayKey = dates.dayKey(dates.logicalDay(tick));
+
+    /* A tab left open across 04:00 rolled the header stamp but not the Log's
+       day, so the heading, its hours and the quick-add target all still pointed
+       at yesterday while the header disagreed. The day follows the clock only
+       when it was ON the old today: someone who paged back to fill in Sunday
+       keeps Sunday. */
+    var prevTodayRef = useRef(todayKey);
+    useEffect(function () {
+      var was = prevTodayRef.current;
+      prevTodayRef.current = todayKey;
+      if (was !== todayKey) setDay(function (d) { return d === was ? todayKey : d; });
+    }, [todayKey]);
 
     /* Past days stay editable; a day that has not happened is never reachable
        (spec §12, business rule §8.15). */
@@ -412,6 +428,12 @@
 
     var exportInfo = data ? data.exportInfo : null;
     var dataLabel = ui.format.exportLabel(exportInfo, tick);
+    /* Read on every render, not once: `commit` sets it the moment a write is
+       refused. It reaches the header and the first-run screen as well as the
+       Data sheet — a browser that has stopped saving is the one thing the
+       friend must not have to go looking for (QUALITY-BAR §5, and CLAUDE.md's
+       "nothing may be lost"). */
+    var storageError = store.getError();
 
     /* Log and Where it went are real screens; the other four are still the
        designed empty state, and all take the same cross-fade classes.
@@ -476,7 +498,7 @@
         view=${sheet.view} pending=${sheet.pending} message=${sheet.message}
         firstRun=${firstRun}
         exportInfo=${exportInfo} now=${tick} source=${data ? data.source : null}
-        storageError=${store.getError()}
+        storageError=${storageError}
         onExport=${handleExport} onFile=${handleFile}
         onApplyImport=${applyImport} onDismissReport=${firstRun ? closeSheet : closeSheet}
         onStartFresh=${startFresh} onClose=${closeSheet} />` : null;
@@ -489,6 +511,7 @@
             <div class="screens">
               <${ui.FirstRun}
                 busy=${sheet.view === 'busy'} message=${sheet.open ? null : sheet.message}
+                error=${storageError}
                 onFile=${handleFile} onDemo=${startDemo} onEmpty=${startEmpty} />
             </div>
           </div>
@@ -503,6 +526,7 @@
             screen=${screen} theme=${theme} stamp=${stamp}
             demo=${data.source === 'demo'}
             dataLabel=${dataLabel} unexported=${!!(exportInfo && exportInfo.unexported)}
+            error=${storageError}
             onScreen=${goToScreen} onTheme=${chooseTheme}
             onOpenData=${function () { patchSheet({ open: true, view: 'idle', message: null }); }} />
           <div class="screens">

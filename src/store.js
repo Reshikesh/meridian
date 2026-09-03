@@ -24,6 +24,7 @@
     root.Meridian.storeKeys = api.KEYS;
     root.Meridian.safeStorage = api.safeStorage;
     root.Meridian.installUnloadGuard = api.installUnloadGuard;
+    root.Meridian.installStorageWatch = api.installStorageWatch;
   }
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (dates, ids, validate, workbook) {
   'use strict';
@@ -91,16 +92,23 @@
       for (var i = 0; i < listeners.length; i++) listeners[i](state);
     }
 
+    /* What this store last read or wrote. A `storage` event carrying exactly
+       this is our own echo in some browsers and is ignored. */
+    var lastSeen = null;
+
     function persist() {
       if (state === null) {
         storage.removeItem(KEYS.data);
+        lastSeen = null;
         return true;
       }
-      var res = storage.setItem(KEYS.data, JSON.stringify(state));
+      var json = JSON.stringify(state);
+      var res = storage.setItem(KEYS.data, json);
       if (!res.ok) {
         error = { code: res.reason, message: WRITE_MESSAGE[res.reason] || WRITE_MESSAGE.blocked };
         return false;
       }
+      lastSeen = json;
       error = null;
       return true;
     }
@@ -136,6 +144,7 @@
         parsed.lessons = parsed.lessons || [];
         parsed.exportInfo = parsed.exportInfo || { unexported: 0, exported_at: null };
         state = parsed;
+        lastSeen = raw;
         return state;
       } catch (e) {
         /* Unreadable saved data is not silently discarded — the key is left
@@ -163,11 +172,42 @@
       return -1;
     }
 
+    /* Another window of the same file:// origin wrote the shared key. Take it:
+       both windows are the same person and the same dataset, and the only
+       alternative on a blind whole-blob write is that whichever window is
+       touched last silently overwrites the other's day.
+
+       Returns true when the state actually moved, so the caller can tell the
+       UI. A value identical to what we last read or wrote is our own echo. */
+    function adoptExternal(raw) {
+      if (raw === lastSeen) return false;
+      if (raw === null || raw === undefined) {
+        /* The other window cleared everything (Start fresh). Follow it rather
+           than writing our stale copy back over the emptiness. */
+        state = null;
+        lastSeen = null;
+        notify();
+        return true;
+      }
+      try {
+        var parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.categories)) return false;
+      } catch (e) {
+        return false;
+      }
+      /* load() re-applies the settings defaults and the missing-array repairs,
+         so an externally written blob is normalised exactly like a fresh open. */
+      load();
+      notify();
+      return true;
+    }
+
     /* ---------- lifecycle ---------- */
 
     var api = {
       KEYS: KEYS,
       load: load,
+      adoptExternal: adoptExternal,
       getState: function () { return state; },
       hasData: function () { return state !== null; },
       getError: function () { return error; },
@@ -423,11 +463,30 @@
     return function () { win.removeEventListener('beforeunload', handler); };
   }
 
+  /* Every copy of index.html on this machine shares one localStorage origin, so
+     a second window is not an edge case — it is what happens when the friend
+     double-clicks index.html again the next day. `persist` writes the whole
+     blob blind, so without this the window touched last would overwrite
+     everything the other one logged, which is precisely the loss CLAUDE.md's
+     "nothing may be lost" forbids.
+
+     A `storage` event fires only in the OTHER documents of the origin, never in
+     the one that wrote, so there is no loop. */
+  function installStorageWatch(store, win) {
+    var handler = function (event) {
+      if (event.key !== null && event.key !== KEYS.data) return;
+      store.adoptExternal(event.key === null ? null : event.newValue);
+    };
+    win.addEventListener('storage', handler);
+    return function () { win.removeEventListener('storage', handler); };
+  }
+
   return {
     KEYS: KEYS,
     createStore: createStore,
     safeStorage: safeStorage,
     memoryStorage: memoryStorage,
-    installUnloadGuard: installUnloadGuard
+    installUnloadGuard: installUnloadGuard,
+    installStorageWatch: installStorageWatch
   };
 });

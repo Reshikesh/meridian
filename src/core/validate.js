@@ -320,14 +320,30 @@
     return result(errors);
   }
 
-  /* Business rule §8.10: delete only clears categories with no hours. */
+  /* Business rule §8.10: delete only clears categories with no hours — and, as
+     of the Phase 5 audit, none that a goal is still fed by.
+
+     A goal carries `category_id` and nothing else. Deleting its category left
+     the goal pointing at an id that no longer exists: the app went on showing
+     it, but no hour could ever reach it, because every picker filters by a
+     category that is gone. Worse, an export of that state cannot be imported —
+     the Goals row is rejected on its foreign key — so the round trip
+     QUALITY-BAR §6 requires is broken by a delete the sheet called safe.
+
+     Archived goals count too: "Archived goals keep their hours. Nothing is
+     deleted." is only true if the category they name still exists. */
   function canDeleteCategory(state, categoryId) {
     var minutes = 0;
     var entries = state.entries || [];
     for (var i = 0; i < entries.length; i++) {
       if (entries[i].category_id === categoryId) minutes += Number(entries[i].duration_min) || 0;
     }
-    return { ok: minutes === 0, minutes: minutes };
+    var fed = (state.goals || []).filter(function (g) { return g.category_id === categoryId; });
+    return {
+      ok: minutes === 0 && fed.length === 0,
+      minutes: minutes,
+      goals: fed.map(function (g) { return g.short_name; })
+    };
   }
 
   return {

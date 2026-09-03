@@ -474,3 +474,67 @@ test('the export filename is the date alone', () => {
   assert.equal(workbook.exportFilename(new Date(2026, 5, 8, 2, 30, 0)),
     'meridian-data-2026-06-07.xlsx', 'the 04:00 boundary applies here too');
 });
+
+/* Phase 5 audit: rejects were numbered by position in the decoded array, so a
+   blank line anywhere above shifted every row number below it. src/ui/report.js
+   promises the friend "the header is row 1, so the first data row is row 2",
+   and decision 5 sends them into Excel to fix the row it names — at the wrong
+   line, on an entry that is perfectly correct. */
+test('a reject names the row Excel shows, even under a blank line', async (t) => {
+  const cats = [CAT_HEAD,
+    ['cat_learn', 'Learning', '#2b4a7d', 'more', 5, null, 1, 'FALSE', null]];
+
+  await t.test('a wiped row does not shift the rows below it', () => {
+    const bytes = bookOf({
+      Meta: [['key', 'value'], ['schema_version', 1]],
+      Categories: cats,
+      Entries: [ENTRY_HEAD,
+        ['e_1', '2026-06-01', 60, 'Good', 'cat_learn', null, null, null],
+        // Excel row 3: selected and deleted, so the cells are there but empty.
+        ENTRY_HEAD.map(() => null),
+        ['e_2', '2026-06-02', 'banana', 'Bad', 'cat_learn', null, null, null]],
+    });
+    const out = workbook.decode(XLSX, bytes, { now: NOW });
+    assert.equal(out.report.rejects.length, 1);
+    assert.equal(out.report.rejects[0].sheet, 'Entries');
+    assert.equal(out.report.rejects[0].row, 4, 'the banana is on Excel row 4, not row 3');
+    assert.equal(out.state.entries.length, 1, 'the good row still lands');
+  });
+
+  await t.test('two blanks in a row shift nothing either', () => {
+    const bytes = bookOf({
+      Meta: [['key', 'value'], ['schema_version', 1]],
+      Categories: cats,
+      Entries: [ENTRY_HEAD,
+        ENTRY_HEAD.map(() => null),
+        ENTRY_HEAD.map(() => null),
+        ['e_1', '2026-06-01', -5, 'Negative', 'cat_learn', null, null, null]],
+    });
+    const out = workbook.decode(XLSX, bytes, { now: NOW });
+    assert.equal(out.report.rejects[0].row, 4);
+  });
+
+  await t.test('with no blanks the numbering is unchanged', () => {
+    const bytes = bookOf({
+      Meta: [['key', 'value'], ['schema_version', 1]],
+      Categories: cats,
+      Entries: [ENTRY_HEAD,
+        ['e_1', '2026-06-01', 60, 'Good', 'cat_learn', null, null, null],
+        ['e_2', 'not-a-date', 60, 'Bad', 'cat_learn', null, null, null]],
+    });
+    const out = workbook.decode(XLSX, bytes, { now: NOW });
+    assert.equal(out.report.rejects[0].row, 3);
+  });
+
+  await t.test('the carrier never reaches the imported data', () => {
+    const bytes = bookOf({
+      Meta: [['key', 'value'], ['schema_version', 1]],
+      Categories: cats,
+      Entries: [ENTRY_HEAD,
+        ['e_1', '2026-06-01', 60, 'Good', 'cat_learn', null, null, null]],
+    });
+    const out = workbook.decode(XLSX, bytes, { now: NOW });
+    assert.equal(Object.prototype.hasOwnProperty.call(out.state.entries[0], '__row'), false);
+    assert.equal(JSON.stringify(out.state.entries[0]).indexOf('__row'), -1);
+  });
+});

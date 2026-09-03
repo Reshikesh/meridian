@@ -100,7 +100,12 @@
     /* Three different rows, and the difference is what the category IS, not how
        it is styled: archived, never used, or in play. */
     var archived = !!c.archived;
-    var untouched = !archived && props.totalMinutes === 0;
+    /* "Never used" has to mean never used by anything. A category with no hours
+       but a goal fed by it is not safe to delete: the goal would be left naming
+       an id that no longer exists (validate.canDeleteCategory). */
+    var fedGoals = props.fedGoals || [];
+    var untouched = !archived && props.totalMinutes === 0 && fedGoals.length === 0;
+    var feeds = !archived && props.totalMinutes === 0 && fedGoals.length > 0;
 
     /* Every row is a <form>, so Enter saves from the name field as well as from
        the editor strip below it — "rename in place" puts the name in the row and
@@ -150,6 +155,10 @@
             <p class="managerow__note">Out of the plan, still in the history</p>`
           : untouched ? html`
             <p class="managerow__note">Never used — safe to delete</p>`
+          : feeds ? html`
+            <p class="managerow__note">
+              No hours yet, and ${fedGoals.length === 1 ? fedGoals[0] + ' is' : fedGoals.length + ' goals are'} fed by it
+            </p>`
           : html`
             <div class="sharebar">
               <div class="sharebar__fill"
@@ -334,6 +343,7 @@
           return html`
             <${Row} key=${c.id} category=${c} theme=${props.theme}
               weekMinutes=${week[c.id] || 0} totalMinutes=${total[c.id] || 0}
+              fedGoals=${validate.canDeleteCategory(state, c.id).goals}
               weekDenominator=${weekDenominator}
               editing=${!!edit && edit.id === c.id}
               draft=${edit && edit.id === c.id ? edit.draft : null}

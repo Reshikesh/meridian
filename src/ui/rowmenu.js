@@ -128,6 +128,12 @@
         setConfirming(item);
         return;
       }
+      /* Focus goes back to the `…` BEFORE the action runs. Clicking a menu item
+         focuses it, and closing the panel removes it in the same commit, so
+         focus would fall to <body> — which a sheet opened by this item would
+         then capture as its opener and "return" to on close, leaving nothing
+         focused and the next Tab starting from the top of the page. */
+      if (btnRef.current) btnRef.current.focus();
       close();
       item.onSelect();
     }

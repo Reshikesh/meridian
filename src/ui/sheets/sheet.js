@@ -15,7 +15,7 @@
 
   var html = htm.bind(preact.h);
   var ui = (window.Meridian = window.Meridian || {}).ui = window.Meridian.ui || {};
-  var useEffect = preactHooks.useEffect;
+  var useLayoutEffect = preactHooks.useLayoutEffect;
   var useRef = preactHooks.useRef;
 
   /* Every open sheet, oldest first. Escape belongs to the last one.
@@ -40,9 +40,19 @@
 
   function Sheet(props) {
     var cardRef = useRef(null);
+    /* Whether the gesture that produced a click STARTED on the veil. Without
+       it, dragging a text selection out of a field and releasing over the veil
+       fires `click` on the veil — the nearest common ancestor of the two — and
+       throws the half-typed sheet away. */
+    var downOnVeil = useRef(false);
     var onClose = props.onClose;
 
-    useEffect(function () {
+    /* A layout effect, not an effect: the vendored hooks run `useEffect` after
+       the frame is painted, so for one frame the sheet was on screen with no
+       Escape handler, no focus trap, no scroll lock and no focused field. On an
+       idle machine that frame is invisible; under load it is long enough to
+       swallow a real Escape, which is how the perf suite caught it. */
+    useLayoutEffect(function () {
       var card = cardRef.current;
       var opener = document.activeElement;
       var body = document.body;
@@ -65,6 +75,14 @@
            sheet and leaves Manage standing behind it. */
         if (OPEN[OPEN.length - 1] !== token) return;
         if (event.key === 'Escape') {
+          /* `stopPropagation` cannot silence another listener on `document`,
+             and both this and the Where-it-went screen's pick-abort are capture
+             listeners there. Their firing order depends on which effect ran
+             last, which is not something either should have to know, so the
+             event carries the answer instead: a sheet has taken this Escape.
+             Not `stopImmediatePropagation`, which would also silence the row
+             menu's own Escape when one is open inside a sheet. */
+          event.meridianSheetClosed = true;
           event.stopPropagation();
           onClose();
           return;
@@ -98,8 +116,13 @@
       };
     }, []);
 
+    function onVeilPointerDown(event) {
+      downOnVeil.current = event.target === event.currentTarget;
+    }
+
     function onVeilClick(event) {
-      if (event.target === event.currentTarget) onClose();
+      if (event.target === event.currentTarget && downOnVeil.current) onClose();
+      downOnVeil.current = false;
     }
 
     /* A real <form> when the sheet has a primary action, so Enter in a field
@@ -124,7 +147,8 @@
 
     return html`
       <div class=${'sheet' + (props.wide ? ' sheet--wide' : '') +
-          (props.stacked ? ' sheet--stacked' : '')} onClick=${onVeilClick}>
+          (props.stacked ? ' sheet--stacked' : '')}
+        onPointerDown=${onVeilPointerDown} onClick=${onVeilClick}>
         <div class="sheet__card" ref=${cardRef} role="dialog" aria-modal="true"
           aria-label=${props.title}>
           <div class="sheet__head">
