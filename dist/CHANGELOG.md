@@ -1,5 +1,33 @@
 # Meridian — changelog
 
+## v1.1.0 — 4 September 2026
+
+Five screens, all of them real.
+
+### New
+
+- **Progress** — every live goal on one chart, in its category's colour: banked
+  history to today, the projection on to its landing, the target marked, the
+  warn band when it is late; percent of target on the vertical axis; a goal
+  list beside it with figures and a switch per goal.
+- **Lessons** — a journal. Cards with or without a title, tagged to a goal or a
+  category; a wall that fills the screen with pinned cards first and a fill
+  that rotates newest, oldest, random from one visit to the next; search that
+  shows every match; pin, archive, restore, and delete for good.
+- **An early estimate** — a landing date from the second logged day, labelled
+  *early estimate — N days* until the seventh, on Goals, the goal sheet, the
+  entry sheet and Progress alike.
+- **Over cap** — the Manage row says how far a *Less* category is past its
+  planned hours this week.
+
+### Changed
+
+- **Plan is gone.** Goals is the plan. The workbook's Plan sheet still
+  round-trips; nothing reads it.
+- The Lessons sheet in the workbook gains `title`, `pinned` and `archived`. An
+  older workbook imports its lessons untitled, unpinned and live.
+- A screen fading out no longer takes keyboard focus with it.
+
 ## v1.0.0 — 3 September 2026
 
 The first build to leave the owner's machine. One friend, a few days, a zip.
@@ -19,11 +47,12 @@ The first build to leave the owner's machine. One friend, a few days, a zip.
   named with its sheet, its Excel row and its reason.
 - **Three themes**, demo data, and a first run that offers import, demo or empty.
 
-### What is deliberately not here
+### What was deliberately not there
 
-Plan, Progress and Lessons need weeks of history to say anything true, so they
-say that instead. Goals are measured in hours only. There are no clock times,
-no accounts, no sync, and no network access of any kind.
+Plan, Progress and Lessons needed weeks of history to say anything true, so
+they said that instead (all three reshaped and shipped in v1.1.0). Goals are
+measured in hours only. There are no clock times, no accounts, no sync, and no
+network access of any kind.
 
 ### Known, and written down
 

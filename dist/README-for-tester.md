@@ -85,8 +85,30 @@ category and needs a number of hours and a date. Meridian then tells you when it
 will actually land at the pace you are really going, which may not be the date
 you typed. That is the point of it.
 
-**Progress**, **Plan** and **Lessons** are not built yet. They need a few weeks
-of history to say anything true, so they say so instead.
+From the second day you log against a goal there is a date, marked *early
+estimate — 2 days* while it rests on so little; after seven logged days the
+label goes and the date settles. The same date and the same label show
+everywhere a goal appears.
+
+**Progress** is one chart with every live goal on it: the hours banked so far
+as a solid line, the projection on to the day it lands, the date you asked for
+marked, and a shaded band when the landing falls past it. The vertical axis is
+percent of the target, so a small goal and a large one read against the same
+line. The list beside the chart carries each goal's figures, and the small
+switch by each name takes it off the chart and back.
+
+**Lessons** is a journal. Write whatever is worth keeping — a rule, a
+noticing, a line you want to read again — with or without a title, and tag it
+with a goal or a category if it belongs to one. The wall shows as many cards as
+fit: pinned ones always, and the rest chosen by a fill that rotates between
+newest, oldest and random each time you open the screen. The label at the top
+left says which, and a click moves it on. Search shows every match. The **…**
+on a card edits, pins, archives or deletes it; *View archived* shows what you
+have put away, with a way back and a delete that is for good.
+
+There is no Plan screen. Setting a goal is the plan; the weekly cap for a
+*Less* category is its planned hours in *Manage categories*, and the row there
+says *over cap* when a week has passed it.
 
 ---
 

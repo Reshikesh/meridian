@@ -73,7 +73,7 @@ test.describe('first run', () => {
     await page.click('[data-option="demo"]');
 
     await expect(page.locator('.root')).toHaveAttribute('data-screen', 'went');
-    await expect(page.locator('[data-nav]')).toHaveCount(6);
+    await expect(page.locator('[data-nav]')).toHaveCount(5);
 
     // The demo badge is the control's own label: a separate chip does not fit in
     // the 1180px header at any width (see styles/components.css).
@@ -131,7 +131,7 @@ test.describe('first run', () => {
     await page.click('.sheet__foot .btn--brand');
 
     await expect(page.locator('.sheet')).toHaveCount(0);
-    await expect(page.locator('[data-nav]')).toHaveCount(6);
+    await expect(page.locator('[data-nav]')).toHaveCount(5);
     const saved = await readState(page);
     expect(saved.source).toBe('import');
     expect(saved.categories).toHaveLength(8);

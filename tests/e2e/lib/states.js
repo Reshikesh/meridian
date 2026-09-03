@@ -346,7 +346,8 @@ function transientStates(page) {
       // A row under the pointer: the other lines dimmed.
       id: 'progress-hover',
       open: async () => { await openProgress(); await page.locator('.pgoal').last().hover(); },
-      ready: '.pchart__goal',
+      // The dimmed line, which is what the hover produces and the mouse-out removes.
+      ready: '.pchart__goal[style*="0.18"]',
       close: async () => { await page.mouse.move(0, 0); },
     },
     {
@@ -368,7 +369,8 @@ function transientStates(page) {
       // QUALITY-BAR §2's twelve goals, on the list and the chart at once.
       id: 'progress-long',
       open: async () => { await loadState(stressState()); await openProgress(); },
-      ready: '.pgoal',
+      // A third row: the demo has two.
+      ready: '.pgoals .pgoal:nth-child(3)',
       close: async () => { await loadState(demoState()); },
     },
     {
@@ -418,7 +420,9 @@ function transientStates(page) {
       // Forty cards: the trim, the count in the label, the archive switch.
       id: 'lessons-many',
       open: async () => { await loadState(manyLessonsState()); await openLessons(); },
-      ready: '.wall--fit .lcard',
+      // The count in the label: how many fit varies with the width, the
+      // total does not, and the demo's label carries no count at all.
+      ready: '.lessons__mode:has-text("OF 38")',
       close: async () => { await loadState(demoState()); },
     },
     {

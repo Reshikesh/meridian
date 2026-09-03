@@ -45,7 +45,7 @@
   }
 
   var SCHEMA_VERSION = 1;
-  var APP_VERSION = '1.0.0';
+  var APP_VERSION = '1.1.0';
 
   /* Column order is the spec's. Reading is by header NAME, never by index —
      the friend will reorder columns in Excel and expect it to still work. */
