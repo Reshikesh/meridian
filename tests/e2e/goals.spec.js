@@ -32,8 +32,8 @@ async function goals(page) {
 
 /* Fill the sheet. `by` is typed as the owner would type it. */
 async function fillSheet(page, v) {
-  if (v.identity !== undefined) await page.locator('.fld--identity').fill(v.identity);
   if (v.name !== undefined) await page.locator('.fld--goalname').fill(v.name);
+  if (v.identity !== undefined) await page.locator('.fld--identity').fill(v.identity);
   if (v.fedBy !== undefined) {
     await page.locator('.select--sheet select').selectOption({ label: v.fedBy });
   }
@@ -224,6 +224,126 @@ test('once hours are banked, the goal cannot leave the category it lives in', as
   expect((await goals(page)).find((g) => g.short_name === 'Learn Rust').category_id)
     .toBe('cat_reading');
 });
+
+/* ---------- the sheet's own shape ----------
+   The owner's first three goals came out as "Learn Cooking / Cook" and
+   "Cycling / Cycling": the optional identity field was first, largest and
+   autofocused, so the caret was inside it before the required name had been
+   read. The required name leads now, and it is the one that takes focus. */
+
+test('the required name leads the sheet and takes the caret', async ({ page }) => {
+  await openGoals(page);
+  await page.click('[data-goal-new]');
+
+  await expect(page.locator('.fld--goalname')).toBeFocused();
+
+  // Source order: name, fed by, hours, by, then the optional line last.
+  const labels = await page.locator('.sheet__card .field .t-label').allInnerTexts();
+  expect(labels).toEqual([
+    'SHORT NAME', 'FED BY', 'HOURS NEEDED', 'BY', 'WHY IT MATTERS — OPTIONAL',
+  ]);
+
+  await expect(page.locator('.fld--identity'))
+    .toHaveAttribute('placeholder', 'Building my own tools, not just using them');
+  await expect(page.locator('.field:has(#goal-identity-label) .field__hint'))
+    .toHaveText('Shows under the name on the Goals screen. Leave it empty if nothing fits.');
+
+  // Typing straight into the sheet fills the name, not the identity line.
+  await page.keyboard.type('Wine tasting');
+  await expect(page.locator('.fld--goalname')).toHaveValue('Wine tasting');
+  await expect(page.locator('.fld--identity')).toHaveValue('');
+});
+
+/* ---------- adding a category without leaving the goal ---------- */
+
+test('a category added from FED BY comes back selected, with the draft intact',
+  async ({ page }) => {
+    await openGoals(page);
+    await page.click('[data-goal-new]');
+    await fillSheet(page, { name: 'Wine tasting', hours: '40', by: '30 Sep 2026' });
+
+    await page.getByRole('button', { name: '+ New category' }).click();
+    await expect(page.locator('.sheet--stacked .sheet__card')).toBeVisible();
+
+    // Opened from a goal, so the More default is explained rather than silent.
+    await expect(page.locator('.field:has(#cat-dir-label) .field__note'))
+      .toHaveText('MORE FEEDS THE GOAL');
+    await expect(page.locator('.dir[data-active="1"]')).toContainText('More');
+
+    await page.locator('.fld--name').fill('Wine');
+    await page.getByRole('button', { name: 'Add category' }).click();
+
+    // Back on the goal sheet, which never unmounted: everything typed survives.
+    await expect(page.locator('.sheet--stacked')).toHaveCount(0);
+    await expect(page.locator('.fld--goalname')).toHaveValue('Wine tasting');
+    await expect(page.locator('.fld--goalnum').first()).toHaveValue('40');
+    await expect(page.locator('.fld--goalnum').last()).toHaveValue('30 Sep 2026');
+
+    // The new category is chosen and focused, and the panel reads it honestly.
+    const select = page.locator('.select--sheet select');
+    await expect(select).toHaveValue(/^cat_/);
+    await expect(select.locator('option:checked')).toHaveText('Wine');
+    await expect(select).toBeFocused();
+    await expect(page.locator('.reach__lead')).toContainText('Nothing logged to Wine yet.');
+
+    await page.getByRole('button', { name: 'Create goal' }).click();
+    const saved = (await goals(page)).find((g) => g.short_name === 'Wine tasting');
+    const cats = await page.evaluate(
+      (k) => JSON.parse(localStorage.getItem(k)).categories, DATA_KEY);
+    expect(cats.find((c) => c.id === saved.category_id).name).toBe('Wine');
+  });
+
+test('a Less or Upkeep category is still created, but says why it cannot feed the goal',
+  async ({ page }) => {
+    await openGoals(page);
+    await page.click('[data-goal-new]');
+    await fillSheet(page, { name: 'Commute less', hours: '10', by: '30 Sep 2026' });
+
+    await page.getByRole('button', { name: '+ New category' }).click();
+    await page.locator('.fld--name').fill('Commuting');
+    await page.locator('.dir').filter({ hasText: 'Upkeep' }).click();
+
+    // Explained before the fact, inside the sheet making the choice.
+    await expect(page.locator('.field:has(#cat-dir-label) [role="status"]'))
+      .toContainText('Only More categories can carry goals.');
+    await page.getByRole('button', { name: 'Add category' }).click();
+
+    // The category is real work and is kept; it just is not selected.
+    const cats = await page.evaluate(
+      (k) => JSON.parse(localStorage.getItem(k)).categories, DATA_KEY);
+    expect(cats.find((c) => c.name === 'Commuting').direction).toBe('upkeep');
+    await expect(page.locator('.select--sheet select')).toHaveValue('');
+    await expect(page.locator('.field:has(#goal-fedby-label) .field__hint'))
+      .toHaveText('Commuting is an Upkeep category, so it cannot feed a goal. '
+        + 'It is saved, and you can log to it.');
+  });
+
+test('with no More categories the picker says so and points at the way out',
+  async ({ page }) => {
+    // Every More category archived: the picker would otherwise be an empty box
+    // whose only exit is a submit-time error naming it.
+    const state = emptyState();
+    state.categories.forEach((c) => {
+      if (c.direction === 'more') { c.archived = true; c.archived_on = '2026-06-01'; }
+    });
+    await openGoals(page, state);
+    await page.click('[data-goal-new]');
+
+    await expect(page.locator('.select--sheet select')).toHaveValue('');
+    await expect(page.locator('.select--sheet option')).toHaveCount(1);
+    await expect(page.locator('.select--sheet option')).toHaveText('No More categories yet');
+    await expect(page.locator('.field:has(#goal-fedby-label) .field__hint'))
+      .toHaveText('A goal is fed by one More category. Add one with + New category.');
+    await expect(page.getByRole('button', { name: '+ New category' })).toBeVisible();
+  });
+
+test('the create button is absent when the picker is locked by banked hours',
+  async ({ page }) => {
+    await openGoals(page);
+    await row(page, 'Learn Python').locator('.goalrow__label').click();
+    await expect(page.locator('.select--sheet select')).toBeDisabled();
+    await expect(page.getByRole('button', { name: '+ New category' })).toHaveCount(0);
+  });
 
 /* ---------- archive and restore (rule §8.10) ---------- */
 

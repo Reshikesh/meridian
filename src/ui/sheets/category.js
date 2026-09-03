@@ -75,9 +75,15 @@
         </div>
 
         <${fields.Field} label="DIRECTION — WHAT DOES MORE OF THIS MEAN" id="cat-dir"
+          note=${props.fromGoal ? 'MORE FEEDS THE GOAL' : null}
           error=${errorFor(errors, 'direction')}>
           <${fields.DirectionCards} labelledBy="cat-dir-label" value=${draft.direction}
             onChange=${function (v) { patch({ direction: v }); }} />
+          ${props.fromGoal && draft.direction !== 'more' ? html`
+            <p class="field__hint" role="status">
+              Only More categories can carry goals. Less and Upkeep are fine to add
+              here, they just will not feed this one.
+            </p>` : null}
         <//>
 
         <p class="notepanel">

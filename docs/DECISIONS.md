@@ -71,3 +71,56 @@ for an existing entry.
 dialog for it is friction in the loop the app is built around. Business rule
 §8.2 is unchanged: picking a goal fills its category, and moving the category off
 it clears the goal.
+
+### 23 — the goal sheet leads with the name, and the identity line is optional and last
+
+Added at the Phase 4 checkpoint, on 3 Sep 2026, after the owner's first three
+real goals came out as `Learn Cooking / Cook` and `Cycling / Cycling`.
+
+**Was:** the sheet opened with `I WANT TO BECOME`, a 20 px field placeheld
+`someone who…`, carrying the autofocus, above the required `SHORT NAME`.
+
+**Now:** `SHORT NAME` and `FED BY` lead and the name takes the caret;
+`HOURS NEEDED` and `BY` follow; the identity field is last, at the same size as
+every other field, labelled `WHY IT MATTERS — OPTIONAL`, placeheld
+`Building my own tools, not just using them`, with the hint "Shows under the
+name on the Goals screen. Leave it empty if nothing fits."
+
+**Why:** the caret was inside the optional field before the required name had
+been read, so the placeholder was destroyed by the first keystroke and the goal's
+own name went into the identity line. It was a focus-order fault, not a wording
+one — rewording alone would have produced the same rows. The owner asked for the
+two strings to go and they have; their suggested `Goal Name` label was not taken,
+because a second field named after the goal is what produced the duplication in
+the first place.
+
+**Not taken:** a placeholder cycling through ten examples. It is auto-updating
+content, so `prefers-reduced-motion` would have to freeze it on one string —
+which means writing one good static string regardless — and a placeholder in a
+field that is about to be typed into is never read at all.
+
+**Consequences:** spec §6's New goal sheet copy and the field order in
+`design/shots/deck-08-sheet-goal.png` are superseded here. The seed's identity
+lines are unchanged and still read correctly on the Goals screen. Existing rows
+are not migrated; the owner clears them in the same sheet.
+
+### 24 — a category can be created from the goal sheet's FED BY picker
+
+**Was:** `FED BY` listed the More categories and nothing else. A goal for
+something with no category yet was a dead end: cancel, lose everything typed,
+go to Log → Manage categories → + New, come back, retype.
+
+**Now:** a `+ New category` button under the picker stacks the existing New
+category sheet over the goal sheet and hands the result back. The goal sheet
+never unmounts, so the draft survives; a More category lands selected and
+focused, and one that is not says so and stays saved.
+
+**Why:** the machinery already existed — the same stack, z-index and
+close-back-to-origin that Manage → New category uses — and with every More
+category archived or imported away the picker was an empty box whose only exit
+was a submit-time error naming it.
+
+**Not taken:** putting `+ New category` inside the `<select>` as an option (it
+fires on arrow-key traversal and is announced as a value), and disabling Less
+and Upkeep in the stacked sheet (it would make one fidelity-locked sheet into
+two). Rule §8.3 is explained, not enforced by amputation.

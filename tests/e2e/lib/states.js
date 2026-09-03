@@ -227,14 +227,31 @@ function transientStates(page) {
         await openGoals();
         await page.click('[data-goal-new]');
         await page.locator('.sheet__card').waitFor();
-        await page.locator('.fld--identity').fill('someone who can build their own tools');
         await page.locator('.fld--goalname').fill('Learn Postgres');
+        await page.locator('.fld--identity').fill('someone who can build their own tools');
         await page.locator('.select--sheet select').selectOption({ label: 'Learning' });
         await page.locator('.fld--goalnum').first().fill('130');
         await page.locator('.fld--goalnum').last().fill('30 Sep 2026');
       },
       ready: '.reach__tail',
       close: esc,
+    },
+    {
+      // New category stacked over the goal sheet, in its tallest state: a
+      // non-More direction, so the rule it breaks is spelled out under the
+      // cards. Two sheets deep, so two Escapes.
+      id: 'sheet-goal-category',
+      open: async () => {
+        await openGoals();
+        await page.click('[data-goal-new]');
+        await page.locator('.sheet__card').waitFor();
+        await page.getByRole('button', { name: '+ New category' }).click();
+        await page.locator('.sheet--stacked .sheet__card').waitFor();
+        await page.locator('.fld--name').fill('Commuting');
+        await page.locator('.dir').filter({ hasText: 'Upkeep' }).click();
+      },
+      ready: '.sheet--stacked [role="status"]',
+      close: async () => { await esc(); await esc(); },
     },
     {
       // The same sheet as the editor, prefilled from a goal that exists.

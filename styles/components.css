@@ -2109,8 +2109,21 @@
 
 /* ---------- New goal sheet (spec §6, deck-08-sheet-goal.png) ---------- */
 
-.fld--identity { font: 400 20px/1.35 var(--font); }
+/* The mockup gives the identity field 20px, above everything else in the
+   sheet. It is the one OPTIONAL field here, and at that size, first, and
+   autofocused it read as the main input — which is exactly what the owner
+   filled it as. Same size as the entry sheet's activity field now, and last in
+   the sheet, so the required name outranks it. */
+.fld--identity { font: 400 16px/1.4 var(--font); }
 .fld--goalname { font: 600 16px/1.3 var(--font); }
+
+/* Under the FED BY picker, left-aligned, with a hit area that clears 24px
+   without moving the row. */
+.fedby__add {
+  align-self: flex-start;
+  padding: 5px 4px;
+  margin: -5px -4px;
+}
 
 .fld--goalnum {
   font: 600 16px/1.3 var(--font);

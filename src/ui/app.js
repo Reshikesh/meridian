@@ -71,6 +71,9 @@
        Manage), but a stack is what makes "closes back to its origin" a
        property of the frame rather than a special case in one sheet. */
     var stackState = useState([]);
+    /* The last category created from inside the goal sheet, with a token so the
+       goal sheet adopts each one exactly once. */
+    var handedState = useState(null);
     /* What is typed in the Log's quick-add row. It lives here rather than in the
        row because an entry saved through the sheet has to clear the row too, and
        the sheet is not the row's child. */
@@ -96,6 +99,7 @@
     var sheet = dataState[0], setSheet = dataState[1];
     var day = dayState[0], setDay = dayState[1];
     var stack = stackState[0], setStack = stackState[1];
+    var handed = handedState[0], setHanded = handedState[1];
     var quick = quickState[0], setQuick = quickState[1];
     var went = wentState[0], setWent = wentState[1];
 
@@ -343,6 +347,23 @@
       popSheet();
     }
 
+    /* ---------- categories ----------
+       A category added from the goal sheet is handed straight back to it, so
+       the picker the owner was standing in is filled rather than left for them
+       to find again. The token makes each hand-off distinct: the goal sheet
+       adopts one exactly once, so a category it has already taken cannot
+       override a choice made by hand afterwards. */
+
+    function addCategory(input, from) {
+      var res = store.addCategory(input);
+      popSheet();
+      if (from === 'goal' && res && res.category) {
+        setHanded(function (prev) {
+          return { category: res.category, token: (prev ? prev.token : 0) + 1 };
+        });
+      }
+    }
+
     /* ---------- goals ---------- */
 
     function saveGoal(sheetState, input) {
@@ -376,14 +397,16 @@
       if (item.kind === 'goal') {
         return html`
           <${ui.GoalSheet} key=${key} state=${data} now=${tick}
-            goal=${item.goal || null}
+            goal=${item.goal || null} pending=${handed}
+            onNewCategory=${function () { pushSheet({ kind: 'category', from: 'goal' }); }}
             onSave=${function (input) { saveGoal(item, input); }}
             onClose=${popSheet} />`;
       }
 
       return html`
         <${ui.CategorySheet} key=${key} state=${data} theme=${theme}
-          onAdd=${function (input) { store.addCategory(input); popSheet(); }}
+          fromGoal=${item.from === 'goal'}
+          onAdd=${function (input) { addCategory(input, item.from); }}
           onClose=${popSheet} />`;
     });
 

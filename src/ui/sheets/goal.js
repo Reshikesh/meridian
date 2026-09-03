@@ -14,6 +14,8 @@
   var html = htm.bind(preact.h);
   var ui = (window.Meridian = window.Meridian || {}).ui = window.Meridian.ui || {};
   var useState = preactHooks.useState;
+  var useEffect = preactHooks.useEffect;
+  var useRef = preactHooks.useRef;
 
   var dates = window.Meridian.dates;
   var validate = window.Meridian.validate;
@@ -31,6 +33,11 @@
 
   function plural(n, word) {
     return n + ' ' + word + (n === 1 ? '' : 's');
+  }
+
+  /* "a Less category" / "an Upkeep category". */
+  function article(direction) {
+    return direction === 'upkeep' ? 'an Upkeep' : 'a Less';
   }
 
   /* ---------- IS THAT REACHABLE (spec §6) ----------
@@ -125,8 +132,11 @@
 
     var draftState = useState(function () { return initialDraft(props.goal); });
     var errorState = useState([]);
+    var noteState = useState(null);
     var draft = draftState[0], setDraft = draftState[1];
     var errors = errorState[0], setErrors = errorState[1];
+    var note = noteState[0], setNote = noteState[1];
+    var selectRef = useRef(null);
 
     function patch(p) {
       setDraft(function (prev) { return Object.assign({}, prev, p); });
@@ -168,6 +178,43 @@
        fixed; before there are any, it is free. */
     var fedByFixed = editing && reach.banked > 0;
 
+    /* ---------- adding a category without leaving the goal ----------
+       The picker is a dead end otherwise: a category that does not exist yet
+       cannot be chosen, and cancelling out to Manage loses everything typed
+       here. `+ New category` stacks the New category sheet over this one — the
+       stack keeps this sheet mounted, so the draft below survives untouched —
+       and app.js hands the created category back through `pending`.
+
+       Keyed on a token rather than the id, so a category adopted once is not
+       re-adopted over a choice the owner then made by hand. */
+    var feederList = feeders(state, editing ? props.goal.category_id : null);
+    var noFeeders = feederList.length === 0;
+
+    useEffect(function () {
+      var handed = props.pending;
+      if (!handed) return;
+      var c = handed.category;
+      if (c.direction === 'more') {
+        setNote(null);
+        patch({ category_id: c.id });
+        /* Focus the picker, not the button that opened the sheet: its value
+           just changed under the owner, and that is what they need to see. */
+        if (selectRef.current) selectRef.current.focus();
+      } else {
+        /* Rule §8.3. The category is real work and is kept; it just cannot
+           feed this goal, which is said here rather than at submit time. */
+        setNote(c.name + ' is ' + article(c.direction) + ' category, so it ' +
+          'cannot feed a goal. It is saved, and you can log to it.');
+      }
+    }, [props.pending && props.pending.token]);
+
+    var fedByHint = fedByFixed
+      ? 'A goal lives inside one category, and ' + hours(reach.banked) + ' h are logged to ' +
+        (reach.category ? reach.category.name : 'it') + ' under this goal already.'
+      : note ? note
+      : noFeeders ? 'A goal is fed by one More category. Add one with + New category.'
+      : null;
+
     function submit() {
       var input = asInput();
       var check = validate.validateGoal(input, state, { now: props.now });
@@ -198,17 +245,11 @@
         onClose=${props.onClose} onSubmit=${submit}
         footer=${footer} footClass="sheet__foot--split">
 
-        <${fields.Field} label="I WANT TO BECOME" id="goal-identity">
-          <${fields.TextField} className="fld--identity" labelledBy="goal-identity-label"
-            value=${draft.identity} placeholder="someone who…" autofocus
-            onInput=${function (v) { patch({ identity: v }); }} />
-        <//>
-
         <div class="goalgrid">
           <${fields.Field} label="SHORT NAME" id="goal-name"
             error=${errorFor(errors, 'short_name')}>
             <${fields.TextField} className="fld--goalname" labelledBy="goal-name-label"
-              value=${draft.short_name} placeholder="Learn Python"
+              value=${draft.short_name} placeholder="Learn Python" autofocus
               invalid=${!!errorFor(errors, 'short_name')}
               onInput=${function (v) { patch({ short_name: v }); }} />
           <//>
@@ -216,15 +257,17 @@
           <${fields.Field} label="FED BY" id="goal-fedby"
             note=${fedByFixed ? 'FIXED BY ITS HOURS' : null}
             error=${errorFor(errors, 'category_id')}
-            hint=${fedByFixed ? 'A goal lives inside one category, and ' +
-              hours(reach.banked) + ' h are logged to ' +
-              (reach.category ? reach.category.name : 'it') + ' under this goal already.' : null}>
+            hint=${fedByHint}>
             <${fields.Select} className="select--sheet"
-              labelledBy="goal-fedby-label" placeholder="Category"
-              options=${feeders(state, editing ? props.goal.category_id : null)}
+              labelledBy="goal-fedby-label"
+              placeholder=${noFeeders ? 'No More categories yet' : 'Category'}
+              options=${feederList} inputRef=${selectRef}
               value=${draft.category_id} disabled=${fedByFixed}
               invalid=${!!errorFor(errors, 'category_id')}
-              onChange=${function (v) { patch({ category_id: v }); }} />
+              onChange=${function (v) { setNote(null); patch({ category_id: v }); }} />
+            ${fedByFixed ? null : html`
+              <button type="button" class="actbtn actbtn--brand fedby__add"
+                onClick=${props.onNewCategory}>+ New category</button>`}
           <//>
         </div>
 
@@ -246,6 +289,14 @@
               onInput=${function (v) { patch({ by: v }); }} />
           <//>
         </div>
+
+        <${fields.Field} label="WHY IT MATTERS — OPTIONAL" id="goal-identity"
+          hint="Shows under the name on the Goals screen. Leave it empty if nothing fits.">
+          <${fields.TextField} className="fld--identity" labelledBy="goal-identity-label"
+            value=${draft.identity}
+            placeholder="Building my own tools, not just using them"
+            onInput=${function (v) { patch({ identity: v }); }} />
+        <//>
 
         <${Reachable} reach=${reach} />
       <//>`;
