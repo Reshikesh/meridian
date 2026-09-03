@@ -143,16 +143,24 @@
 
   /* ---------- the picker's state ---------- */
 
-  /* `range`   what the screen aggregates; during a pick it is the one clicked
-               day, as in the mockup.
+  /* `range`   the landed range — the only one the screen ever aggregates. It is
+               NOT touched while a pick is open, so a half-made choice can never
+               be read as an answer.
      `pending` PICK END DAY: one day chosen, waiting for the second.
-     `prev`    the range before the first click, restored by Escape and used as
-               the undo target when the second click lands.
+     `anchor`  that first clicked day. The mockup put it in `range` instead,
+               which made every figure on the screen recompute for a single day
+               between the two clicks — the range appeared to have been replaced
+               by a one-day one, and the second click read as a fresh mistake
+               rather than the other half of the same gesture. Held apart here,
+               so nothing downstream can mistake it for a range.
      `undo`    the range ↩ UNDO would restore, for six seconds after a change.
      `split`   'cat' | 'goal'; `sort` 'asc' | 'desc' (mockup defaults);
      `focus`   the focused band's node id, or null. */
   function emptyView(range) {
-    return { range: range, pending: false, prev: null, undo: null, split: 'cat', sort: 'asc', focus: null };
+    return {
+      range: range, pending: false, anchor: null, undo: null,
+      split: 'cat', sort: 'asc', focus: null
+    };
   }
 
   /* A focused band whose category or goal has no hours in the new range would
@@ -165,40 +173,39 @@
   }
 
   /* Mockup landRange: the undo is armed only when the range actually changed,
-     and an unchanged landing clears any undo that was showing. `opts.prev` is
-     the range to compare against and to offer back; by default the current
-     one — which during a pick is the clicked day, as in the mockup. */
+     and an unchanged landing clears any undo that was showing. What it undoes
+     to is simply the range that was there — which, because a pick no longer
+     writes to `range`, is the range from before the pick started, whichever
+     way the landing was reached. */
   function land(view, next, opts) {
     opts = opts || {};
-    var prev = opts.prev || view.range;
+    var prev = view.range;
     var changed = !same(prev, next);
     return assign(view, {
       range: next,
       pending: false,
-      prev: null,
+      anchor: null,
       undo: changed ? prev : null,
       focus: keepFocus(view, next, opts)
     });
   }
 
   /* Mockup onDay: a future day (or one before the first entry) is ignored; the
-     first click starts a pick on that one day and remembers the range it
-     replaced; the second click lands the two, whichever order they came in,
-     with the pre-pick range as the undo target. Nothing is stored until it
-     lands. */
+     first click anchors a pick on that day and the landed range stays exactly
+     as it was; the second click lands the two, whichever order they came in
+     (`normalise` puts the earlier one first), with the pre-pick range as the
+     undo target. Nothing is stored until it lands. */
   function pick(view, day, opts) {
     if (day > opts.today || day < opts.minDay) return view;
-    if (!view.pending) {
-      return assign(view, { range: { start: day, end: day }, pending: true, prev: view.range });
-    }
-    return land(view, normalise(view.range.start, day), { prev: view.prev, nodeIds: opts.nodeIds });
+    if (!view.pending) return assign(view, { pending: true, anchor: day });
+    return land(view, normalise(view.anchor, day), { nodeIds: opts.nodeIds });
   }
 
-  /* Escape during PICK END DAY (spec Appendix B, item 6): back to the range
-     before the first click, nothing written, no undo armed. */
+  /* Escape during PICK END DAY (spec Appendix B, item 6): drop the anchor. The
+     range was never moved, so there is nothing to restore and no undo to arm. */
   function abort(view) {
     if (!view.pending) return view;
-    return assign(view, { range: view.prev, pending: false, prev: null });
+    return assign(view, { pending: false, anchor: null });
   }
 
   function undo(view, opts) {
@@ -206,14 +213,14 @@
     return assign(view, {
       range: view.undo,
       pending: false,
-      prev: null,
+      anchor: null,
       undo: null,
       focus: keepFocus(view, view.undo, opts)
     });
   }
 
-  /* Mockup setPreset: lands (undo against whatever the range was, a pending
-     day included) and clears the focus. */
+  /* Mockup setPreset: lands against whatever the range was — abandoning any
+     open pick — and clears the focus. */
   function preset(view, id, opts) {
     var next = presetRange(id, opts.today, opts.minDay);
     if (!next) return view;

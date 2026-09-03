@@ -104,8 +104,14 @@
 
   function Rail(props) {
     var view = props.view;
-    var active = range.activePreset(view.range, props.today, props.minDay);
+    var pending = !!view.pending;
+    /* While a pick is open the landed range is still the landed range, but the
+       screen is showing no answer — so nothing claims to be the current one.
+       The calendar marks the anchor alone, and the end field is empty until
+       there is an end. */
+    var active = pending ? null : range.activePreset(view.range, props.today, props.minDay);
     var undo = range.showUndo(view);
+    var calRange = pending ? { start: view.anchor, end: view.anchor } : view.range;
 
     return html`
       <aside class="rail">
@@ -128,17 +134,19 @@
             </div>
           </div>
           <div class="rail__dates">
-            <${DateInput} id="rangeStart" which="start" label="Start date" day=${view.range.start}
+            <${DateInput} id="rangeStart" which="start" label="Start date"
+              day=${pending ? view.anchor : view.range.start}
               onCommit=${function (text) { return props.actions.typed('start', text); }}
               onEfield=${props.onEfield} onScrollTo=${props.onScrollTo} />
             <span class="rail__dash" aria-hidden="true">–</span>
-            <${DateInput} id="rangeEnd" which="end" label="End date" day=${view.range.end}
+            <${DateInput} id="rangeEnd" which="end" label="End date"
+              day=${pending ? null : view.range.end}
               onCommit=${function (text) { return props.actions.typed('end', text); }}
               onEfield=${props.onEfield} onScrollTo=${props.onScrollTo} />
           </div>
         </div>
         <${ui.Calendar}
-          range=${view.range} minDay=${props.minDay} today=${props.today}
+          range=${calRange} minDay=${props.minDay} today=${props.today}
           heat=${props.heat} efield=${props.efield} scrollTo=${props.scrollTo}
           onPick=${props.actions.pick} />
       </aside>`;

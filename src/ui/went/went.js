@@ -44,7 +44,15 @@
     var scrollTo = scrollState[0], setScrollTo = scrollState[1];
 
     var entries = state.entries || [];
-    var summary = aggregate.rangeSummary(entries, state.categories, view.range);
+
+    /* A pick in flight has no answer yet, so the screen shows none: the
+       summary is taken over an empty set, which zeroes the hours, empties the
+       donut and blanks the split. The alternative — aggregating the one
+       clicked day — is what made the third click read as "it replaced my
+       range with a single day" instead of "keep going". */
+    var pending = !!view.pending;
+    var summary = aggregate.rangeSummary(
+      pending ? [] : entries, state.categories, view.range);
     var nodes = aggregate.chartNodes(summary.entries, state.categories, state.goals, view.split, view.sort);
     var focused = null;
     for (var i = 0; i < nodes.length; i++) if (nodes[i].id === view.focus) focused = nodes[i];
@@ -55,9 +63,15 @@
     }
 
     var cov = summary.coverage;
-    var donutLabel = cov.pct + '% of the ' + aggregate.groupHours(cov.totalHours) + ' h in this range are logged';
-    var caption = (dates.formatLong(view.range.start) + ' – ' + dates.formatLong(view.range.end)).toUpperCase();
-    var note = cov.pct + '% coverage · ' + aggregate.groupHours(cov.unloggedHours) + ' h unlogged';
+    var donutLabel = pending
+      ? 'No range chosen yet'
+      : cov.pct + '% of the ' + aggregate.groupHours(cov.totalHours) + ' h in this range are logged';
+    var caption = pending
+      ? ('FROM ' + dates.formatLong(view.anchor)).toUpperCase()
+      : (dates.formatLong(view.range.start) + ' – ' + dates.formatLong(view.range.end)).toUpperCase();
+    var note = pending
+      ? null
+      : cov.pct + '% coverage · ' + aggregate.groupHours(cov.unloggedHours) + ' h unlogged';
 
     /* Escape aborts a pick (spec Appendix B, item 6) — from anywhere on the
        page except inside a sheet, which owns its own Escape (decision-log
@@ -100,10 +114,14 @@
       <main class=${props.className} data-s="went">
         <div class="went__head">
           <div class="went__title">
-            <${ui.Donut} fraction=${cov.fraction} label=${donutLabel} />
-            <h1 class="t-h1 went__h1">${aggregate.formatHoursGrouped(summary.minutes)} hours logged</h1>
+            <${ui.Donut} fraction=${pending ? 0 : cov.fraction} label=${donutLabel} />
+            <h1 class="t-h1 went__h1">
+              ${pending
+                ? 'Pick the second day.'
+                : aggregate.formatHoursGrouped(summary.minutes) + ' hours logged'}
+            </h1>
           </div>
-          <${ui.Split} split=${summary.split} />
+          <${ui.Split} split=${summary.split} quiet=${pending} />
         </div>
 
         <div class="went__body">
@@ -116,7 +134,7 @@
             <div class="went__panelhead">
               <div class="went__caption">
                 <span class="t-label went__range">${caption}</span>
-                <span class="went__note">${note}</span>
+                ${note ? html`<span class="went__note">${note}</span>` : null}
               </div>
               <div class="went__ctl">
                 <span class="t-label" id="went-split-label">SPLIT</span>
@@ -130,7 +148,17 @@
               </div>
             </div>
 
-            ${nodes.length ? html`
+            ${pending ? html`
+              <div class="went__empty" data-pending>
+                <p class="went__emptytitle">
+                  ${dates.formatLong(view.anchor)} is one end of the range.
+                </p>
+                <p class="went__emptynote">
+                  Click a second day to finish it. Either direction works — the
+                  earlier of the two becomes the start. Escape cancels.
+                </p>
+              </div>`
+            : nodes.length ? html`
               <div class="went__pctlabel">% OF LOGGED</div>
               <${ui.Ribbon} nodes=${nodes} totalMinutes=${summary.minutes}
                 focus=${focused ? focused.id : null} onFocus=${actions.focus} />`

@@ -133,21 +133,49 @@ test('meridian:range is {s, e} in epoch days and round-trips', async (t) => {
 const start = () => range.emptyView(r('2026-05-30', '2026-06-03'));
 
 test('the two-click pick', async (t) => {
-  await t.test('the first click shows that one day, remembers what it replaced, writes nothing', () => {
-    const v = range.pick(start(), '2026-06-01', OPTS);
-    assert.deepEqual(v.range, r('2026-06-01', '2026-06-01'));
+  /* The mockup put the clicked day straight into `range`, so between the two
+     clicks every figure on the screen recomputed for that single day and the
+     range looked as though it had been replaced by a one-day one. The owner
+     reported it at the Phase 4 checkpoint as "I am not able to select a third
+     date": the third click was landing, it just did not look like the start of
+     anything. The landed range is now left alone until a pick completes. */
+  await t.test('the first click anchors a day and leaves the landed range alone', () => {
+    const before = start();
+    const v = range.pick(before, '2026-06-01', OPTS);
+    assert.deepEqual(v.range, r('2026-05-30', '2026-06-03'), 'nothing has been replaced yet');
+    assert.equal(v.anchor, '2026-06-01');
     assert.equal(v.pending, true);
-    assert.deepEqual(v.prev, r('2026-05-30', '2026-06-03'));
     assert.equal(v.undo, null);
     assert.equal(range.status(v), 'PICK END DAY');
     assert.equal(range.showUndo(v), false);
+  });
+
+  await t.test('a third click starts a fresh pick over a range that is already landed', () => {
+    const landed = range.pick(range.pick(start(), '2026-06-01', OPTS), '2026-06-04', OPTS);
+    assert.deepEqual(landed.range, r('2026-06-01', '2026-06-04'));
+
+    const again = range.pick(landed, '2026-06-02', OPTS);
+    assert.equal(again.pending, true);
+    assert.equal(again.anchor, '2026-06-02');
+    assert.deepEqual(again.range, r('2026-06-01', '2026-06-04'), 'still the landed range');
+
+    const done = range.pick(again, '2026-06-06', OPTS);
+    assert.deepEqual(done.range, r('2026-06-02', '2026-06-06'));
+    assert.deepEqual(done.undo, r('2026-06-01', '2026-06-04'), 'undo goes back a whole range');
+  });
+
+  await t.test('the second day may come before the first, in which case they swap', () => {
+    const v = range.pick(range.pick(start(), '2026-06-05', OPTS), '2026-05-31', OPTS);
+    assert.deepEqual(v.range, r('2026-05-31', '2026-06-05'));
+    assert.equal(v.anchor, null);
+    assert.equal(range.status(v), '6 DAYS');
   });
 
   await t.test('the second click lands the pair in order, with the pre-pick range as the undo', () => {
     const v = range.pick(range.pick(start(), '2026-06-05', OPTS), '2026-06-02', OPTS);
     assert.deepEqual(v.range, r('2026-06-02', '2026-06-05'));
     assert.equal(v.pending, false);
-    assert.equal(v.prev, null);
+    assert.equal(v.anchor, null);
     assert.deepEqual(v.undo, r('2026-05-30', '2026-06-03'));
     assert.equal(range.status(v), '4 DAYS');
     assert.equal(range.showUndo(v), true);
@@ -167,10 +195,11 @@ test('the two-click pick', async (t) => {
     assert.equal(range.pick(v, MIN, OPTS).pending, true, 'so is the first logged day');
   });
 
-  await t.test('Escape restores the pre-pick range with no undo armed (D6)', () => {
+  await t.test('Escape drops the anchor, leaving the range it never moved (D6)', () => {
     const v = range.abort(range.pick(start(), '2026-06-01', OPTS));
     assert.deepEqual(v.range, r('2026-05-30', '2026-06-03'));
     assert.equal(v.pending, false);
+    assert.equal(v.anchor, null);
     assert.equal(v.undo, null);
     const idle = start();
     assert.strictEqual(range.abort(idle), idle, 'Escape with no pick open is a no-op');
@@ -207,10 +236,13 @@ test('presets land, clear the focus, and undo against whatever was showing', asy
     assert.deepEqual(v.undo, r('2026-05-30', '2026-06-03'));
   });
 
-  await t.test('a preset during a pick undoes to the pending day, as the mockup does', () => {
+  /* The mockup undid to the half-made pick, because the pick had already
+     overwritten the range. It undoes to the range the owner actually had. */
+  await t.test('a preset during a pick abandons it and undoes to the real range', () => {
     const v = range.preset(range.pick(start(), '2026-06-01', OPTS), 'all', OPTS);
     assert.equal(v.pending, false);
-    assert.deepEqual(v.undo, r('2026-06-01', '2026-06-01'));
+    assert.equal(v.anchor, null);
+    assert.deepEqual(v.undo, r('2026-05-30', '2026-06-03'));
   });
 
   await t.test('an unknown preset changes nothing', () => {

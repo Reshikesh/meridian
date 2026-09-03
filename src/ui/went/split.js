@@ -28,6 +28,9 @@
       </div>`;
   }
 
+  /* `quiet` is a pick in flight: there is no range to describe yet, so the bar
+     keeps its empty track and says so, rather than reciting three zeros that
+     read as a measurement. */
   function Split(props) {
     var s = props.split;
     var any = s.totalMinutes > 0;
@@ -38,12 +41,13 @@
     return html`
       <div class="split">
         <div class="t-label split__label">OF LOGGED TIME</div>
-        <div class="split__bar" role="img" aria-label=${caption}>
+        <div class="split__bar" role="img"
+          aria-label=${props.quiet ? 'No range chosen yet' : caption}>
           <${Segment} kind="more" width=${s.upWidth} pct=${s.upPct} show=${any} />
           <${Segment} kind="less" width=${s.downWidth} pct=${s.downPct} show=${any} />
           <${Segment} kind="keep" width=${s.keepWidth} pct=${s.keepPct} show=${any} />
         </div>
-        <div class="split__caption">${caption}</div>
+        ${props.quiet ? null : html`<div class="split__caption">${caption}</div>`}
       </div>`;
   }
 

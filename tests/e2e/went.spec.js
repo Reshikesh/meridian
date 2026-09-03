@@ -58,11 +58,22 @@ test('two clicks pick a range, in either order; a future day is ignored; nothing
   await expect(status(page)).toHaveText('14 DAYS');
   expect(await stored(page)).toBe(null);
 
-  // First click: that one day, PICK END DAY, still nothing stored.
+  /* First click: the day is anchored and the screen shows NO answer — the
+     landed range is untouched and nothing is aggregated. The mockup put the
+     clicked day into the range, so the figures recomputed for that one day and
+     a pick in flight looked like a finished one-day range (owner, phase 4
+     checkpoint: "I am not able to select a third date"). */
   await day(page, '3 Jun 2026').click();
   await expect(status(page)).toHaveText('PICK END DAY');
-  expect(await shown(page)).toEqual({ start: '3 Jun 2026', end: '3 Jun 2026' });
-  await expect(heading(page)).toHaveText('14.5 hours logged');
+  expect(await shown(page)).toEqual({ start: '3 Jun 2026', end: '' });
+  await expect(heading(page)).toHaveText('Pick the second day.');
+  await expect(page.locator('.went__range')).toHaveText('FROM 3 JUN 2026');
+  await expect(page.locator('.went__empty[data-pending]')).toBeVisible();
+  await expect(page.locator('.went__note')).toHaveCount(0);
+  await expect(page.locator('.split__caption')).toHaveCount(0);
+  await expect(page.locator('.ribbon')).toHaveCount(0);
+  // No preset claims to be the current range while there is not one.
+  await expect(page.locator('.preset[data-active="1"]')).toHaveCount(0);
   expect(await stored(page)).toBe(null);
 
   // Second click, earlier than the first: the pair lands in order.
@@ -86,6 +97,53 @@ test('two clicks pick a range, in either order; a future day is ignored; nothing
   await expect(status(page)).toHaveCount(0);
   await expect(day(page, '24 May 2026')).toHaveAttribute('aria-disabled', 'true');
   expect(await shown(page)).toEqual({ start: '1 Jun 2026', end: '3 Jun 2026' });
+});
+
+/* The owner's phase 4 checkpoint report: with a range already on screen,
+   clicking a third day did not read as starting a new range — the figures
+   collapsed onto that one day and it looked as though the range had been
+   thrown away. Replacing a landed range is the ordinary way to use this
+   screen, so it gets its own test. */
+test('replacing a landed range: the third click clears, the fourth lands', async ({ page }) => {
+  await open(page);
+
+  await day(page, '1 Jun 2026').click();
+  await day(page, '4 Jun 2026').click();
+  expect(await shown(page)).toEqual({ start: '1 Jun 2026', end: '4 Jun 2026' });
+  await expect(heading(page)).toHaveText('59.5 hours logged');
+
+  // Third click: everything about the old range goes, and the screen waits.
+  await day(page, '2 Jun 2026').click();
+  await expect(status(page)).toHaveText('PICK END DAY');
+  await expect(heading(page)).toHaveText('Pick the second day.');
+  expect(await shown(page)).toEqual({ start: '2 Jun 2026', end: '' });
+  await expect(page.locator('.went__empty[data-pending]'))
+    .toContainText('2 Jun 2026 is one end of the range.');
+  await expect(page.locator('.ribbon')).toHaveCount(0);
+  // Only the anchor is marked; the old range's shading is gone.
+  await expect(page.locator('.cal__fill--in')).toHaveCount(1);
+  await expect(page.locator('.cal__chip')).toHaveCount(1);
+  // Still the last landed range on disk: a reload mid-pick loses nothing.
+  expect(await stored(page)).toEqual({ s: 20605, e: 20608 });
+
+  // Fourth click, later: it becomes the end, and everything populates at once.
+  await day(page, '6 Jun 2026').click();
+  expect(await shown(page)).toEqual({ start: '2 Jun 2026', end: '6 Jun 2026' });
+  await expect(heading(page)).toHaveText('71.5 hours logged');
+  await expect(page.locator('.went__range')).toHaveText('2 JUN 2026 – 6 JUN 2026');
+  await expect(page.locator('.ribbon')).toHaveCount(1);
+  expect(await stored(page)).toEqual({ s: 20606, e: 20610 });
+
+  // And the other direction: an earlier second day becomes the start.
+  await day(page, '5 Jun 2026').click();
+  await expect(heading(page)).toHaveText('Pick the second day.');
+  await day(page, '30 May 2026').click();
+  expect(await shown(page)).toEqual({ start: '30 May 2026', end: '5 Jun 2026' });
+  await expect(page.locator('.went__range')).toHaveText('30 MAY 2026 – 5 JUN 2026');
+
+  // The undo goes back a whole range, never to a half-made pick.
+  await undo(page).click();
+  expect(await shown(page)).toEqual({ start: '2 Jun 2026', end: '6 Jun 2026' });
 });
 
 test('Escape during PICK END DAY restores the range it replaced, with no undo armed', async ({ page }) => {
