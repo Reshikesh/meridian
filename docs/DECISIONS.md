@@ -257,12 +257,15 @@ Every click after that was off by one — land, anchor, land, anchor — which f
 the outside is "the second click does not land, and the old figures stay up
 during a pick". Both reported symptoms were this one cause.
 
-**Consequences:** the pick is abandoned on the way **in** to the screen rather
-than on the way out, so the copy still fading out keeps showing what it showed
-(`DECISION-LOG.md` #208). Opening a pick also clears the focus, so a band
-focused against the old range cannot dim the new one the moment it lands — which
-takes the two-click pick out from under decision 121 rather than changing that
-rule, since there is no focus left for it to judge by the time the pair lands.
+**Consequences:** the pick is abandoned in the click that **leaves**, so no
+half-made pick is ever held while its screen is not on show. The copy still
+fading out is drawn from a snapshot of the view taken before it was abandoned,
+so it keeps showing what it showed rather than redrawing at full opacity in the
+first frames of the fade (`DECISION-LOG.md` #232). Opening a pick also clears
+the focus, so a band focused against the old range cannot dim the new one the
+moment it lands — which takes the two-click pick out from under decision 121
+rather than changing that rule, since there is no focus left for it to judge by
+the time the pair lands.
 
 **Two deviations from the wording of this decision, both deliberate.** The
 blanked panel keeps the copy decision 173 built for it — the heading *Pick the

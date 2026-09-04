@@ -268,6 +268,47 @@ for (const other of ['log', 'goals', 'progress', 'lessons']) {
   });
 }
 
+/* The pick dies in the click that leaves, so for the 120 ms the outgoing copy
+   is still painted its view has already been abandoned. It must not redraw:
+   `screen-out` holds full opacity for its first frames, and rendering the
+   abandoned view there snapped the pending panel back to the ribbon and
+   PICK END DAY back to {n} DAYS while the screen was still fully visible. */
+test('the copy fading out keeps the pending panel it was showing', async ({ page }) => {
+  await openViaNav(page);
+  await day(page, '2 Jun 2026').click();
+  await expectPending(page, 'FROM 2 JUN 2026');
+
+  /* Sampled inside the page at the first frame after the click — about 16 ms
+     into a 120 ms fade — so the reading cannot race the round trip out to the
+     test process the way an `expect` poll on a disappearing element would. */
+  const frame = await page.evaluate(() => new Promise((resolve) => {
+    document.querySelector('[data-nav="log"]').click();
+    requestAnimationFrame(() => {
+      const leaving = document.querySelector('.screen--leaving');
+      const days = leaving && leaving.querySelector('.rail__days');
+      resolve({
+        present: !!leaving,
+        screen: leaving && leaving.getAttribute('data-s'),
+        status: days && days.textContent,
+        pending: !!(leaving && leaving.querySelector('.went__empty[data-pending]')),
+        ribbon: !!(leaving && leaving.querySelector('.ribbon')),
+      });
+    });
+  }));
+
+  expect(frame.present, 'the outgoing screen is still painted').toBe(true);
+  expect(frame.screen).toBe('went');
+  expect(frame.status).toBe('PICK END DAY');
+  expect(frame.pending).toBe(true);
+  expect(frame.ribbon).toBe(false);
+
+  // And it really was abandoned: coming back shows the landed range.
+  await settle(page);
+  await goTo(page, 'went');
+  await expect(status(page)).toHaveText('14 DAYS');
+  await expect(page.locator('.went__empty[data-pending]')).toHaveCount(0);
+});
+
 /* The rest of the view is what decision 117 was for, and it still holds. */
 test('the range, the undo and the split survive a screen change; only the pick does not', async ({ page }) => {
   await openViaNav(page);

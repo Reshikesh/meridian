@@ -91,6 +91,11 @@
     var wentState = useState(function () {
       return range.emptyView(range.fromStored(store.readRange()));
     });
+    /* That same view as it stood when the screen was left, held only for the
+       length of the cross-fade. Leaving abandons an open pick in the same click
+       (decision 30), and the copy still fading out must keep showing what it
+       showed — see goToScreen. Null except during a fade off a pending pick. */
+    var leavingWentState = useState(null);
 
     var data = stateHolder[0], setData = stateHolder[1];
     var screen = screenState[0], setScreen = screenState[1];
@@ -104,6 +109,7 @@
     var handed = handedState[0], setHanded = handedState[1];
     var quick = quickState[0], setQuick = quickState[1];
     var went = wentState[0], setWent = wentState[1];
+    var leavingWent = leavingWentState[0], setLeavingWent = leavingWentState[1];
 
     var firstRun = data === null;
 
@@ -139,25 +145,32 @@
        finished that stale pick instead of starting a new range, leaving every
        click after it off by one: land, anchor, land, anchor.
 
-       Abandoned on the way IN rather than on the way out. Both give the same
-       rule — the screen is never entered on a half-made pick — but abandoning
-       on the way out re-renders the copy that is still fading, and the fade
-       holds full opacity for its first few frames: the pending panel visibly
-       snapped back to the ribbon and PICK END DAY back to {n} DAYS before the
-       screen had begun to go. Doing it here keeps the leaving copy showing
-       what it showed, and costs nothing while the pick sits unread on another
-       screen. It also cannot be outrun by navigating away and back inside the
-       120 ms, which a timer hung on the fade could. */
+       The pick dies in the click that leaves, not on the way back (owner) — so
+       no half-made pick is ever held while its screen is not on show. What the
+       fading copy draws is then a separate question from what the state says,
+       because `screen-out` holds full opacity for its first frames: re-rendered
+       from the abandoned view, the pending panel visibly snapped back to the
+       ribbon and PICK END DAY back to {n} DAYS before the screen had begun to
+       go. So the view is photographed on the way out and the leaving copy is
+       drawn from the photograph, which is inert and unclickable for the 120 ms
+       it exists. Only a pending pick needs one; every other screen change
+       leaves the snapshot null and renders live. */
     function goToScreen(id) {
       if (id === screen) return;
-      if (id === 'went') setWent(function (prev) { return range.abort(prev); });
+      if (screen === 'went' && went.pending) {
+        setLeavingWent(wentView);
+        setWent(function (prev) { return range.abort(prev); });
+      }
       setOutgoing(screen);
       setScreen(id);
     }
 
     useEffect(function () {
       if (outgoing === null) return undefined;
-      var timer = setTimeout(function () { setOutgoing(null); }, SCREEN_FADE_MS);
+      var timer = setTimeout(function () {
+        setOutgoing(null);
+        setLeavingWent(null);
+      }, SCREEN_FADE_MS);
       return function () { clearTimeout(timer); };
     }, [outgoing, screen]);
 
@@ -544,7 +557,8 @@
         return html`
           <${ui.Went} key=${key} className=${className} inert=${inert} state=${data}
             today=${todayKey} minDay=${wentBounds.minDay}
-            view=${wentView} actions=${wentActions} />`;
+            view=${mode === 'leaving' && leavingWent ? leavingWent : wentView}
+            actions=${wentActions} />`;
       }
 
       return html`

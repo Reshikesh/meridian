@@ -362,36 +362,43 @@ The suite had also never run with motion enabled: `playwright.config.js` sets
 | file | change |
 |---|---|
 | `src/core/range.js` | `pick()` clears the focus on the first click (decision 30). `abort()` documented as the transition for a dropped pick, and it returns an idle view by identity. |
-| `src/ui/app.js` | `goToScreen` abandons an open pick **on arrival** at `went`. |
+| `src/ui/app.js` | `goToScreen` abandons an open pick **in the click that leaves**, and photographs the view first so the fading copy can be drawn from the photograph. |
 
-Abandoning on arrival rather than on departure is the same rule and the same
-observable behaviour — the screen is never entered on a half-made pick — but a
-`requestAnimationFrame` sampler taken during the fix showed why it matters:
-`screen-out` holds **opacity 1 for its first ~77 ms**, so abandoning in the
-departing click made the leaving copy visibly snap from the pending panel back
-to the ribbon, and `PICK END DAY` back to `14 DAYS`, before the screen had begun
-to go. Sampled again after the change, the leaving copy holds the pending panel
-to opacity 0.001. It also cannot be outrun by navigating away and back inside
-the 120 ms, which a timer hung on the fade could (`DECISION-LOG.md` #232).
+The pick dies the moment the screen is left, so no half-made pick is ever held
+while its screen is off show. That makes what the fading copy *draws* a separate
+question from what the state *says*, and a `requestAnimationFrame` sampler taken
+during the fix showed why it needed answering: `screen-out` holds **opacity 1
+for its first ~77 ms**, so a leaving copy re-rendered from the abandoned view
+snapped the pending panel back to the ribbon, and `PICK END DAY` back to
+`14 DAYS`, while it was still fully visible. `renderScreen` now draws the
+leaving copy from a snapshot taken before the abandon — safe because that copy
+is `inert` with `pointer-events: none` (#206) for the 120 ms it exists. The
+snapshot is taken only for a pending pick and cleared with `outgoing`; every
+other screen change renders live. Sampled again after: the pending panel holds
+to **opacity 0.0014** and the ribbon never appears (`DECISION-LOG.md` #232).
+
+An earlier build abandoned the pick on *arrival* instead, which needed no
+snapshot. The owner chose departure; this is that, with the fade kept honest.
 
 ## 6. Tests
 
 | suite | before | after | added |
 |---|---|---|---|
 | `node --test` (unit) | 518 | **524** | 6 |
-| Playwright, Chromium | 255 | **269** | 14 |
+| Playwright, Chromium | 255 | **270** | 15 |
 
 **The 255 that existed are unchanged in number and all still pass.** One
 existing assertion changed meaning rather than count: `range.test.js` asserted
 that a band focus survives a two-click pick, which decision 30 reverses.
 
-`tests/e2e/went-pick.spec.js` is new — 14 tests, and the first in the project to
+`tests/e2e/went-pick.spec.js` is new — 15 tests, and the first in the project to
 run with `reducedMotion: 'no-preference'`. Every test in it reaches the screen
 through the nav from Log rather than by `goto`, which is the gap section 4
 names. It is a `test.use` inside the one file rather than a new project, so the
 existing tests keep running exactly as they did.
 
-Against the **unfixed** build it reported **5 failed, 9 passed**:
+Against the **unfixed** build it reported **5 failed, 9 passed** (the fade test
+came later, with the snapshot it guards):
 
 ```
 FAIL  a pick works with a band focused, and the focus does not survive it
@@ -405,15 +412,15 @@ FAIL  a pick is dropped by leaving for lessons,  so the next click anchors
 
 The nine that passed are the guard: they are what decision 30 already had.
 
-**The full Chromium run was clean on the first attempt — 269 passed in 7.5 min,
-no retries consumed and none needed.** The responsive and zoom matrices are 108
-of those 269, green in all three themes at every width and zoom.
+**The full Chromium run was clean on the first attempt — 270 passed, no retries
+consumed and none needed.** The responsive and zoom matrices are 108 of those
+270, green in all three themes at every width and zoom.
 
 `went-pending` **was already a matrix state** and has been since Phase 3, so the
 pending state was already audited for overlap, clipping and page scroll at every
 width, zoom and theme. It was verified rather than added twice. What it had
 never been checked for is what it *says*, which is now `expectPending()` in the
-new file — the whole of decision 30 as one assertion, run in eleven tests.
+new file — the whole of decision 30 as one assertion, called from twelve places.
 
 `QUALITY-BAR.md` section 2 names no list of states (only "every screen and sheet
 open"), so there was nothing there to add `went-pending` to, and it is unchanged.
@@ -450,10 +457,12 @@ before anything was deleted.
   investigation, where it reproduced the defect and then the fix, but the
   `msedge` project was not run.
 - **Firefox and Safari remain untested**, as before.
-- **The cross-fade artefact is recorded, not tested.** An assertion that the
-  leaving copy still reads `PICK END DAY` would have to catch a 120 ms window,
-  which is the kind of timing-dependent check section 10 of the report above
-  argues against. It was measured, fixed and written up instead.
+- ~~The cross-fade artefact is recorded, not tested.~~ **Now tested**, once the
+  snapshot became real machinery that needed a guard. The nav click and the
+  reading of the leaving copy happen inside one `page.evaluate`, at the first
+  `requestAnimationFrame` after the click — ~16 ms into a 120 ms fade, a
+  seven-fold margin that never crosses the wire. An `expect` poll would have
+  raced the round trip and been exactly the flakiness section 10 warns about.
 - **A pick left open on another screen is dropped silently.** Nothing tells the
   owner it went; the screen simply opens on the range it had. That is what
   decision 30 asks for, and the alternative — a line in the rail saying a pick
