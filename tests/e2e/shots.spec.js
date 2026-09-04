@@ -84,3 +84,32 @@ test('the early label on goals, the goal sheet and the entry sheet', async ({ pa
     await p.locator('.preview').waitFor();
   });
 });
+
+/* The one screenshot that is committed. Everything else in this file lands in
+   the gitignored shots folder for the owner to look at and then forget; this
+   one is in the README a stranger reads before they download anything, so it
+   is generated the same way as the rest rather than cropped by hand, and it
+   goes to docs/readme/ where git can see it.
+
+   Log, paper, 1280 — the reference width, the default theme, and the screen
+   the app is actually used on. `fullPage: false`: the README wants the window
+   a reader would see, not a tall strip of the whole document. */
+test('the README screenshot', async ({ page }) => {
+  await page.addInitScript(([k, v, t]) => {
+    try { localStorage.setItem(k, v); localStorage.setItem('meridian:theme', t); } catch (e) { /* */ }
+  }, [DATA_KEY, JSON.stringify(demoState()), 'paper']);
+  /* 1280 is the reference width. The height is 620 rather than the suite's 900
+     because a demo Sunday is three entries long: at 900 the shot is a third
+     dead space, which reads as a bug in the layout rather than as a short day. */
+  await page.setViewportSize({ width: 1280, height: 620 });
+  await page.clock.setFixedTime(FROZEN);
+  await page.goto(APP_URL);
+  await page.click('[data-nav="log"]');
+  await page.locator('main.screen[data-s="log"]').waitFor();
+  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState === 'finished'));
+  await page.screenshot({
+    path: path.join(__dirname, '..', '..', 'docs', 'readme', 'log.png'),
+    fullPage: false,
+    animations: 'disabled',
+  });
+});
