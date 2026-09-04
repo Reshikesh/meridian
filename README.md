@@ -81,14 +81,24 @@ re-verified against the pinned CDN URL.
 ## For developers
 
 The app itself has **zero dependencies** and no build step — `index.html` opened
-from disk is the whole program. The tooling below is only for the tests.
+from disk is the whole program. There is no lockfile at the root because there
+is nothing to lock. The tooling below is only for the tests.
+
+Unit tests need no install at all:
+
+```bash
+node --test "tests/unit/**/*.test.js"
+```
+
+Playwright is installed inside `tests/e2e` rather than at the root, so that the
+app stays dependency-free. From that folder:
 
 ```bash
 npm ci
 ```
 
 ```bash
-node --test "tests/unit/**/*.test.js"
+npx playwright install chromium
 ```
 
 ```bash

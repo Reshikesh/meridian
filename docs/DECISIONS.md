@@ -26,6 +26,8 @@ Status: **all resolved on 30 Aug 2026.** These override `MERIDIAN-SPEC-v1.1.md` 
 | 20 | Seed goals | **Two hours-only goals:** Learn Python — 130 h, due 16 weeks after first run; Half-marathon training — 60 h, due 20 weeks after first run. Seed entries make the reachability maths consistent (see spec §9 [P]). |
 | 21 | "COUNTS TOWARD" in the New category sheet | **Dropped.** A category feeds many goals; the only link is `Goals.category_id`. The sheet keeps NAME, COLOUR, DIRECTION and the upkeep note. |
 | 22 | v1 rendering stack | **Preact 10 + htm + preact/hooks, vendored UMD builds, no build step.** API-compatible with React so the GitHub version is a mechanical port (htm → JSX). Vanilla JS only for the pre-paint theme script and the seed file. |
+| 28 | Where the version shows | **One constant, three surfaces.** `src/core/version.js` is the single source, loaded first; the workbook stamps it into every export's `Meta.app_version`. It shows as `MERIDIAN 1.1.0` in the caps-label style in the Data sheet footer and below the three first-run choices, and as `title="Meridian 1.1.0"` on the header wordmark. Nothing else in the header changes. An allowed deviation from the mockup — added to the list QUALITY-BAR §1 names. |
+| 29 | Licence and shape | **MIT, `Copyright (c) 2026 RESH`.** The repository goes to GitHub **private** first and is flipped to public by hand. The release artefact is named with the version (`meridian-1.1.0.zip`), attached to a GitHub Release, and **never committed to git**. Firefox and Safari are stated as untested, in plain words. |
 
 ## Things that are technical, not product (Claude Code decides and logs them in `docs/DECISION-LOG.md`)
 

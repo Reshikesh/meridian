@@ -165,6 +165,35 @@ Phase 6. Read CLAUDE.md and docs/BUILD-PLAN.md § Phase 6, then DECISIONS 25–2
 
 **Checkpoint (owner)**: start fresh. Write three lessons, one without a title; pin one, archive one, find the third by search, then view the archived one and delete it for good. Create two goals, log against both on two different days, open Progress and read both lines and the early-estimate label; switch one goal off. Import a workbook with a week of entries against it and watch the label go. Set a Less category's planned hours below what you have logged this week and find "over cap" in Manage.
 
+## Phase 7 — Publication
+
+The repository goes to GitHub as a private repo named `meridian`, v1.1.0 tagged
+and a draft release carrying the zip; the owner flips it to public by hand. No
+features, and nothing fixed except what publishing requires. Decisions 28 and 29
+were made at the start of the phase and are recorded in `DECISIONS.md`.
+
+**Prompt**
+```
+Phase 7 — publication. Read CLAUDE.md, docs/QUALITY-BAR.md §8, docs/DECISIONS.md, the tail of docs/DECISION-LOG.md and docs/PHASE-6-CHECKPOINT.md. Plan first, wait for approval. Firefox is deferred: do not test it, do not touch its config, and never say it was tested.
+```
+
+**Scope**, one commit per item.
+1. **Version** (decision 28): the literal in `workbook.js` lifted into `src/core/version.js`, loaded first; shown in the Data sheet footer, on the first-run screen and as the wordmark's `title`. A unit test binds the constant to `package.json` and to the changelog's first `## v` heading. Matrix states for first run and the Data sheet stay green in all three themes.
+2. **Vendor check**: every vendored library's version, source URL and recorded sha256 reported and recomputed. Preact checked against CVE-2026-22028 (affects 10.26.5–10.28.1) and re-vendored if in range. htm and SheetJS 0.20.3 stay. Outcome logged either way.
+3. **Code greps** across `index.html`, `src/`, `seed/`, `styles/`: `innerHTML`, `dangerouslySetInnerHTML`, `eval(`, `new Function`, `document.write`, `http://`, `https://`. Every hit justified in one line or removed.
+4. **History and identity scan**, reported and never fixed unasked: every path ever committed, machine paths carrying a username across all revisions and the working tree, and every author identity that would become public. Anything flagged stops the phase for the owner. History is never rewritten without instruction.
+5. **`.gitignore`** covers node_modules, test output, workbooks, zips, local agent state, editor and OS litter; anything on the list that is tracked is `git rm --cached`.
+6. **LICENSE** (MIT, decision 29), `"license": "MIT"` in `package.json`, and a README licence section pointing at it and at `vendor/README.md`.
+7. **README.md** rewritten for strangers in the app's voice: what and why, one committed screenshot, how to get it, the five screens, where the data lives and how it is lost, which browsers are actually tested, where to read the version, the SheetJS scanner false positive, developer commands, licence. `dist/README-for-tester.md` is untouched.
+8. **`npm audit`**, applying only fixes that leave `@playwright/test` on its current major.minor.
+9. **Package**: the zip named from the version constant, the script and `dist.spec.js` following it, rebuilt and re-tested. The zip stays untracked.
+10. **GitHub**: `gh repo create meridian --private --source=. --push`, an annotated `v1.1.0` tag, and a **draft** release carrying the zip with notes from the changelog. Never made public, never published — the owner does both by hand.
+11. **Docs**: decisions 28 and 29, decision-log entries for every technical call, this section, and `docs/PHASE-7-CHECKPOINT.md`.
+
+**Acceptance**: QUALITY-BAR §8 with the version on screen; unit and Chromium e2e suites green including the responsive and zoom matrices; the zip cut, named for the version, and `dist.spec.js` green against it; the repository private on GitHub with the tag pushed and the release still a draft; nothing of the owner's data, machine or local state in the published tree.
+
+**Checkpoint (owner)**: open the draft release and download its zip; unzip and run it; read the version in the Data sheet footer and on first run; read the README as a stranger would. Then, by hand: Dependabot alerts, secret scanning with push protection, and Visibility → Public when ready.
+
 ## Backlog (after the friend's feedback)
 
 - Whatever the friend's feedback changes in Log / Where it went / Goals / Lessons / Progress.

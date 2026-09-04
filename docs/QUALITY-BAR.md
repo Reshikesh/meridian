@@ -4,7 +4,7 @@ This is acceptance criteria, not aspiration. A phase is not done until every app
 
 ## 1. Fidelity to the redesign
 
-- Reference: `design/shots/deck-*.png` (paper theme) and the mockup `design/Meridian Redesign.dc.html`. Tokens (`docs/MERIDIAN-SPEC-v1.1.md` §5) and copy (§6) are used verbatim. Only the deviations listed in `docs/DECISIONS.md` (10, 17, 18, 19, 21) are allowed; each is implemented so it looks native, not patched.
+- Reference: `design/shots/deck-*.png` (paper theme) and the mockup `design/Meridian Redesign.dc.html`. Tokens (`docs/MERIDIAN-SPEC-v1.1.md` §5) and copy (§6) are used verbatim. Only the deviations listed in `docs/DECISIONS.md` (10, 17, 18, 19, 21, 28) are allowed; each is implemented so it looks native, not patched.
 - Side-by-side check per screen at 1280 px: type sizes, weights, letter-spacing, caps labels, column alignment, row heights, gutters, border colours, chart proportions. Differences must be explainable by a decision or by real data replacing sample data.
 - The chart maths in §4 (ribbon layout constants, donut stroke trick, calendar heat opacity, 18 h bar scale, 16 h plan scale) is ported exactly. Ribbon colours, opacities and focus/dim states match §4c.
 - Every screen and sheet uses the same header, nav, sheet frame, table style, button styles, stat blocks and empty-state style. Nothing is styled ad hoc; if a new pattern is needed it is added once as a component and reused.
