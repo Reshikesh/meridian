@@ -16,6 +16,21 @@ self-consistent evidence: if a file changes, its recorded hash stops matching.
 
 Retrieved 2026-08-31. Total vendored: 1054310 bytes across 12 files.
 
+**Re-verified 2026-09-04 (Phase 7).** All twelve recorded sha256s were recomputed from the working
+tree and match. The four libraries were additionally re-downloaded from the pinned source URLs
+below and compared byte-for-byte, so the versions in the table are proven upstream identities, not
+just self-consistent local hashes — which matters because neither Preact UMD build carries a
+version string inside it.
+
+### CVE-2026-22028 (GHSA-36hm-qxxp-pg3m) — not applicable
+
+Affects Preact 10.26.5 through 10.28.1; patched in 10.26.10, 10.27.3 and 10.28.2. **Meridian
+vendors 10.29.8**, above the affected range, and 10.29.8 is also the current `latest` dist-tag on
+npm — there is no newer 10.x to move to. `preact.umd.js` and `hooks.umd.js` were both confirmed
+identical to `unpkg.com/preact@10.29.8/...` at re-verification, so the version is established from
+the bytes rather than from this table. **No re-vendoring was required and none was done.** htm 3.1.1
+and SheetJS 0.20.3 are unchanged.
+
 ## Load order
 
 These are classic `<script src>` tags. Only one edge is load-bearing: **preact before hooks**. `htm.umd.js` and `xlsx.full.min.js` read nothing at load time and may go anywhere.
