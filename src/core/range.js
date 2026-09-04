@@ -194,15 +194,23 @@
      first click anchors a pick on that day and the landed range stays exactly
      as it was; the second click lands the two, whichever order they came in
      (`normalise` puts the earlier one first), with the pre-pick range as the
-     undo target. Nothing is stored until it lands. */
+     undo target. Nothing is stored until it lands.
+
+     Opening a pick also clears the focus (decision 30). A band focused against
+     the old range would otherwise still be focused when the new one landed, so
+     the answer would arrive already dimmed by a question asked about the range
+     before it. */
   function pick(view, day, opts) {
     if (day > opts.today || day < opts.minDay) return view;
-    if (!view.pending) return assign(view, { pending: true, anchor: day });
+    if (!view.pending) return assign(view, { pending: true, anchor: day, focus: null });
     return land(view, normalise(view.anchor, day), { nodeIds: opts.nodeIds });
   }
 
-  /* Escape during PICK END DAY (spec Appendix B, item 6): drop the anchor. The
-     range was never moved, so there is nothing to restore and no undo to arm. */
+  /* Abandon a half-made pick: Escape during PICK END DAY (spec Appendix B,
+     item 6), and leaving the screen it was made on (decision 30). The range was
+     never moved, so there is nothing to restore and no undo to arm. A view with
+     no pick open comes back by identity, so a caller that abandons on every
+     screen change costs an idle one nothing. */
   function abort(view) {
     if (!view.pending) return view;
     return assign(view, { pending: false, anchor: null });

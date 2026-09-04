@@ -17,8 +17,10 @@ reaction. Notes at the end of this file on what would help most.
 It opens in your browser and that is the whole installation. There is nothing to
 install and nothing to sign into.
 
-**Use Chrome or Edge if you can**; Firefox works too. Keep it in one browser
-rather than moving between them — see *Where your data lives* below.
+**Use Chrome or Edge.** Meridian is machine-tested in Chromium, and Edge passed
+that suite on v1.0.0. Firefox and Safari have not been tested — they may work,
+but nobody has checked. Keep it in one browser rather than moving between them —
+see *Where your data lives* below.
 
 You can close the tab and come back whenever you like. Everything you have
 logged is still there.

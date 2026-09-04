@@ -28,6 +28,7 @@ Status: **all resolved on 30 Aug 2026.** These override `MERIDIAN-SPEC-v1.1.md` 
 | 22 | v1 rendering stack | **Preact 10 + htm + preact/hooks, vendored UMD builds, no build step.** API-compatible with React so the GitHub version is a mechanical port (htm → JSX). Vanilla JS only for the pre-paint theme script and the seed file. |
 | 28 | Where the version shows | **One constant, three surfaces.** `src/core/version.js` is the single source, loaded first; the workbook stamps it into every export's `Meta.app_version`. It shows as `MERIDIAN 1.1.0` in the caps-label style in the Data sheet footer and below the three first-run choices, and as `title="Meridian 1.1.0"` on the header wordmark. Nothing else in the header changes. An allowed deviation from the mockup — added to the list QUALITY-BAR §1 names. |
 | 29 | Licence and shape | **MIT, `Copyright (c) 2026 RESH`.** The repository goes to GitHub **private** first and is flipped to public by hand. The release artefact is named with the version (`meridian-1.1.0.zip`), attached to a GitHub Release, and **never committed to git**. Firefox and Safari are stated as untested, in plain words. |
+| 30 | What the screen shows while a range is being picked | **A pending state, and no half-made pick outlives its screen.** While a pick is open the rail says `PICK END DAY`, and the hours figure, the coverage donut, the direction split, the coverage line and the ribbon all show no answer; the calendar heat and any band focus are cleared; the anchor day is marked as a range start; no preset is lit. Escape still restores the pre-pick range with no undo (122). Nothing ever computes for the anchor day alone (173). The second click lands and re-aggregates; clicking the anchor day again lands a one-day range. **Leaving the screen abandons an open pick** — see the amendment below. |
 
 ## Things that are technical, not product (Claude Code decides and logs them in `docs/DECISION-LOG.md`)
 
@@ -233,3 +234,40 @@ stat blocks and ALL GOALS list fold into the goal list beside the chart; the
 "which goal" picker spec §10 asks for is that list. The owner's Phase 4 answer that a young goal shows "— /
 after a week of logging" is superseded by the early estimate and its label;
 that copy now covers only a goal with fewer than two logged days.
+
+### 30 — a half-made pick does not outlive its screen
+
+Added at the owner's bug report after Phase 7, on 4 September 2026.
+
+**Was:** the whole Where-it-went view survived a trip to another screen, a pick
+waiting for its second day included. That was deliberate — see the reasoning in
+`DECISION-LOG.md` #117 — and it was never tested, because "Where it went" is the
+default screen and no test had ever left it and come back.
+
+**Now:** the range, the undo, the split, the sort and the focus still survive a
+screen change. A pick waiting for its second day does not. The screen is never
+entered on a half-made pick, so the first click on the calendar always starts a
+new range and the second always lands it.
+
+**Why:** because it read as the app ignoring clicks. Coming back to the screen
+with a pick still open, the click the owner meant as "start here" *finished* the
+stale pick and painted a full set of figures for a range they had not chosen;
+the click they meant as "end here" then opened a new pick and blanked the screen.
+Every click after that was off by one — land, anchor, land, anchor — which from
+the outside is "the second click does not land, and the old figures stay up
+during a pick". Both reported symptoms were this one cause.
+
+**Consequences:** the pick is abandoned on the way **in** to the screen rather
+than on the way out, so the copy still fading out keeps showing what it showed
+(`DECISION-LOG.md` #208). Opening a pick also clears the focus, so a band
+focused against the old range cannot dim the new one the moment it lands — which
+takes the two-click pick out from under decision 121 rather than changing that
+rule, since there is no focus left for it to judge by the time the pair lands.
+
+**Two deviations from the wording of this decision, both deliberate.** The
+blanked panel keeps the copy decision 173 built for it — the heading *Pick the
+second day.* and a panel naming the anchor day and saying either direction works
+— rather than reusing the generic empty-range state. The generic copy
+("Nothing logged in this range.") is a statement about data and would be untrue
+mid-pick, where the screen is asking a question. And the focus is cleared when
+the pick **opens**, not merely hidden while it is open.

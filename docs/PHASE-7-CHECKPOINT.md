@@ -260,14 +260,206 @@ The phase deliberately stops short of all four:
 
 ## Known gaps
 
-- **The five pre-Phase-7 commits still carry `[redacted]`.** The rewrite command is in the report and in §4. This is the one item that blocks going public.
+- **The pre-Phase-7 commits still carry `[redacted]`.** The rewrite command is in the report and in §4. This is the one item that blocks going public. **Corrected 4 Sep 2026:** this report said "five" throughout; `git log --author` counts **23** of the 30 commits, the other 7 being Phase 7's own. The rewrite has to cover all 23.
 - **Edge is untested on v1.1.0.** It failed with exit 4 on the Phase 6 run and was not re-attempted here. It passed on v1.0.0, which is what the README says.
 - **Firefox is untested and deferred**, by instruction. Its Playwright project remains gated behind `MERIDIAN_FIREFOX` and was not touched.
 - **Safari is untested.** No WebKit project exists in the config.
-- **`dist/README-for-tester.md` says "Firefox works too".** It was explicitly out of scope for this phase and has not been edited, so it now contradicts the root README and decision 29's "stated as untested, in plain words". Worth one line in a later phase.
+- ~~**`dist/README-for-tester.md` says "Firefox works too".**~~ **Closed 4 Sep 2026** in the range-pick fix below: it now carries the root README's wording — machine-tested in Chromium, Edge passed on v1.0.0, Firefox and Safari untested.
 - The four confirmed findings from `docs/PHASE-5-AUDIT.md` are unchanged; none is a publication blocker.
 
 ## Questions for the owner
 
 None. Decisions 28 and 29 covered the phase; the one open item — the commit
 identity — was answered before the build started.
+
+---
+
+# Fix after Phase 7 — range pick — 4 September 2026
+
+No features. Two defects on one screen, one line in the tester README, and
+v1.1.0 re-cut on the same private remote. Decision 30 was settled by the owner
+before the work opened and is in `DECISIONS.md`, with its amendment.
+
+## 1. Pre-flight
+
+```
+git config user.email  ->  22979164+Reshikesh@users.noreply.github.com
+git status             ->  working tree clean
+git fetch origin; git status -sb  ->  ## main...origin/main  (96d96a9 == origin/main)
+git log --format='%ae %ce' | sort -u
+  22979164+Reshikesh@users.noreply.github.com  x2
+  [redacted]                            x2
+```
+
+Two identities, as expected. **Section 4 of the report above says the gmail
+address is on five commits; it is on 23 of 30.** The rewrite the owner runs
+before going public has to cover all 23. Corrected in Known gaps above and in
+`DECISION-LOG.md` #238. No history was rewritten here.
+
+## 2. Reproducing it
+
+The report named a theme, a browser and a zoom that were left blank, and
+suspected motion, so nothing was assumed. **78 configurations** were swept
+before a line of source was touched: five datasets by nine preceding actions,
+nine viewport widths, three stored ranges, motion on and off, Chromium and
+Edge.
+
+**Motion is not the variable.** Every path behaves identically with
+`reducedMotion` on and off. Neither is width, dataset, theme, browser, nor a
+stored `meridian:range`. Exactly one path fails, and it fails everywhere:
+
+| step | rail | heading |
+|---|---|---|
+| landed default | `14 DAYS` | 186.5 hours logged |
+| click 2 Jun — pick opens | `PICK END DAY` | Pick the second day. |
+| to Log, then back to Where it went | `PICK END DAY` | Pick the second day. |
+| **the owner's click #1** | undo shown | **50.5 hours logged** — *it lands* |
+| **the owner's click #2** | `PICK END DAY` | **Pick the second day.** — *it anchors* |
+
+Reproduced via Log, Goals, Progress and Lessons, in Chromium and in Edge.
+
+## 3. Root cause
+
+`app.js` holds the Where-it-went view outside the screen so a range, an undo or
+a split is not lost on the way to Log and back (`DECISION-LOG.md` #117) — and
+the pending pick was held with it. `range.pick` then correctly read
+`view.pending === true` on the next click and **landed the stale anchor**
+against the day the owner meant to start a new range with. The click after it
+anchored. Every click from then on was off by one: land, anchor, land, anchor.
+
+**Both reported symptoms are that one cause.** (A) "the second click does not
+land" is the click that anchored. (B) "the old figures stay on screen during a
+pick" is the full set of figures the *first* click painted by landing — a range
+the owner had not chosen, appearing where they expected a blank waiting state.
+
+**Nothing regressed, and #173 was never wrong.** `src/core/range.js` is
+byte-unchanged since `156c7bd` (Phase 4), where #173 moved the anchor out of
+`range`. The defect is in what survives a screen change, which is `app.js`. The
+staged `dist/meridian-1.1.0/` is byte-identical to `src/`, so the owner was not
+running an older artefact either.
+
+**Defect (B) does not exist separately.** Every other clause of decision 30 was
+already built and was verified running: blanked hours, donut at zero, no split
+caption, no coverage note, no ribbon, no lit preset, no calendar heat, the
+anchor marked as a range start, Escape restoring with no undo, and the anchor
+day clicked twice landing a one-day range. The two deliberate deviations from
+the wording of decision 30 are recorded in `DECISIONS.md`.
+
+## 4. Why 255 passing tests missed it
+
+"Where it went" is the default screen. Every existing test reaches it with
+`page.goto` and never leaves it, so **#117's guarantee had no test at all**, in
+either direction. `went.spec.js` already covers the two-click pick, the third
+click and the swap — all of them pass, and all of them pass on the unfixed
+build too. The responsive and zoom matrices walk between screens constantly, but
+they audit layout, not the picker's state.
+
+The suite had also never run with motion enabled: `playwright.config.js` sets
+`reducedMotion: 'reduce'` globally, which the Phase 5 audit had noted.
+
+## 5. The fix
+
+| file | change |
+|---|---|
+| `src/core/range.js` | `pick()` clears the focus on the first click (decision 30). `abort()` documented as the transition for a dropped pick, and it returns an idle view by identity. |
+| `src/ui/app.js` | `goToScreen` abandons an open pick **on arrival** at `went`. |
+
+Abandoning on arrival rather than on departure is the same rule and the same
+observable behaviour — the screen is never entered on a half-made pick — but a
+`requestAnimationFrame` sampler taken during the fix showed why it matters:
+`screen-out` holds **opacity 1 for its first ~77 ms**, so abandoning in the
+departing click made the leaving copy visibly snap from the pending panel back
+to the ribbon, and `PICK END DAY` back to `14 DAYS`, before the screen had begun
+to go. Sampled again after the change, the leaving copy holds the pending panel
+to opacity 0.001. It also cannot be outrun by navigating away and back inside
+the 120 ms, which a timer hung on the fade could (`DECISION-LOG.md` #232).
+
+## 6. Tests
+
+| suite | before | after | added |
+|---|---|---|---|
+| `node --test` (unit) | 518 | **524** | 6 |
+| Playwright, Chromium | 255 | **269** | 14 |
+
+**The 255 that existed are unchanged in number and all still pass.** One
+existing assertion changed meaning rather than count: `range.test.js` asserted
+that a band focus survives a two-click pick, which decision 30 reverses.
+
+`tests/e2e/went-pick.spec.js` is new — 14 tests, and the first in the project to
+run with `reducedMotion: 'no-preference'`. Every test in it reaches the screen
+through the nav from Log rather than by `goto`, which is the gap section 4
+names. It is a `test.use` inside the one file rather than a new project, so the
+existing tests keep running exactly as they did.
+
+Against the **unfixed** build it reported **5 failed, 9 passed**:
+
+```
+FAIL  a pick works with a band focused, and the focus does not survive it
+        .ribbon__band--on   expected 0, received 1
+FAIL  a pick is dropped by leaving for log,      so the next click anchors
+FAIL  a pick is dropped by leaving for goals,    so the next click anchors
+FAIL  a pick is dropped by leaving for progress, so the next click anchors
+FAIL  a pick is dropped by leaving for lessons,  so the next click anchors
+        .rail__days         expected "14 DAYS", received "PICK END DAY"
+```
+
+The nine that passed are the guard: they are what decision 30 already had.
+
+**The full Chromium run was clean on the first attempt — 269 passed in 7.5 min,
+no retries consumed and none needed.** The responsive and zoom matrices are 108
+of those 269, green in all three themes at every width and zoom.
+
+`went-pending` **was already a matrix state** and has been since Phase 3, so the
+pending state was already audited for overlap, clipping and page scroll at every
+width, zoom and theme. It was verified rather than added twice. What it had
+never been checked for is what it *says*, which is now `expectPending()` in the
+new file — the whole of decision 30 as one assertion, run in eleven tests.
+
+`QUALITY-BAR.md` section 2 names no list of states (only "every screen and sheet
+open"), so there was nothing there to add `went-pending` to, and it is unchanged.
+
+## 7. Package
+
+`dist/meridian-1.1.0.zip` — 0.56 MB, 61 files, unchanged in shape. `dist.spec.js`
+passes against it: it carries the fix and the corrected tester README, and its
+`src/` is byte-identical to the working tree. The zip is **untracked**, confirmed
+against `.gitignore:16` (`dist/*.zip`), per decision 29.
+
+## 8. Docs
+
+`DECISIONS.md` — decision 30 and its amendment, including the two deviations.
+`DECISION-LOG.md` — #229 to #238. `dist/CHANGELOG.md` — a **Fixed** entry for
+the stale pick and a **Changed** entry for the cleared focus, both under v1.1.0.
+`dist/README-for-tester.md` — the "Firefox works too" line now carries the root
+README's wording, which closes the Known gap above.
+
+## 9. The re-cut
+
+v1.1.0 is re-cut on the commit this report lands in. The old draft release and
+the old `v1.1.0` tag are deleted local and remote first; the new annotated tag
+is pushed and a fresh **draft** release is created with the v1.1.0 changelog
+section as its notes and the zip as its one asset. The repository stays
+**private** and the release stays **unpublished** — both were verified as such
+before anything was deleted.
+
+## Known gaps
+
+- **The 23 pre-Phase-7 commits still carry `[redacted]`.** Unchanged by
+  this work, and still the one item that blocks going public.
+- **Edge is untested on v1.1.0 as a suite.** It was driven by hand during the
+  investigation, where it reproduced the defect and then the fix, but the
+  `msedge` project was not run.
+- **Firefox and Safari remain untested**, as before.
+- **The cross-fade artefact is recorded, not tested.** An assertion that the
+  leaving copy still reads `PICK END DAY` would have to catch a 120 ms window,
+  which is the kind of timing-dependent check section 10 of the report above
+  argues against. It was measured, fixed and written up instead.
+- **A pick left open on another screen is dropped silently.** Nothing tells the
+  owner it went; the screen simply opens on the range it had. That is what
+  decision 30 asks for, and the alternative — a line in the rail saying a pick
+  was discarded — is copy in neither the spec nor the mockup.
+- The four confirmed findings from `docs/PHASE-5-AUDIT.md` are unchanged.
+
+## Questions for the owner
+
+None. Decision 30 and its three sub-answers were settled before the work opened.

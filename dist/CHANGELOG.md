@@ -30,6 +30,21 @@ Five screens, all of them real.
 - The Lessons sheet in the workbook gains `title`, `pinned` and `archived`. An
   older workbook imports its lessons untitled, unpinned and live.
 - A screen fading out no longer takes keyboard focus with it.
+- **Starting a range pick clears a focused band.** Focusing a band asks a
+  question about the range on screen; carrying it into the next range answered a
+  question nobody had asked, with the new chart already dimmed and the calendar
+  already shaded when it arrived.
+
+### Fixed
+
+- **Picking a range after leaving Where it went and coming back.** A pick
+  waiting for its second day used to survive the trip, so the next click on the
+  calendar *finished* that half-made pick instead of starting a new range — and
+  every click after it was off by one: one landed a range you had not chosen,
+  the next blanked the screen. It read as the second click not landing, and as
+  the old figures refusing to clear. Leaving the screen now abandons a
+  half-made pick. The range, the undo, the split and the sort still survive it,
+  as they always did.
 
 ## v1.0.0 — 3 September 2026
 

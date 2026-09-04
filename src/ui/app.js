@@ -130,9 +130,27 @@
     /* Cross-fade: the outgoing screen stays mounted for the length of the
        transition and fades out while the incoming one fades in (QUALITY-BAR §3).
        Rendering only the new screen would be a fade-in from blank, not a
-       cross-fade. */
+       cross-fade.
+
+       A half-made pick does not cross with it (decision 30). Everything else in
+       the Where-it-went view survives a screen change and always did (117) —
+       the range, the undo, the split, the sort, the focus — but a pick waiting
+       for its second day survived too, and the next click on the calendar then
+       finished that stale pick instead of starting a new range, leaving every
+       click after it off by one: land, anchor, land, anchor.
+
+       Abandoned on the way IN rather than on the way out. Both give the same
+       rule — the screen is never entered on a half-made pick — but abandoning
+       on the way out re-renders the copy that is still fading, and the fade
+       holds full opacity for its first few frames: the pending panel visibly
+       snapped back to the ribbon and PICK END DAY back to {n} DAYS before the
+       screen had begun to go. Doing it here keeps the leaving copy showing
+       what it showed, and costs nothing while the pick sits unread on another
+       screen. It also cannot be outrun by navigating away and back inside the
+       120 ms, which a timer hung on the fade could. */
     function goToScreen(id) {
       if (id === screen) return;
+      if (id === 'went') setWent(function (prev) { return range.abort(prev); });
       setOutgoing(screen);
       setScreen(id);
     }

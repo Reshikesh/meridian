@@ -206,6 +206,71 @@ test('the two-click pick', async (t) => {
   });
 });
 
+/* The defect the owner reported after Phase 7. `app.js` keeps this view alive
+   across a screen change so a range, an undo or a split is not lost on the way
+   to Log and back (117) — and a half-made pick was kept alive with it. The next
+   click on the calendar then finished that stale pick instead of starting a new
+   range, and every click after it was off by one: land, anchor, land, anchor.
+   The screen reads as "the second click does not land", because the click that
+   did land was the one the owner meant as a first. */
+test('a pick does not outlive the screen it was made on (decision 30)', async (t) => {
+  await t.test('clicking the anchor day again lands a one-day range', () => {
+    const v = range.pick(range.pick(start(), '2026-06-01', OPTS), '2026-06-01', OPTS);
+    assert.deepEqual(v.range, r('2026-06-01', '2026-06-01'));
+    assert.equal(v.pending, false);
+    assert.equal(v.anchor, null);
+    assert.equal(range.status(v), '1 DAYS');
+    assert.deepEqual(v.undo, r('2026-05-30', '2026-06-03'));
+  });
+
+  /* What a screen switch carries: `app.js` holds this object, abandons any
+     pick on it, and the remounted screen draws whatever comes back. */
+  await t.test('a pending pick abandoned on the way out remounts as a landed range', () => {
+    const pending = range.pick(start(), '2026-06-01', OPTS);
+    const carried = range.abort(pending);
+    assert.equal(carried.pending, false);
+    assert.equal(carried.anchor, null);
+    assert.deepEqual(carried.range, r('2026-05-30', '2026-06-03'), 'the range never moved');
+    assert.equal(carried.undo, null, 'an abandoned pick arms no undo (122)');
+    assert.equal(range.status(carried), '5 DAYS', 'PICK END DAY is gone');
+  });
+
+  await t.test('abandoning an idle view is identity, so every screen change is free', () => {
+    const idle = start();
+    assert.strictEqual(range.abort(idle), idle);
+    const once = range.abort(range.pick(idle, '2026-06-01', OPTS));
+    assert.strictEqual(range.abort(once), once, 'and abandoning twice changes nothing further');
+  });
+
+  /* The whole off-by-one, in one sequence: without the abandon in the middle
+     the second assertion below reads r('2026-06-01', '2026-06-05') — the stale
+     anchor finishing against a day the owner meant to start with. */
+  await t.test('after the switch the next click anchors rather than landing', () => {
+    const left = range.abort(range.pick(start(), '2026-06-01', OPTS));
+
+    const first = range.pick(left, '2026-06-05', OPTS);
+    assert.equal(first.pending, true, 'it starts a new range');
+    assert.equal(first.anchor, '2026-06-05');
+    assert.deepEqual(first.range, r('2026-05-30', '2026-06-03'), 'and lands nothing yet');
+
+    const second = range.pick(first, '2026-06-07', OPTS);
+    assert.deepEqual(second.range, r('2026-06-05', '2026-06-07'), 'the pair the owner clicked');
+    assert.equal(second.pending, false);
+  });
+
+  /* 117's own reason for existing is untouched: only the pick is dropped. */
+  await t.test('the range, the undo, the split, the sort and the focus all survive', () => {
+    const landed = range.pick(range.pick(start(), '2026-06-01', OPTS), '2026-06-04', OPTS);
+    const dressed = range.toggleFocus(range.setSort(range.setSplit(landed, 'goal'), 'desc'), 'cat:b');
+    const carried = range.abort(dressed);
+    assert.deepEqual(carried.range, r('2026-06-01', '2026-06-04'));
+    assert.deepEqual(carried.undo, r('2026-05-30', '2026-06-03'));
+    assert.equal(carried.split, 'goal');
+    assert.equal(carried.sort, 'desc');
+    assert.equal(carried.focus, 'cat:b');
+  });
+});
+
 test('landing arms the undo only when the range actually changed', async (t) => {
   await t.test('a change arms it', () => {
     const v = range.land(start(), r(MIN, TODAY));
@@ -261,12 +326,15 @@ test('a focused band that leaves the range is dropped, one that stays is kept', 
     assert.equal(range.land(focused, r('2026-06-01', TODAY), opts).focus, null);
   });
 
-  await t.test('second click and undo apply the same rule', () => {
+  /* Decision 30 took the pick out from under this rule rather than changing it:
+     the focus is cleared the moment a pick opens, so by the time the second
+     click lands there is nothing left for `nodeIds` to judge. Landing by any
+     other route — a preset, a typed date, an undo — still applies it. */
+  await t.test('a pick clears the focus outright; undo still applies the rule', () => {
     const focused = range.toggleFocus(start(), 'cat:b');
-    const landed = range.pick(range.pick(focused, '2026-06-01', opts), TODAY, opts);
-    assert.equal(landed.focus, null);
+    assert.equal(range.pick(focused, MIN, opts).focus, null, 'gone on the first click');
     const kept = range.pick(range.pick(focused, MIN, opts), TODAY, opts);
-    assert.equal(kept.focus, 'cat:b');
+    assert.equal(kept.focus, null, 'and it does not come back when the pair lands');
     assert.equal(range.undo(range.land(focused, r(MIN, TODAY), opts), opts).focus, null,
       'undo back to a range without the node drops it');
   });
