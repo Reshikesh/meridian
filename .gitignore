@@ -1,11 +1,29 @@
+# Test and build output.
 node_modules/
 tests/e2e/shots/
 tests/e2e/test-results/
+tests/e2e/report/
+test-results/
+playwright-report/
+
+# The owner's own logged life. Only the placeholder README is tracked.
 data/*
 !data/README.md
+data/*.xlsx
+
+# Release artefacts. The zip is attached to a GitHub Release, never committed
+# (decision 29). The stage folder is named from the version, so this is a glob.
 dist/*.zip
-dist/meridian-v1/
-.DS_Store
-Thumbs.db
-tests/e2e/report/
+dist/meridian-*/
+
+# Local machine state — never anyone else's business.
 .claude/
+.claude/settings.local.json
+CLAUDE.local.md
+.env
+
+# Editor and OS litter.
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
