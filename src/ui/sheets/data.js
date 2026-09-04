@@ -9,6 +9,7 @@
 
   var html = htm.bind(preact.h);
   var ui = (window.Meridian = window.Meridian || {}).ui = window.Meridian.ui || {};
+  var version = window.Meridian.version;
   var useState = preactHooks.useState;
 
   function Busy() {
@@ -107,7 +108,13 @@
         <${Idle} exportInfo=${props.exportInfo} now=${props.now} source=${props.source}
           storageError=${props.storageError} message=${props.message}
           onExport=${props.onExport} onFile=${props.onFile} onStartFresh=${props.onStartFresh} />`;
-      footer = html`<button type="button" class="btn" onClick=${props.onClose}>Done</button>`;
+      /* Decision 28: the version, in the footer of the sheet that writes it
+         into every export's Meta sheet. The idle view only — during an import
+         decision the footer is carrying two buttons and a choice, and a build
+         number there is noise. */
+      footer = html`
+        <span class="t-label sheet__version">${version.DISPLAY}</span>
+        <button type="button" class="btn" onClick=${props.onClose}>Done</button>`;
     }
 
     return html`

@@ -302,6 +302,14 @@
   padding: 0 var(--sp-9) var(--sp-8);
 }
 
+/* Decision 28: the build, in the Data sheet's footer. `margin-right: auto`
+   rather than the split-footer class, so the sheet frame is untouched and Done
+   stays exactly where it has always been. */
+.sheet__version {
+  margin-right: auto;
+  align-self: center;
+}
+
 @keyframes veil-in {
   from { opacity: 0; }
   to   { opacity: 1; }

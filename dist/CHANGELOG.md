@@ -19,6 +19,9 @@ Five screens, all of them real.
   entry sheet and Progress alike.
 - **Over cap** — the Manage row says how far a *Less* category is past its
   planned hours this week.
+- **The version, on the screen** — `MERIDIAN 1.1.0` in the Data sheet footer
+  and on the first-run screen, and on the wordmark as a tooltip. Every export
+  already carried it in the Meta sheet; now the app says it out loud.
 
 ### Changed
 

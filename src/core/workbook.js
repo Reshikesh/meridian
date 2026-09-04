@@ -22,11 +22,12 @@
   var api = factory(
     isNode ? require('./dates.js') : root.Meridian.dates,
     isNode ? require('./validate.js') : root.Meridian.validate,
-    isNode ? require('./aggregate.js') : root.Meridian.aggregate
+    isNode ? require('./aggregate.js') : root.Meridian.aggregate,
+    isNode ? require('./version.js') : root.Meridian.version
   );
   if (isNode) module.exports = api;
   else (root.Meridian = root.Meridian || {}).workbook = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (dates, validate, aggregate) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (dates, validate, aggregate, version) {
   'use strict';
 
   /* The spreadsheet row a decoded row came from, carried non-enumerably so it
@@ -45,7 +46,8 @@
   }
 
   var SCHEMA_VERSION = 1;
-  var APP_VERSION = '1.1.0';
+  /* Decision 28: one version string in the project, in src/core/version.js. */
+  var APP_VERSION = version.VERSION;
 
   /* Column order is the spec's. Reading is by header NAME, never by index —
      the friend will reorder columns in Excel and expect it to still work. */

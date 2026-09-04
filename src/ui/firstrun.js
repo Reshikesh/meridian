@@ -12,6 +12,7 @@
 
   var html = htm.bind(preact.h);
   var ui = (window.Meridian = window.Meridian || {}).ui = window.Meridian.ui || {};
+  var version = window.Meridian.version;
   var useState = preactHooks.useState;
 
   var OPTIONS = [
@@ -105,6 +106,11 @@
           <p class="firstrun__drop">
             ${dragging ? 'Drop the workbook to import it.' : 'You can also drop a workbook anywhere on this page.'}
           </p>
+
+          ${/* Decision 28: the version, below the three choices. This is the
+                one screen a reader meets before any data exists, so it is where
+                "which build is this?" is answered without opening a sheet. */
+            html`<p class="t-label firstrun__version">${version.DISPLAY}</p>`}
         </div>
 
         ${dragging ? html`<div class="dropveil" aria-hidden="true"></div>` : null}

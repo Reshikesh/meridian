@@ -15,6 +15,7 @@
 
   var html = htm.bind(preact.h);
   var ui = (window.Meridian = window.Meridian || {}).ui = window.Meridian.ui || {};
+  var version = window.Meridian.version;
 
   var THEMES = [
     { id: 'paper', label: 'PAPER' },
@@ -43,7 +44,10 @@
     return html`
       <header class=${'header' + (compact ? ' header--compact' : '')}>
         <div class="header__left">
-          <span class="wordmark">MERIDIAN</span>
+          <span class="wordmark"
+            title=${/* Decision 28: the build, on hover and to a screen reader.
+                       Nothing visible changes in the header. */ version.TITLE}
+          >MERIDIAN</span>
           ${compact ? null : html`
             <nav class="nav" aria-label="Screens">
               ${ui.SCREEN_ORDER.map(function (id) {
