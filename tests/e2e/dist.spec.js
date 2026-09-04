@@ -14,7 +14,10 @@ const { ROOT } = require('./lib/app-url');
    makes it, and a red suite on a machine that simply has not built yet would
    teach everyone to ignore this file. */
 
-const ZIP = path.join(ROOT, 'dist', 'meridian-v1.zip');
+/* The artefact is named from the version constant (decision 28), so this test
+   and the packaging script cannot disagree about which file to look for. */
+const { VERSION } = require('../../src/core/version.js');
+const ZIP = path.join(ROOT, 'dist', `meridian-${VERSION}.zip`);
 const OUT = path.join(ROOT, 'tests', 'e2e', 'test-results', 'unzipped');
 
 test.use({ viewport: { width: 1280, height: 900 } });
@@ -23,7 +26,7 @@ test.describe('the packaged zip', () => {
   /* One worker: both tests share the one unpacked folder, and in parallel each
      worker's beforeAll deletes it under the other. */
   test.describe.configure({ mode: 'serial' });
-  test.skip(!fs.existsSync(ZIP), 'dist/meridian-v1.zip not built — run `npm run package`');
+  test.skip(!fs.existsSync(ZIP), `dist/meridian-${VERSION}.zip not built — run \`npm run package\``);
 
   test.beforeAll(() => {
     fs.rmSync(OUT, { recursive: true, force: true });

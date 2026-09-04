@@ -1,5 +1,9 @@
-/* Cuts dist/meridian-v1.zip — the folder the friend unzips and double-clicks.
-   `npm run package`.
+/* Cuts dist/meridian-<version>.zip — the folder the friend unzips and
+   double-clicks. `npm run package`.
+
+   The version comes from src/core/version.js, the same constant the app shows
+   and stamps into every export (decision 28), so the artefact cannot be named
+   for a build it does not contain.
 
    What goes in is an allowlist, not everything-minus-a-few-things. A denylist
    at a packaging gate fails open: the day someone adds a folder, it ships. This
@@ -9,14 +13,20 @@
    this project will ever be built on, so the app keeps its zero dependencies. */
 
 import { execFileSync } from 'node:child_process';
+import { createRequire } from 'node:module';
 import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(ROOT, 'dist');
-const STAGE = join(DIST, 'meridian-v1');
-const ZIP = join(DIST, 'meridian-v1.zip');
+
+/* The core modules are CommonJS under a UMD guard (see the footer of any file
+   in src/core/), so this ESM script reaches the constant through require. */
+const { VERSION } = createRequire(import.meta.url)('../src/core/version.js');
+
+const STAGE = join(DIST, `meridian-${VERSION}`);
+const ZIP = join(DIST, `meridian-${VERSION}.zip`);
 
 /* Everything the app needs to run from file://, and nothing else. */
 const INCLUDE = [
@@ -130,5 +140,5 @@ execFileSync('powershell', [
 if (!existsSync(ZIP)) fail('the zip was not written');
 
 const bytes = statSync(ZIP).size;
-console.log(`dist/meridian-v1.zip  ${(bytes / 1024 / 1024).toFixed(2)} MB  ${shipped.length} files`);
+console.log(`dist/meridian-${VERSION}.zip  ${(bytes / 1024 / 1024).toFixed(2)} MB  ${shipped.length} files`);
 console.log('contents: ' + INCLUDE.join(', ') + ', ' + README + ', data/ (empty)');
