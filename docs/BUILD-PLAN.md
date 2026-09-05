@@ -194,6 +194,38 @@ Phase 7 — publication. Read CLAUDE.md, docs/QUALITY-BAR.md §8, docs/DECISIONS
 
 **Checkpoint (owner)**: open the draft release and download its zip; unzip and run it; read the version in the Data sheet footer and on first run; read the README as a stranger would. Then, by hand: Dependabot alerts, secret scanning with push protection, and Visibility → Public when ready.
 
+## Phase 8 — Linked workbook (v1.2.0)
+
+**Prompt**
+```
+Phase 8. Read CLAUDE.md and docs/BUILD-PLAN.md § Phase 8, spec §7 and §10, DECISIONS 5, 6, 15, 28, 29, 32–35 and DECISION-LOG 57–63, 185, 190. Plan first, wait for approval. 8a is a spike — stop and report before 8b.
+```
+
+**8a — Spike (report only, no product code)**
+- From `file://` in Chrome and Edge: a handle stored in IndexedDB survives a browser restart; `requestPermission({mode:'readwrite'})` succeeds from a submit-button click; `queryPermission` state after restart.
+- Atomic write while Excel holds the file: error type and message.
+- `lastModified` moves on an Excel save and does not move on our own write in a way that self-triggers 34.
+- Report which of 32–35 hold as written. If IndexedDB does not hold the handle on `file://`, propose re-pick-per-session and stop.
+
+**8b — Scope**
+- `src/core/link.js`: pure state machine — unlinked / linked-needs-grant / linked-auto / locked / unsupported; events in, state and label out; unit tests for every transition.
+- `src/store.js`: mirror hook after each counted mutation via the existing export encoder; write queue; counter reset on success; errors through `getError()` (185). Test asserting mirror bytes ≡ export bytes.
+- Data sheet: Link / Create / Unlink; shows file name and last-written time.
+- Header data control: states per 33/35 inside the 232 px budget (63); hover, active, focus-visible, disabled from tokens.
+- Reconnect flow per 34, reusing the decision-15 prompt component.
+- e2e: stub `showOpenFilePicker`/`showSaveFilePicker` with an in-memory handle via `addInitScript`; cover grant-on-first-submission, dismissed-then-Save, locked→retry, reconnect-with-newer-file, unsupported-browser hiding. Both matrices; dist test.
+- Docs: version constant → 1.2.0 (28); CHANGELOG; public README "Saving" section in plain words (Chromium keeps saving; Firefox/Safari export as before); tester README; DECISION-LOG; `docs/PHASE-8-CHECKPOINT.md`.
+- Re-cut per the private procedure; tag v1.2.0; draft release. Delete the v1.1.0 draft release; keep the tag.
+
+**Acceptance**
+- Linked workbook, no grant this session, log an entry → one browser prompt → file on disk changes within the same second; every later submission (entry add/edit/delete, category, goal, plan, lesson) changes the file with no prompt.
+- Dismiss the prompt → SAVE · 1 → click → written, counter 0, SAVED · AUTO.
+- Workbook open in Excel, log → WORKBOOK LOCKED; close Excel, log → written, state clears.
+- Edit a cell in Excel, save, close; reload app, reconnect → decision-15 prompt; Replace shows the edit.
+- Firefox: no Link controls; export unchanged. Unit and e2e suites green on the first run.
+
+**Checkpoint (owner)**: Edge and Chrome at the device, the acceptance sequence, plus close the tab with SAVE · n showing and confirm the browser warns.
+
 ## Backlog (after the friend's feedback)
 
 - Whatever the friend's feedback changes in Log / Where it went / Goals / Lessons / Progress.
