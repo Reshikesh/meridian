@@ -1860,20 +1860,16 @@
               opacity var(--m-chart) var(--ease);
 }
 
-/* Decision 31: a day outside [first logged day, today] cannot be picked, so it
-   is drawn in the app's own disabled language — a token colour at the .45 that
-   `.btn:disabled` and `.seg__btn:disabled` already use.
-
-   It was `--line2`, which is the SAME HEX as `--pale` in paper and graphite and
-   within 1.03:1 of it in blueprint: an unpickable day was outlined in exactly
-   the colour an available one is filled with, and both sat around 1.1:1 against
-   `--bg`. Against `--pale` this goes from 1.00:1 to 1.70:1 on paper, 1.00 to
-   1.97 on graphite, 1.03 to 1.70 on blueprint. Pre-data and future days share
-   the class, so the two can never drift apart. */
+/* Spec §4d verbatim, and deliberately so. Decision 31 tried lifting this into
+   the app's disabled language — `--ink2` at .45 — because `--line2` is the same
+   hex as `--pale` in paper and graphite, so an unpickable day is outlined in the
+   colour an available one is filled with. The owner looked at it and turned it
+   down: the resting calendar stays quiet, and what tells you a day is unpickable
+   is the hover it does not take and the flash it answers a click with. Do not
+   "fix" the contrast here again without asking (decision 31, decision-log #248). */
 .cal__fill--off {
   background: transparent;
-  border: 1px dashed var(--ink2);
-  opacity: .45;
+  border: 1px dashed var(--line2);
 }
 
 .cal__fill--in {

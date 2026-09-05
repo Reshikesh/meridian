@@ -149,12 +149,18 @@ test('colour.THEME_BG matches --bg in tokens.css', () => {
   assert.deepEqual(Object.keys(colour.THEME_BG).sort(), [...THEME_IDS].sort());
 });
 
-/* Decision 31. An unpickable calendar day used to be outlined in --line2, which
-   is the SAME HEX as --pale in paper and graphite and within 1.03:1 of it in
-   blueprint — so a day before the first logged one was drawn in exactly the
-   colour an available day is filled with, and the refusal read as a bug rather
-   than as a rule. This reads the token back out of components.css, so neither
-   the stylesheet nor the token table can drift into that state again. */
+/* Decision 31. An unpickable calendar day is outlined in --line2 — spec §4d
+   verbatim — and that is a decision the owner took deliberately, with the
+   numbers in front of them: --line2 is the SAME HEX as --pale in paper and
+   graphite and within 1.03:1 of it in blueprint, so the resting cell really is
+   drawn in the colour an available day is filled with. Lifting it to --ink2 at
+   .45 was built, looked at, and turned down; the signals that a day cannot be
+   picked are the brand hover it does not take and the flash it answers a click
+   with, not the resting ink.
+
+   So this pins the spec treatment rather than a contrast floor. It reads the
+   token back out of components.css, so a future session cannot quietly "fix"
+   the contrast that was chosen. */
 const COMPONENTS = fs.readFileSync(
   path.join(__dirname, '..', '..', 'styles', 'components.css'), 'utf8');
 
@@ -167,23 +173,27 @@ function ruleBlock(css, selector) {
   return css.slice(open, css.indexOf('}', open));
 }
 
-test('the unavailable calendar day is not drawn in the available day colour', () => {
+test('the unavailable calendar day keeps spec §4d: transparent, 1px dashed --line2', () => {
   const block = ruleBlock(COMPONENTS, '.cal__fill--off');
-  const token = /border:[^;]*var\((--[\w-]+)\)/.exec(block);
-  assert.ok(token, '.cal__fill--off must take its border colour from a token');
-  const ink = token[1];
 
-  for (const id of THEME_IDS) {
-    const theme = THEMES[id];
-    assert.ok(theme[ink], `${id} has no ${ink}`);
-    assert.notEqual(theme[ink].toLowerCase(), theme['--pale'].toLowerCase(),
-      `${id}: an unavailable day is outlined in ${ink}, the same colour --pale fills an available one with`);
-    // Comfortably clear of the 1.11-1.22:1 --line2 gave, in every theme.
-    const vsBg = contrast(theme[ink], theme['--bg']);
-    assert.ok(vsBg >= 3, `${id}: ${ink} on --bg is ${vsBg.toFixed(2)}:1, too faint to read as a state`);
-    const vsPale = contrast(theme[ink], theme['--pale']);
-    assert.ok(vsPale >= 2.5, `${id}: ${ink} against --pale is ${vsPale.toFixed(2)}:1`);
-  }
+  assert.match(block, /background:\s*transparent;/,
+    '.cal__fill--off must have no fill (spec §4d)');
+  assert.match(block, /border:\s*1px dashed var\(--line2\);/,
+    '.cal__fill--off must be a 1px dashed --line2 border (spec §4d)');
+  assert.doesNotMatch(block, /opacity:/,
+    'no opacity: the .45 disabled treatment was tried and turned down');
+
+  /* Recorded, not fixed, exactly as the theme-toggle border above is: these are
+     the numbers the owner decided against changing. */
+  const measured = THEME_IDS.map((id) => ({
+    vsPale: +contrast(THEMES[id]['--line2'], THEMES[id]['--pale']).toFixed(2),
+    vsBg: +contrast(THEMES[id]['--line2'], THEMES[id]['--bg']).toFixed(2),
+  }));
+  assert.deepEqual(measured, [
+    { vsPale: 1, vsBg: 1.14 },      // paper: --line2 and --pale are one hex
+    { vsPale: 1, vsBg: 1.22 },      // graphite: likewise
+    { vsPale: 1.03, vsBg: 1.11 },   // blueprint
+  ]);
 });
 
 /* The refusal flash is the typed-date revert, on a cell: the same two

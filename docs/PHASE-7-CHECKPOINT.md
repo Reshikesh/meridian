@@ -531,13 +531,28 @@ could be is filled with.** Both sat around 1.1:1 against the background. So:
 |---|---|
 | `src/core/range.js` | new `selectable(day, opts)` — the rule as one function; `pick` now refuses through it |
 | `src/ui/went/calendar.js` | availability from core; `onClick` on every cell, picking or refusing; brand hover withheld from unavailable cells |
-| `styles/components.css` | `.cal__fill--off` in `--ink2` at `.45`; new `.cal__fill--refused` |
+| `styles/components.css` | one new rule, `.cal__fill--refused`. `.cal__fill--off` is unchanged — see below |
 
-**The treatment.** `--ink2` at the `.45` opacity `.btn:disabled` and
-`.seg__btn:disabled` already use — the app's own disabled language. Against
-`--pale`: **1.00 to 1.70:1** on paper, **1.00 to 1.97** on graphite, **1.03 to
-1.70** on blueprint. No token was added or changed; the nineteen of spec §5
-stand, and pre-data and future days share the class so they cannot drift apart.
+**The resting treatment: tried, and withdrawn by the owner.** The first build of
+this took `.cal__fill--off` from `--line2` to `--ink2` at the `.45` opacity
+`.btn:disabled` and `.seg__btn:disabled` use, on the measurement in §2 — against
+`--pale` that is 1.00 to 1.70:1 on paper, 1.00 to 1.97 on graphite, 1.03 to 1.70
+on blueprint. It went through a full green suite and a v1.1.0 re-cut, and then
+the owner looked at it on screen and turned it down: **the resting calendar
+stays quiet.**
+
+So `.cal__fill--off` is spec §4d verbatim and its declarations are
+byte-identical to `1d27aa0`. `styles/components.css` differs from that commit by
+**one rule — `.cal__fill--refused` — and two comments**; there is no hover rule,
+because the hover change is the class being withheld in `calendar.js`, not new
+CSS. Checked by re-rendering the review shots with the app source at `1d27aa0`
+and comparing: `cal-pale-paper.png` comes back byte-identical, and
+`cal-hover-unavailable.png` does not, which is the split that was wanted.
+
+The measurement stands and is recorded rather than fixed — **the contrast is a
+decision, not a defect** (`DECISION-LOG.md` #248). What distinguishes an
+unavailable day is the hover it does not take and the flash it answers a click
+with. Pre-data and future days still share one class, so they cannot drift apart.
 
 **The refusal.** A click on any unavailable day, first or second, flashes that
 cell with the two properties the typed-date field reverts with — `--warnbg`
@@ -580,11 +595,13 @@ day, that day itself, today, tomorrow, a single-logged-day dataset where floor
 and ceiling are the same day — and assert that `pick` refuses exactly what
 `selectable` refuses.
 
-Two token tests read `components.css` and check it against the token table:
-the unavailable border must not be `--pale` and must clear 3:1 against `--bg` in
-every theme, and the refused flash must use the same two tokens as the reverted
-date field. **A tokens-only test would not have caught this**: no token was
-wrong, the stylesheet reached for the wrong one.
+Two token tests read `components.css` and check it against the token table.
+The first pins the spec §4d treatment — transparent, 1px dashed `--line2`, no
+opacity — with the three ratios recorded as literals, so neither a future
+contrast "fix" nor a token edit can move what the owner decided; the second
+holds the refused flash to the same two tokens as the reverted date field. **A
+tokens-only test could not police either**: no token is wrong in any of this,
+it is which one the stylesheet reaches for.
 
 `went-predata` and `went-predata-hover` join both matrices, so the unavailable
 treatment is audited beside the available one at every width, zoom and theme.
@@ -612,11 +629,12 @@ cannot be picked, and flash red if you try.
 
 - **The 23 pre-Phase-7 commits still carry `[redacted]`.** Untouched by
   this work, and still the one item that blocks going public.
-- **The unavailable ink is 1.84-2.39:1 against `--bg` as rendered**, because the
-  `.45` is opacity. The token itself clears 3:1, which is what the token test can
-  see; the rendered figure is the honest one and is recorded here. It was
-  1.11-1.22:1 before, and the change against `--pale` — 1.00:1 to 1.70:1 — is the
-  one that matters, since that was the confusion.
+- **The resting unavailable cell is still 1.11-1.22:1 against `--bg`, and still
+  the same hex as `--pale` in two themes.** That is the owner's decision, taken
+  with the rendered alternative in front of them, not an oversight: it is pinned
+  by a test and written up in `DECISION-LOG.md` #248 so a future session
+  re-measuring it does not fix it again. Anyone reading only the numbers will
+  reach for the change that was withdrawn.
 - **Edge is untested as a suite on v1.1.0**, as before.
 - **Firefox and Safari remain untested**, as before.
 - **The refusal flash is asserted, not screenshotted.** A 200 ms state cannot be
