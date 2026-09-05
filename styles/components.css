@@ -1860,9 +1860,20 @@
               opacity var(--m-chart) var(--ease);
 }
 
+/* Decision 31: a day outside [first logged day, today] cannot be picked, so it
+   is drawn in the app's own disabled language — a token colour at the .45 that
+   `.btn:disabled` and `.seg__btn:disabled` already use.
+
+   It was `--line2`, which is the SAME HEX as `--pale` in paper and graphite and
+   within 1.03:1 of it in blueprint: an unpickable day was outlined in exactly
+   the colour an available one is filled with, and both sat around 1.1:1 against
+   `--bg`. Against `--pale` this goes from 1.00:1 to 1.70:1 on paper, 1.00 to
+   1.97 on graphite, 1.03 to 1.70 on blueprint. Pre-data and future days share
+   the class, so the two can never drift apart. */
 .cal__fill--off {
   background: transparent;
-  border: 1px dashed var(--line2);
+  border: 1px dashed var(--ink2);
+  opacity: .45;
 }
 
 .cal__fill--in {
@@ -1885,6 +1896,18 @@
   background: var(--brand);
   opacity: 1;
   border: 0;
+}
+
+/* Decision 31: a click on an unavailable day is refused, and says so. The two
+   properties the typed-date field reverts with (`.rail__input--reverted`), held
+   by a 200 ms timer rather than a keyframe — base.css collapses animations to
+   1 ms under prefers-reduced-motion, which would erase it (decision-log #135).
+   `--warnbg` is only ~1.1:1 against `--bg`, so as on the field it is the
+   `--warn` border that carries the flash. */
+.cal__fill--refused {
+  background: var(--warnbg);
+  border: 1px solid var(--warn);
+  opacity: 1;
 }
 
 .cal__num {

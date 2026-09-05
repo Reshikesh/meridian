@@ -64,6 +64,15 @@
     return a <= b ? { start: a, end: b } : { start: b, end: a };
   }
 
+  /* Rule §8.15, as one function: a day is selectable only inside [first logged
+     day, today]. The calendar asks it of every cell it draws and `pick` asks it
+     of every click, and before decision 31 the same comparison was written out
+     in both places — so the screen could have drawn a day as pickable that the
+     rule would then refuse, which is exactly what it did. */
+  function selectable(day, opts) {
+    return !!day && day >= opts.minDay && day <= opts.today;
+  }
+
   function clampDay(d, lo, hi) {
     if (d < lo) return lo;
     if (d > hi) return hi;
@@ -201,7 +210,7 @@
      the answer would arrive already dimmed by a question asked about the range
      before it. */
   function pick(view, day, opts) {
-    if (day > opts.today || day < opts.minDay) return view;
+    if (!selectable(day, opts)) return view;
     if (!view.pending) return assign(view, { pending: true, anchor: day, focus: null });
     return land(view, normalise(view.anchor, day), { nodeIds: opts.nodeIds });
   }
@@ -284,6 +293,7 @@
     UNDO_MS: UNDO_MS,
     bounds: bounds,
     normalise: normalise,
+    selectable: selectable,
     clamp: clamp,
     presetRange: presetRange,
     activePreset: activePreset,

@@ -2,7 +2,7 @@ const path = require('node:path');
 const { test } = require('@playwright/test');
 const { APP_URL } = require('./lib/app-url');
 const { demoState, emptyState, DATA_KEY } = require('./lib/seed-state');
-const { earlyState, progressState, manyLessonsState } = require('./lib/datasets');
+const { earlyState, progressState, manyLessonsState, twoDayState } = require('./lib/datasets');
 
 /* Screenshots for a human to look at, on demand: `npx playwright test shots
    --project=chromium`. Not an assertion suite — responsive.spec.js owns the
@@ -25,6 +25,69 @@ async function shoot(page, state, theme, width, screen, file, prep) {
   if (prep) await prep(page);
   await page.screenshot({ path: path.join(OUT, file), fullPage: true, animations: 'disabled' });
 }
+
+/* Decision 31: what an unavailable day looks like beside an available one.
+   The calendar scroller alone, at the top of its first band, so the shot is
+   the cells and nothing else. `twoday` is the telling one — pre-data,
+   available and future days all sit in its single June band. */
+async function shootCal(page, state, theme, file, prep) {
+  await page.addInitScript(([k, v, t]) => {
+    try { localStorage.setItem(k, v); localStorage.setItem('meridian:theme', t); } catch (e) { /* */ }
+  }, [DATA_KEY, JSON.stringify(state), theme]);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.clock.setFixedTime(FROZEN);
+  await page.goto(APP_URL);
+  await page.click('[data-nav="went"]');
+  await page.locator('main.screen[data-s="went"]').waitFor();
+  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState === 'finished'));
+  // The first band, so the days before the first logged day are on screen.
+  await page.evaluate(() => {
+    const s = document.querySelector('.cal__scroll');
+    if (s) s.scrollTop = 0;
+  });
+  if (prep) await prep(page);
+  await page.locator('.cal__scroll').screenshot({
+    path: path.join(OUT, file), animations: 'disabled',
+  });
+}
+
+test('the calendar: unavailable days beside available ones, every theme', async ({ page }) => {
+  for (const [name, state] of [['demo', demoState()], ['twoday', twoDayState()]]) {
+    for (const theme of ['paper', 'graphite', 'blueprint']) {
+      await shootCal(page, state, theme, `cal-${name}-${theme}.png`);
+    }
+  }
+  /* The comparison decision 31 turns on: an available day OUT of range is a
+     solid `--pale` tile, and `--pale` was the same hex as the `--line2` an
+     unavailable day was outlined in. Neither dataset above shows it, because
+     in both the default range covers every available day — so pick a narrow
+     range on the demo and put the May band's pre-data days (1-24) next to its
+     available-but-unpicked ones (25-31). */
+  for (const theme of ['paper', 'graphite', 'blueprint']) {
+    await shootCal(page, demoState(), theme, `cal-pale-${theme}.png`, async (p) => {
+      await p.locator('.cal__cell[aria-label="1 Jun 2026"]').click();
+      await p.locator('.cal__cell[aria-label="4 Jun 2026"]').click();
+      await p.evaluate(() => { document.querySelector('.cal__scroll').scrollTop = 0; });
+      await p.mouse.move(0, 0);
+      await p.waitForTimeout(250);
+    });
+  }
+
+  // Hovered: an unavailable day, and an available one that is not an endpoint.
+  await shootCal(page, twoDayState(), 'paper', 'cal-hover-unavailable.png', async (p) => {
+    await p.locator('.cal__cell[aria-label="3 Jun 2026"]').hover();
+    await p.waitForTimeout(200);
+  });
+  // 27 May: available, in the same band as the demo's pre-data days 1-24.
+  await shootCal(page, demoState(), 'paper', 'cal-hover-available.png', async (p) => {
+    await p.evaluate(() => { document.querySelector('.cal__scroll').scrollTop = 0; });
+    await p.locator('.cal__cell[aria-label="27 May 2026"]').hover();
+    await p.waitForTimeout(200);
+  });
+  /* The refusal flash is not shot: it lasts 200 ms, and a screenshot racing it
+     would produce a review image that is sometimes the flash and sometimes not.
+     went-predata.spec.js asserts it on a paused clock instead. */
+});
 
 test('progress, every theme, 1280 and 360', async ({ page }) => {
   for (const theme of ['paper', 'graphite', 'blueprint']) {

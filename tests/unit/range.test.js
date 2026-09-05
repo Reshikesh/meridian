@@ -31,6 +31,65 @@ test('bounds: the range lives between the first logged day and today', async (t)
   });
 });
 
+/* Decision 31. The screen draws a cell as pickable or not from this, and `pick`
+   refuses a click from the same function, so the two can never disagree — which
+   before this they could, and did: a day before the first logged one was drawn
+   as though it could be clicked and then silently refused. */
+test('selectable: only inside [first logged day, today] (rule §8.15)', async (t) => {
+  await t.test('the day before the first logged day is not selectable', () => {
+    assert.equal(range.selectable('2026-05-24', OPTS), false);
+    assert.equal(range.selectable('2026-01-01', OPTS), false);
+  });
+
+  await t.test('the first logged day itself is', () => {
+    assert.equal(range.selectable(MIN, OPTS), true);
+  });
+
+  await t.test('today is; tomorrow is not', () => {
+    assert.equal(range.selectable(TODAY, OPTS), true);
+    assert.equal(range.selectable('2026-06-08', OPTS), false);
+    assert.equal(range.selectable('2026-12-31', OPTS), false);
+  });
+
+  await t.test('a day inside the span is', () => {
+    assert.equal(range.selectable('2026-06-01', OPTS), true);
+  });
+
+  await t.test('nothing at all is not', () => {
+    assert.equal(range.selectable(null, OPTS), false);
+    assert.equal(range.selectable(undefined, OPTS), false);
+    assert.equal(range.selectable('', OPTS), false);
+  });
+
+  /* With one logged day the floor and the ceiling are the same day. */
+  await t.test('a single logged day is selectable and its neighbours are not', () => {
+    const one = { today: TODAY, minDay: TODAY };
+    assert.equal(range.selectable(TODAY, one), true);
+    assert.equal(range.selectable('2026-06-06', one), false);
+    assert.equal(range.selectable('2026-06-08', one), false);
+  });
+
+  await t.test('pick refuses exactly what selectable refuses', () => {
+    const v = range.emptyView(r(MIN, TODAY));
+    for (const day of ['2026-05-24', '2026-06-08', '2026-01-01']) {
+      assert.strictEqual(range.pick(v, day, OPTS), v, day + ' came back untouched');
+      assert.equal(range.selectable(day, OPTS), false);
+    }
+    for (const day of [MIN, TODAY, '2026-06-01']) {
+      assert.equal(range.pick(v, day, OPTS).pending, true, day + ' opened a pick');
+      assert.equal(range.selectable(day, OPTS), true);
+    }
+  });
+
+  /* The second click of a pick goes through the same gate. */
+  await t.test('an unavailable second click leaves the pick open', () => {
+    const open = range.pick(range.emptyView(r(MIN, TODAY)), '2026-06-01', OPTS);
+    assert.strictEqual(range.pick(open, '2026-05-24', OPTS), open, 'still waiting');
+    assert.equal(open.pending, true);
+    assert.equal(open.anchor, '2026-06-01');
+  });
+});
+
 test('clamp pulls a range inside the bounds rather than discarding it (D5)', () => {
   assert.deepEqual(range.clamp(r('2026-05-01', '2026-06-30'), MIN, TODAY), r(MIN, TODAY));
   assert.deepEqual(range.clamp(r('2026-06-01', '2026-06-03'), MIN, TODAY), r('2026-06-01', '2026-06-03'));

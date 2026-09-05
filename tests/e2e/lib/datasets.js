@@ -242,7 +242,18 @@ function perfState() {
   return s;
 }
 
+// Two logged days, 6 and 7 June. The calendar then has exactly one band, and
+// that band carries all three cell states at once: 1-5 June before the first
+// logged day, 6-7 available, 8-30 in the future. The demo shows pre-data days
+// too (1-24 May), but spread over two bands; this is the one dataset where an
+// unavailable day and an available one sit side by side (decision 31).
+function twoDayState() {
+  const s = demoState();
+  s.entries = s.entries.filter((e) => e.date >= '2026-06-06');
+  return s;
+}
+
 module.exports = {
   gappedState, archivedState, singleCategoryState, stressState, perfState,
-  earlyState, progressState, manyLessonsState,
+  earlyState, progressState, manyLessonsState, twoDayState,
 };

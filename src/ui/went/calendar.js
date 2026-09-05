@@ -36,11 +36,19 @@
   var useEffect = preactHooks.useEffect;
   var useLayoutEffect = preactHooks.useLayoutEffect;
   var dates = window.Meridian.dates;
+  /* Not `range`: `Calendar` binds that name to its own `props.range`. */
+  var rangeRules = window.Meridian.range;
 
   /* Decision 18: M T W T F S S. */
   var DOW = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
   var SCROLL_OFFSET = 44;
+
+  /* The refusal hold, decision 31. The same 200 ms the typed-date field reverts
+     with, and a timed class rather than a keyframe for the same reason
+     (decision-log #135): base.css collapses every animation to 1 ms under
+     prefers-reduced-motion, which would erase it for the people it is for. */
+  var FLASH_MS = 200;
 
   function pad2(n) { return n < 10 ? '0' + n : String(n); }
 
@@ -90,7 +98,16 @@
   function Cell(props) {
     var fill = 'cal__fill';
     var style = null;
-    if (props.hovered) fill += ' cal__fill--hover';
+    /* Decision 31: the brand hover is what an available day answers a pointer
+       with, so an unavailable one does not borrow it — hovered, the two used to
+       be pixel-identical, which is most of why a day before the first logged
+       one looked pickable. The numerals still come up on both, as the mockup
+       has them (decision-log #130); only the fill and the numeral's own colour
+       are held back. A deviation from spec §4d's "hover = --brand", for
+       unavailable cells only. */
+    var brandHover = props.hovered && props.available;
+    if (props.refused) fill += ' cal__fill--refused';
+    else if (brandHover) fill += ' cal__fill--hover';
     else if (!props.available) fill += ' cal__fill--off';
     else if (props.inRange && props.heat) {
       fill += ' cal__fill--heat cal__fill--heat-' + props.heat.direction;
@@ -106,11 +123,11 @@
       <button type="button" class="cal__cell" tabindex="-1"
         aria-label=${label} aria-disabled=${props.available ? null : 'true'}
         aria-pressed=${props.isStart || props.isEnd ? 'true' : null}
-        onClick=${props.available ? props.onPick : null}
+        onClick=${props.onActivate}
         onMouseEnter=${props.onHover}>
         <span class=${fill} style=${style} />
         ${props.numeral ? html`
-          <span class=${'cal__num' + (props.hovered ? ' cal__num--hover' : '')}>${props.day}</span>` : null}
+          <span class=${'cal__num' + (brandHover ? ' cal__num--hover' : '')}>${props.day}</span>` : null}
         ${props.isStart || props.isEnd ? html`
           <span class=${'cal__mark cal__mark--' + (props.isStart ? 'start' : 'end')} aria-hidden="true" />
           ${props.ringed ? html`<span class="cal__ring" aria-hidden="true" />` : null}
@@ -124,6 +141,25 @@
     var hovState = useState(null);
     var hov = hovState[0], setHov = hovState[1];
     var scrollRef = useRef(null);
+    /* The day whose refusal is currently being shown, and the timer holding it
+       (decision 31). One at a time: a second refused click moves the flash to
+       that cell and restarts the hold. */
+    var refusedState = useState(null);
+    var refused = refusedState[0], setRefused = refusedState[1];
+    var refuseTimer = useRef(null);
+
+    useEffect(function () {
+      return function () { clearTimeout(refuseTimer.current); };
+    }, []);
+
+    /* Rule §8.15 refuses the click; the screen says so rather than doing
+       nothing, which is what read as a bug. Nothing else moves: a pick waiting
+       for its second day stays open, and the range is untouched. */
+    function refuse(key) {
+      clearTimeout(refuseTimer.current);
+      setRefused(key);
+      refuseTimer.current = setTimeout(function () { setRefused(null); }, FLASH_MS);
+    }
 
     var range = props.range;
     var minDay = props.minDay, today = props.today;
@@ -165,11 +201,11 @@
       for (var d = 1; d <= dim; d++) {
         var key = monKey + '-' + pad2(d);
         var index = fdow + d - 1;
-        var available = key >= minDay && key <= today;
+        var available = rangeRules.selectable(key, { minDay: minDay, today: today });
         var isStart = key === range.start, isEnd = key === range.end;
         cells.push(html`
           <${Cell} key=${key} dayKey=${key} day=${d}
-            available=${available}
+            available=${available} refused=${refused === key}
             inRange=${key >= range.start && key <= range.end}
             heat=${props.heat}
             hovered=${hovIndex === index}
@@ -178,7 +214,9 @@
             ringed=${(efield === 'start' && isStart) || (efield === 'end' && isEnd)}
             dimChip=${!!efield && !((efield === 'start' && isStart) || (efield === 'end' && isEnd))}
             anchor=${chipAnchor(index % 7)}
-            onPick=${function (k) { return function () { props.onPick(k); }; }(key)}
+            onActivate=${function (k, ok) {
+              return function () { if (ok) props.onPick(k); else refuse(k); };
+            }(key, available)}
             onHover=${function (m, day) { return function () { setHov({ month: m, day: day }); }; }(monKey, d)} />`);
       }
 

@@ -34,6 +34,13 @@ Five screens, all of them real.
   question about the range on screen; carrying it into the next range answered a
   question nobody had asked, with the new chart already dimmed and the calendar
   already shaded when it arrived.
+- **Days the calendar will not accept now look that way.** A day before your
+  first logged day, or after today, was drawn in the same colour an ordinary day
+  is filled with, and lit up under the pointer exactly like one you could pick —
+  and then the click did nothing. Those days are now drawn in the app's disabled
+  grey, they no longer take the hover highlight, and clicking one flashes it in
+  warn red instead of failing silently. Nothing about which days you may pick has
+  changed: the calendar has always run from your first logged day to today.
 
 ### Fixed
 

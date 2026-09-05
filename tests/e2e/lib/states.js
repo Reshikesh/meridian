@@ -10,7 +10,8 @@
 // axis) so the two can never drift apart.
 
 const { DATA_KEY, demoState, emptyState } = require('./seed-state');
-const { gappedState, stressState, earlyState, progressState, manyLessonsState } = require('./datasets');
+const { gappedState, stressState, earlyState, progressState, manyLessonsState,
+  twoDayState } = require('./datasets');
 
 function transientStates(page) {
   const esc = async () => page.keyboard.press('Escape');
@@ -200,6 +201,33 @@ function transientStates(page) {
       open: async () => { await openWent(); await page.locator('#rangeStart').focus(); },
       ready: '.cal__ring',
       close: esc,
+    },
+    {
+      // Decision 31: two logged days, so one band carries days before the
+      // first logged day, the two available days and future days at once. The
+      // unavailable treatment gets audited beside the available one at every
+      // width, zoom and theme.
+      id: 'went-predata',
+      open: async () => { await loadState(twoDayState()); },
+      /* Not `.cal__fill--off`: the demo has unavailable days too, so the
+         harness's "the state really closed" check would never go back to zero.
+         3 June is unavailable here and available on the demo. */
+      ready: '.cal__cell[aria-label="3 Jun 2026"][aria-disabled="true"]',
+      close: async () => { await loadState(demoState()); },
+    },
+    {
+      // The same band with an unavailable day under the pointer: the numerals
+      // come up, the brand fill does not.
+      id: 'went-predata-hover',
+      open: async () => {
+        await loadState(twoDayState());
+        await day('3 Jun 2026').hover();
+      },
+      ready: '.cal__cell[aria-label="3 Jun 2026"] .cal__num',
+      close: async () => {
+        await page.mouse.move(0, 0);
+        await loadState(demoState());
+      },
     },
     {
       // A range with nothing in it: the panel's own empty state.

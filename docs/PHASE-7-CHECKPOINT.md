@@ -472,3 +472,158 @@ before anything was deleted.
 ## Questions for the owner
 
 None. Decision 30 and its three sub-answers were settled before the work opened.
+
+---
+
+# Decision 31 — unavailable days — 5 September 2026
+
+No features. One change on one screen, one sentence in the tester README, and
+v1.1.0 re-cut on the same private remote. Decision 31 and its hover amendment
+were settled by the owner before the work opened and are in `DECISIONS.md`.
+
+The owner clicked a day before their first logged day and nothing happened. The
+rule is right — the range lives in [first logged day, today], §8.15 and decision
+118 — and it is **not widened here**. What was wrong is that the cell did not
+look unpickable, and the refusal was silent.
+
+## 1. Pre-flight
+
+```
+git config user.email  ->  22979164+Reshikesh@users.noreply.github.com
+git status             ->  working tree clean
+git status -sb         ->  ## main...origin/main   (1d27aa0 == origin/main)
+```
+
+No history rewrite. The 23 pre-Phase-7 commits are untouched, as before.
+
+## 2. What the cells looked like, before anything changed
+
+Shots first, from `shots.spec.js`, at 1280 in all three themes, on the demo and
+on a new two-logged-day dataset (`tests/e2e/shots/`, gitignored).
+
+The measurement matters more than the pictures, and it came from the token
+table rather than from the eye:
+
+| theme | unavailable border `--line2` vs `--bg` | vs `--pale`, the available tile |
+|---|---|---|
+| paper | 1.14:1 | **1.00:1 — the same hex, `#f0ebe4`** |
+| graphite | 1.22:1 | **1.00:1 — the same hex, `#26282d`** |
+| blueprint | 1.11:1 | 1.03:1 |
+
+**A day that could not be picked was outlined in exactly the colour a day that
+could be is filled with.** Both sat around 1.1:1 against the background. So:
+
+- **Pre-data days and future days already looked identical to each other** — one
+  shared `available` test drives one shared class, and `aria-disabled` was
+  already set on both. That half of decision 31 was already true, and the shots
+  confirm it: the demo's 1-24 May render exactly like its 8-30 June.
+- **Neither looked meaningfully different from an available day.** A faint
+  dashed outline against a faint solid tile, in the same ink.
+- **Hovered, an unavailable day was pixel-identical to an available one**: solid
+  `--brand` with a white numeral — the app's strongest "this is clickable"
+  signal — on a cell that then refused the click. This is what the owner's
+  amendment addresses, and `cal-hover-unavailable.png` beside
+  `cal-hover-available.png` is the evidence.
+
+## 3. What changed
+
+| file | change |
+|---|---|
+| `src/core/range.js` | new `selectable(day, opts)` — the rule as one function; `pick` now refuses through it |
+| `src/ui/went/calendar.js` | availability from core; `onClick` on every cell, picking or refusing; brand hover withheld from unavailable cells |
+| `styles/components.css` | `.cal__fill--off` in `--ink2` at `.45`; new `.cal__fill--refused` |
+
+**The treatment.** `--ink2` at the `.45` opacity `.btn:disabled` and
+`.seg__btn:disabled` already use — the app's own disabled language. Against
+`--pale`: **1.00 to 1.70:1** on paper, **1.00 to 1.97** on graphite, **1.03 to
+1.70** on blueprint. No token was added or changed; the nineteen of spec §5
+stand, and pre-data and future days share the class so they cannot drift apart.
+
+**The refusal.** A click on any unavailable day, first or second, flashes that
+cell with the two properties the typed-date field reverts with — `--warnbg`
+background, `--warn` border — held 200 ms by a timer rather than a keyframe, for
+the same reason as #135: reduced motion collapses animations to 1 ms. `--warnbg`
+is only ~1.1:1 against `--bg`, so as on the field it is the `--warn` border that
+carries it. Nothing else moves: no pick opens, a pick in flight stays open, the
+range and `meridian:range` are untouched.
+
+**Hover (the owner's amendment).** An unavailable day hovered shows the numerals
+and nothing else — no `--brand` fill, and the numeral keeps `--ink` rather than
+`--brandink`, which is white and would have had no brand behind it. Available
+cells keep the brand hover verbatim. Recorded in `DECISIONS.md` as a deviation
+from spec §4d and from the hover half of #130, **for unavailable cells only**;
+the rest of #130 is untouched, and its choice of `aria-disabled` over `disabled`
+is exactly what lets a real pointer reach these cells and be answered.
+
+**One rule, one place.** `calendar.js` decided what to draw with
+`key >= minDay && key <= today` while `range.pick` refused with
+`day > opts.today || day < opts.minDay` — the same rule written twice, once in a
+component and once in core. That split is what let the screen draw a cell as
+pickable and then refuse it. `range.selectable` now answers both.
+
+## 4. Tests
+
+| suite | before | after | added |
+|---|---|---|---|
+| `node --test` (unit) | 524 | **535** | 11 |
+| Playwright, Chromium | 270 | **278** | 8 |
+
+`tests/e2e/went-predata.spec.js` — 7 tests: the two unavailable kinds marked
+alike, hover showing numerals without the brand fill (and an available cell
+keeping it), a refused first click, a refused second click with a pick open, a
+future day both ways, one flash at a time, and the flash under motion. The
+timing ones run on a paused clock, so a loaded machine cannot let the 200 ms
+expire between the click and the assertion.
+
+The unit tests cover the rule at its edges — the day before the first logged
+day, that day itself, today, tomorrow, a single-logged-day dataset where floor
+and ceiling are the same day — and assert that `pick` refuses exactly what
+`selectable` refuses.
+
+Two token tests read `components.css` and check it against the token table:
+the unavailable border must not be `--pale` and must clear 3:1 against `--bg` in
+every theme, and the refused flash must use the same two tokens as the reverted
+date field. **A tokens-only test would not have caught this**: no token was
+wrong, the stylesheet reached for the wrong one.
+
+`went-predata` and `went-predata-hover` join both matrices, so the unavailable
+treatment is audited beside the available one at every width, zoom and theme.
+
+**The full Chromium run was clean on the first attempt — 278 passed in 8.0 min,
+no retries consumed and none needed.** The responsive matrix is 39 of those, the
+zoom matrix 45, both green in all three themes.
+
+## 5. Package
+
+`dist/meridian-1.1.0.zip` — 0.56 MB, 61 files, unchanged in shape. `dist.spec.js`
+passes against it; its `src/` and `styles/components.css` are byte-identical to
+the working tree, and it carries the new README sentence. Untracked, per
+`.gitignore:16` and decision 29.
+
+## 6. Docs
+
+`DECISIONS.md` — decision 31 in the table and the hover amendment below it.
+`DECISION-LOG.md` — #239 to #247. `dist/CHANGELOG.md` — a Changed entry under
+v1.1.0. `dist/README-for-tester.md` — one sentence under *Where it went*: the
+calendar runs from your first logged day to today; earlier days and future days
+cannot be picked, and flash red if you try.
+
+## Known gaps
+
+- **The 23 pre-Phase-7 commits still carry `[redacted]`.** Untouched by
+  this work, and still the one item that blocks going public.
+- **The unavailable ink is 1.84-2.39:1 against `--bg` as rendered**, because the
+  `.45` is opacity. The token itself clears 3:1, which is what the token test can
+  see; the rendered figure is the honest one and is recorded here. It was
+  1.11-1.22:1 before, and the change against `--pale` — 1.00:1 to 1.70:1 — is the
+  one that matters, since that was the confusion.
+- **Edge is untested as a suite on v1.1.0**, as before.
+- **Firefox and Safari remain untested**, as before.
+- **The refusal flash is asserted, not screenshotted.** A 200 ms state cannot be
+  captured reliably by a review shot; the shots cover the resting and hovered
+  states instead.
+- The four confirmed findings from `docs/PHASE-5-AUDIT.md` are unchanged.
+
+## Questions for the owner
+
+None. Decision 31 and the hover amendment covered the work.

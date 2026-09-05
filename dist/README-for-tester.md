@@ -80,7 +80,8 @@ you add, rename, recolour and archive them. Each one has a direction:
 **Where it went** is the payoff. Pick a date range — click a day, then click
 another day, in either order — and it shows where the hours went. Click any band
 in the chart to shade the days it happened on. The presets (30D, 90D, YTD, ALL)
-are quicker than clicking.
+are quicker than clicking. The calendar runs from your first logged day to
+today; earlier days and future days cannot be picked, and flash red if you try.
 
 **Goals** turns logged hours into a finishing date. A goal is fed by one *More*
 category and needs a number of hours and a date. Meridian then tells you when it

@@ -148,3 +148,51 @@ test('colour.THEME_BG matches --bg in tokens.css', () => {
   }
   assert.deepEqual(Object.keys(colour.THEME_BG).sort(), [...THEME_IDS].sort());
 });
+
+/* Decision 31. An unpickable calendar day used to be outlined in --line2, which
+   is the SAME HEX as --pale in paper and graphite and within 1.03:1 of it in
+   blueprint — so a day before the first logged one was drawn in exactly the
+   colour an available day is filled with, and the refusal read as a bug rather
+   than as a rule. This reads the token back out of components.css, so neither
+   the stylesheet nor the token table can drift into that state again. */
+const COMPONENTS = fs.readFileSync(
+  path.join(__dirname, '..', '..', 'styles', 'components.css'), 'utf8');
+
+// The selector may share its rule with others on following lines, so find the
+// declaration block rather than assuming the brace sits on the same line.
+function ruleBlock(css, selector) {
+  const at = css.indexOf('\n' + selector);
+  assert.notEqual(at, -1, `components.css has no ${selector} rule`);
+  const open = css.indexOf('{', at);
+  return css.slice(open, css.indexOf('}', open));
+}
+
+test('the unavailable calendar day is not drawn in the available day colour', () => {
+  const block = ruleBlock(COMPONENTS, '.cal__fill--off');
+  const token = /border:[^;]*var\((--[\w-]+)\)/.exec(block);
+  assert.ok(token, '.cal__fill--off must take its border colour from a token');
+  const ink = token[1];
+
+  for (const id of THEME_IDS) {
+    const theme = THEMES[id];
+    assert.ok(theme[ink], `${id} has no ${ink}`);
+    assert.notEqual(theme[ink].toLowerCase(), theme['--pale'].toLowerCase(),
+      `${id}: an unavailable day is outlined in ${ink}, the same colour --pale fills an available one with`);
+    // Comfortably clear of the 1.11-1.22:1 --line2 gave, in every theme.
+    const vsBg = contrast(theme[ink], theme['--bg']);
+    assert.ok(vsBg >= 3, `${id}: ${ink} on --bg is ${vsBg.toFixed(2)}:1, too faint to read as a state`);
+    const vsPale = contrast(theme[ink], theme['--pale']);
+    assert.ok(vsPale >= 2.5, `${id}: ${ink} against --pale is ${vsPale.toFixed(2)}:1`);
+  }
+});
+
+/* The refusal flash is the typed-date revert, on a cell: the same two
+   properties, so the app has one way of saying "no" (decision-log #135). */
+test('the refused-day flash uses the same tokens as the reverted date field', () => {
+  const cell = ruleBlock(COMPONENTS, '.cal__fill--refused');
+  const field = ruleBlock(COMPONENTS, '.rail__input--reverted');
+  for (const token of ['--warnbg', '--warn']) {
+    assert.ok(cell.includes('var(' + token + ')'), `.cal__fill--refused must use ${token}`);
+    assert.ok(field.includes('var(' + token + ')'), `.rail__input--reverted must use ${token}`);
+  }
+});

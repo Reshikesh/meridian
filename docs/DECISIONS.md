@@ -29,6 +29,7 @@ Status: **all resolved on 30 Aug 2026.** These override `MERIDIAN-SPEC-v1.1.md` 
 | 28 | Where the version shows | **One constant, three surfaces.** `src/core/version.js` is the single source, loaded first; the workbook stamps it into every export's `Meta.app_version`. It shows as `MERIDIAN 1.1.0` in the caps-label style in the Data sheet footer and below the three first-run choices, and as `title="Meridian 1.1.0"` on the header wordmark. Nothing else in the header changes. An allowed deviation from the mockup — added to the list QUALITY-BAR §1 names. |
 | 29 | Licence and shape | **MIT, `Copyright (c) 2026 RESH`.** The repository goes to GitHub **private** first and is flipped to public by hand. The release artefact is named with the version (`meridian-1.1.0.zip`), attached to a GitHub Release, and **never committed to git**. Firefox and Safari are stated as untested, in plain words. |
 | 30 | What the screen shows while a range is being picked | **A pending state, and no half-made pick outlives its screen.** While a pick is open the rail says `PICK END DAY`, and the hours figure, the coverage donut, the direction split, the coverage line and the ribbon all show no answer; the calendar heat and any band focus are cleared; the anchor day is marked as a range start; no preset is lit. Escape still restores the pre-pick range with no undo (122). Nothing ever computes for the anchor day alone (173). The second click lands and re-aggregates; clicking the anchor day again lands a one-day range. **Leaving the screen abandons an open pick** — see the amendment below. |
+| 31 | Days the calendar will not accept | **They read as unavailable, and a refused click says so.** A day before the first logged day gets exactly the treatment a future day gets — same class, same tokens, same `aria-disabled` — in all three themes; the rule itself (§8.15, decision 118) is unchanged and is not widened. That treatment moves from `--line2` to the app's disabled language, because `--line2` **is the same hex as `--pale`** in paper and graphite. A click on any unavailable day, past or future, first or second, flashes that cell with the 200 ms `--warnbg` hold the typed-date field reverts with and does nothing else — a pick in flight stays open. No toast, no message, no new component. **Hover is the deviation** — see the amendment below. |
 
 ## Things that are technical, not product (Claude Code decides and logs them in `docs/DECISION-LOG.md`)
 
@@ -274,3 +275,38 @@ second day.* and a panel naming the anchor day and saying either direction works
 ("Nothing logged in this range.") is a statement about data and would be untrue
 mid-pick, where the screen is asking a question. And the focus is cleared when
 the pick **opens**, not merely hidden while it is open.
+
+### 31 — an unavailable day does not borrow the brand hover
+
+Added at the owner's report after Phase 7, on 5 September 2026.
+
+**Was:** spec §4d gives every hovered cell `--brand`, and decision-log #130 kept
+hover alive on unavailable cells deliberately, so the mockup's day numerals
+would still come up there. Both halves applied to every cell alike.
+
+**Now:** hovering an unavailable day — before the first logged day or after
+today — shows the numerals and nothing else. No `--brand` fill, and the
+numeral keeps `--ink` rather than taking `--brandink`. An available day keeps
+the brand hover verbatim.
+
+**Why:** hovered, the two were pixel-identical. A day before the first logged
+day filled solid brand with a white numeral under the pointer — which is the
+app's strongest "this is clickable" signal — and then refused the click. The
+numerals are the useful half of that hover and they stay; the fill was the half
+that lied.
+
+**Consequences:** a deviation from spec §4d's "hover = `--brand`" and from the
+hover half of #130, **for unavailable cells only**, added to the list
+QUALITY-BAR §1 keeps. The rest of #130 is untouched: cells stay `aria-disabled`
+buttons rather than `disabled` ones, precisely so a real pointer still reaches
+them — which is what makes the refusal flash possible at all, and is how the
+owner reached the dead click in the first place.
+
+**On the treatment itself.** `--line2` and `--pale` are the *same hex* in paper
+(`#f0ebe4`) and graphite (`#26282d`), and 1.03:1 apart in blueprint: an
+unpickable day was outlined in exactly the colour an available one is filled
+with, both sitting around 1.1:1 against `--bg`. It is now `--ink2` at the `.45`
+opacity `.btn:disabled` and `.seg__btn:disabled` already use, which takes it
+from 1.00:1 to 1.70:1 against `--pale` on paper, 1.00 to 1.97 on graphite, and
+1.03 to 1.70 on blueprint. No token was added or changed; the nineteen of spec
+§5 stand.
