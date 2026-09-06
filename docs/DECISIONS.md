@@ -1,6 +1,6 @@
 # Meridian v1 — product decisions (final)
 
-Status: **all resolved on 30 Aug 2026.** These override `MERIDIAN-SPEC-v1.1.md` §13 wherever they differ. Claude Code does not reopen them; anything not covered here and not purely technical gets asked once, at the start of a phase. **Amended 5 Sep 2026 — 32–35 added (linked workbook).**
+Status: **all resolved on 30 Aug 2026.** These override `MERIDIAN-SPEC-v1.1.md` §13 wherever they differ. Claude Code does not reopen them; anything not covered here and not purely technical gets asked once, at the start of a phase. **Amended 5 Sep 2026 — 32–35 added (linked workbook).** **Amended 6 Sep 2026 — 34 and 35 rewritten on the 8a spike's measurements; 36 added (Protected View).**
 
 | # | Decision | Resolution |
 |---|---|---|
@@ -32,8 +32,9 @@ Status: **all resolved on 30 Aug 2026.** These override `MERIDIAN-SPEC-v1.1.md` 
 | 31 | Days the calendar will not accept | **They read as unavailable, and a refused click says so.** A day before the first logged day gets exactly the treatment a future day gets — same class, same tokens, same `aria-disabled` — in all three themes; the rule itself (§8.15, decision 118) is unchanged and is not widened. **The resting cell stays spec §4d verbatim** — transparent, 1px dashed `--line2` — even though `--line2` is the same hex as `--pale` in paper and graphite; making it visibly darker was built, looked at and turned down (see the amendment). What tells you a day cannot be picked is the hover it does not take and the answer it gives a click: any unavailable day, past or future, first click or second, flashes with the 200 ms `--warnbg` hold the typed-date field reverts with and does nothing else — a pick in flight stays open. No toast, no message, no new component. |
 | 32 | Linked workbook (fulfils the Chromium enhancement left open in 6) | localStorage stays the live store. The Data sheet offers **Link workbook** (pick an existing .xlsx) and **Create workbook** (save picker, suggested name `meridian.xlsx`); the handle is kept in IndexedDB. Every store mutation that today increments the unexported counter is written to the linked file immediately — no debounce, writes queued, atomic (`createWritable` → `close`). A successful mirror counts as an export (DECISION-LOG 58/59 unchanged). Mirror bytes are the export encoder's bytes. Controls are hidden where `showOpenFilePicker` is absent; the export flow is untouched there. |
 | 33 | Session grant | Chromium forgets a `file://` grant per session. The first mutation of a session calls `requestPermission({mode:'readwrite'})` on its own click; if dismissed, the header data control shows **SAVE · n** in brand and its click grants and writes. After a grant the control reads **SAVED · AUTO** and stays clickable as a flush. The `beforeunload` warning (spec §10) is unchanged — it arms only while the counter is non-zero. |
-| 34 | Reconnect and external edits | On reconnect, if the file's `lastModified` is later than the recorded last mirror, the decision-15 prompt appears (Replace local / Keep local). Keep overwrites the workbook on the next mutation and the prompt says so. Never merge. |
-| 35 | Locked workbook | A write failure (e.g. `NoModificationAllowedError` while Excel holds the file) shows **WORKBOOK LOCKED** in `--warn` on the header control; the counter keeps counting; retry on the next mutation or on click. Nothing is lost — localStorage already has it. |
+| 34 | Reconnect and external edits | **Amended 6 Sep 2026 — see below.** ~~On reconnect, if the file's `lastModified` is later than the recorded last mirror, the decision-15 prompt appears.~~ **The check runs before every write, not only on reconnect.** Read the handle's `lastModified` first; if it is later than the recorded last mirror, **do not write**. The header shows **EDITED OUTSIDE** in `--warn`; its click opens the decision-15 prompt (Replace local / Keep local), and **Keep local writes the workbook immediately**. The same check runs on reconnect. Never merge. |
+| 35 | Locked workbook | **Amended 6 Sep 2026 — see below.** **WORKBOOK LOCKED is any write failure**, whatever the error name — ~~`NoModificationAllowedError` while Excel holds the file~~; the 8a spike measured `InvalidStateError`, and found that Excel merely having the workbook open does not hold the file at all. The counter keeps counting; retry on the next mutation or on click. Nothing is lost — localStorage already has it. Tested in e2e with a synthetic failing handle, not with Excel. |
+| 36 | Protected View | **Accepted.** Chromium stamps a mark of the web on every file it writes, so Excel opens the linked workbook behind the **PROTECTED VIEW** bar. The README's *Saving* section says in plain words that Enable Editing is harmless, and that adding the workbook's folder to Excel's Trusted Locations (File → Options → Trust Center → Trusted Locations) removes the bar for good. **Create workbook** opens at `startIn: 'documents'`. Any copy about the permission prompt says **click Allow**, never Enter — Don't Allow holds the focus ring. |
 
 ## Things that are technical, not product (Claude Code decides and logs them in `docs/DECISION-LOG.md`)
 
@@ -321,3 +322,49 @@ two signals that a day cannot be picked are the ones that answer a pointer — t
 brand hover it does not take, and the flash it gives a click. `tokens.test.js`
 now pins the spec treatment, so neither a future contrast "fix" nor a token edit
 can move it without going red.
+
+### 34 — the check moves in front of the write
+
+**Was:** the app compared `lastModified` on reconnect. Between reconnects it
+wrote whenever anything changed, and Keep local was described as overwriting
+"on the next mutation".
+
+**Now:** every write reads the handle's `lastModified` first. If the file is
+newer than the last mirror the app recorded, **the write does not happen**: the
+header turns to `EDITED OUTSIDE` in `--warn`, and its click opens the
+decision-15 prompt. Keep local writes the workbook there and then; Replace
+local reads the file in. Reconnect runs the same check, so there is one rule
+rather than two.
+
+**Why:** the 8a spike showed the old shape loses the friend's typing. Excel does
+not hold an open workbook, so the app happily wrote over a hand edit that was
+sitting on screen in Excel, and the reconnect prompt — which only ran on
+reconnect — never got the chance to ask. A check that runs before every write
+cannot be outrun by the next entry.
+
+**Consequences:** one extra `getFile()` per write, measured in single-digit
+milliseconds against the 110 ms the write itself takes. The recorded
+"last mirror" is the file's own `lastModified` read after each successful write,
+never our wall clock — the spike measured our clock landing 3 ms early on one
+run and 94 ms late on another, either of which would fire this prompt on the
+app's own writes.
+
+### 35 — a locked workbook is any write that fails
+
+**Was:** `NoModificationAllowedError` while Excel holds the file.
+
+**Now:** any rejection from the write is `WORKBOOK LOCKED`, whatever its name.
+The one exception is `NotAllowedError`, which means the session's grant is gone
+and belongs to decision 33's `SAVE · n`.
+
+**Why:** both halves of the old sentence were wrong on the measurements. The
+error a held file actually produces on Chromium 152 is `InvalidStateError`, with
+a message about cached state that says nothing about locking. And Excel does not
+hold an `.xlsx` it has open: it reads the file, lets go, and leaves a `~$`
+marker, so `FileShare.None` succeeds against a workbook sitting open on screen
+and mirror writes go through the whole time. Keying the state to one error name,
+or testing it by opening Excel, would have shipped a state that never appears.
+
+**Consequences:** the e2e drives this with a handle whose `createWritable`
+rejects, which is deterministic and needs no Office installed. The owner's
+checkpoint no longer tries to produce a lock by hand.

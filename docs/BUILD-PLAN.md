@@ -198,7 +198,7 @@ Phase 7 — publication. Read CLAUDE.md, docs/QUALITY-BAR.md §8, docs/DECISIONS
 
 **Prompt**
 ```
-Phase 8. Read CLAUDE.md and docs/BUILD-PLAN.md § Phase 8, spec §7 and §10, DECISIONS 5, 6, 15, 28, 29, 32–35 and DECISION-LOG 57–63, 185, 190. Plan first, wait for approval. 8a is a spike — stop and report before 8b.
+Phase 8. Read CLAUDE.md and docs/BUILD-PLAN.md § Phase 8, spec §7 and §10, DECISIONS 5, 6, 15, 28, 29, 32–36, docs/PHASE-8A-SPIKE.md and DECISION-LOG 57–63, 185, 190, 250–263. Plan first, wait for approval. 8a is a spike — stop and report before 8b.
 ```
 
 **8a — Spike (report only, no product code)**
@@ -208,23 +208,24 @@ Phase 8. Read CLAUDE.md and docs/BUILD-PLAN.md § Phase 8, spec §7 and §10, DE
 - Report which of 32–35 hold as written. If IndexedDB does not hold the handle on `file://`, propose re-pick-per-session and stop.
 
 **8b — Scope**
-- `src/core/link.js`: pure state machine — unlinked / linked-needs-grant / linked-auto / locked / unsupported; events in, state and label out; unit tests for every transition.
-- `src/store.js`: mirror hook after each counted mutation via the existing export encoder; write queue; counter reset on success; errors through `getError()` (185). Test asserting mirror bytes ≡ export bytes.
-- Data sheet: Link / Create / Unlink; shows file name and last-written time.
-- Header data control: states per 33/35 inside the 232 px budget (63); hover, active, focus-visible, disabled from tokens.
-- Reconnect flow per 34, reusing the decision-15 prompt component.
-- e2e: stub `showOpenFilePicker`/`showSaveFilePicker` with an in-memory handle via `addInitScript`; cover grant-on-first-submission, dismissed-then-Save, locked→retry, reconnect-with-newer-file, unsupported-browser hiding. Both matrices; dist test.
-- Docs: version constant → 1.2.0 (28); CHANGELOG; public README "Saving" section in plain words (Chromium keeps saving; Firefox/Safari export as before); tester README; DECISION-LOG; `docs/PHASE-8-CHECKPOINT.md`.
+- `src/core/link.js`: pure state machine — unlinked / linked-needs-grant / linked-auto / edited-outside / locked / unsupported; events in, state and label out; unit tests for every transition.
+- `src/store.js`: mirror hook after each counted mutation via the existing export encoder; write queue; the decision-34 freshness check in front of every write; the file's own `lastModified` recorded after each success; counter reset on success; errors through `getError()` (185). Test asserting mirror bytes ≡ export bytes.
+- Data sheet: Link / Create / Unlink; shows file name and last-written time. Create opens at `startIn: 'documents'` (36).
+- Header data control: states per 33/34/35 inside the 232 px budget (63); hover, active, focus-visible, disabled from tokens.
+- Edited-outside and reconnect flows per 34, reusing the decision-15 prompt component.
+- e2e: stub `showOpenFilePicker`/`showSaveFilePicker` with an in-memory handle via `addInitScript` (the spike proved neither Playwright nor CDP can reach the real picker or the permission bubble); cover grant-on-first-submission, dismissed-then-Save, write-failure→retry with a synthetic failing handle, newer-file-before-write, reconnect-with-newer-file, unsupported-browser hiding. Both matrices; dist test.
+- Docs: version constant → 1.2.0 (28); CHANGELOG; public README "Saving" section in plain words (Chromium keeps saving; Firefox/Safari export as before; click Allow once a session; Enable Editing and Trusted Locations per 36); tester README; DECISION-LOG; `docs/PHASE-8-CHECKPOINT.md`.
 - Re-cut per the private procedure; tag v1.2.0; draft release. Delete the v1.1.0 draft release; keep the tag.
 
 **Acceptance**
 - Linked workbook, no grant this session, log an entry → one browser prompt → file on disk changes within the same second; every later submission (entry add/edit/delete, category, goal, plan, lesson) changes the file with no prompt.
 - Dismiss the prompt → SAVE · 1 → click → written, counter 0, SAVED · AUTO.
-- Workbook open in Excel, log → WORKBOOK LOCKED; close Excel, log → written, state clears.
-- Edit a cell in Excel, save, close; reload app, reconnect → decision-15 prompt; Replace shows the edit.
+- App running, linked, SAVED · AUTO. Open the workbook in Excel, edit a cell, save. Log an entry in the app → header EDITED OUTSIDE, file on disk unchanged. Click → decision-15 prompt. Keep local → file rewritten, SAVED · AUTO. Repeat with Replace local → the Excel edit shows in the app.
+- Reload, reconnect after an Excel save → the same prompt.
+- Synthetic lock in e2e → WORKBOOK LOCKED, the counter counts, the next write succeeds, the state clears.
 - Firefox: no Link controls; export unchanged. Unit and e2e suites green on the first run.
 
-**Checkpoint (owner)**: Edge and Chrome at the device, the acceptance sequence, plus close the tab with SAVE · n showing and confirm the browser warns.
+**Checkpoint (owner)**: Edge and Chrome at the device, the acceptance sequence, plus close the tab with SAVE · n showing and confirm the browser warns. Then open the linked workbook in Excel once and read the Protected View line in the README against what Excel actually shows (36).
 
 ## Backlog (after the friend's feedback)
 
