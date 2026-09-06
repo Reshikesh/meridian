@@ -7,8 +7,9 @@ machine, not read in a specification.
 
 - **Edge 152.0.4191.53** (Chromium 152), headed, driven by Playwright with a
   persistent profile, so "restart the browser" means launching the same profile
-  again. **Chrome is not installed on this machine** — the registered browsers
-  are Edge and Firefox — so every Chromium number below is Edge's.
+  again. Chrome was not installed while the body of this report was measured;
+  the owner installed it the same evening and the sequence was re-run there —
+  see the Chrome addendum at the end. Everything held.
 - **Firefox 155** for the feature check, in its own throwaway profile.
 - **Excel 16.0** (Office 16), opened and driven over COM, plus a stand-in
   lock-holder that opens the file with `FileShare.Read` / `FileShare.None`.
@@ -176,9 +177,9 @@ folder because it contains system files". A tester who keeps their workbook in
 
 ## Open questions for the owner (product)
 
-1. **Chrome is not on this machine.** Either it gets installed before the 8b
-   checkpoint, or v1.2.0 says "tested in Edge" and Chrome rides on being the
-   same engine. Chrome's prompt wording differs from Edge's.
+1. ~~**Chrome is not on this machine.**~~ **Closed 6 Sep 2026** — Chrome 152 was
+   installed and the sequence re-run in it; see the addendum. Both browsers can
+   be claimed.
 2. **The Excel acceptance step cannot pass as written**, because an open
    workbook is not a held file. Suggested replacement: *open the workbook in
    Excel, type in a cell and save while the app is running → the app keeps
@@ -187,6 +188,30 @@ folder because it contains system files". A tester who keeps their workbook in
    e2e suite rather than by Excel.
 3. **Protected View**: accepted as a cost of linking, and explained in the
    README?
+
+## Addendum — Chrome 152 (6 Sep 2026)
+
+Chrome was installed after the body of this report was written, and the whole
+sequence was re-run in it on a profile that had never granted anything.
+
+| step | Chrome 152 | matches Edge |
+|---|---|---|
+| `file://` origin, secure context | `file://`, `true` | yes |
+| `showOpenFilePicker` / `showSaveFilePicker` / IndexedDB | all present | yes |
+| `queryPermission` straight after the pick | `prompt` | yes |
+| handle stored in IndexedDB, browser restarted | comes back live, name intact | yes |
+| `queryPermission` after the restart | `prompt` | yes |
+| `requestPermission` from a submit click | `granted` in 893 ms | yes |
+| writes after the grant | 733 ms then 313 ms, no second prompt | yes |
+
+The prompt reads the same as Edge's, word for word:
+
+> **Allow this site to edit spike-workbook.xlsx?**
+> file:/// will be able to edit spike-workbook.xlsx
+> [ Allow ] [ **Don't Allow** ]
+
+**Don't Allow carries the focus ring**, so Enter refuses. Whatever the app says
+about the prompt must say *click Allow*, not "press Enter".
 
 ## Reproducing
 
