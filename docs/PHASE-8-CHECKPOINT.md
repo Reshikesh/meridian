@@ -85,7 +85,7 @@ line is a choice that can be overruled:
 - **Unit: 585 pass** (`node --test`), including 39 new for the state machine and
   the store's hook, and one asserting the mirror's bytes decode to exactly what
   Export's bytes decode to.
-- **e2e: 588 pass** across chromium and msedge, including 15 new in
+- **e2e: 588 pass**, clean in one run across chromium and msedge, including 15 new in
   `link.spec.js` — linking, the grant, a dismissal, the leave warning, a failing
   write and its retry, an outside edit answered both ways, an unreadable file,
   both reconnects, linking a workbook that already holds data, and a
@@ -144,7 +144,12 @@ once and being refused, and waits on the adapter's own state rather than on a
 label that two different states can show. The reload path stays covered in
 `link.spec.js`, which also now waits on the state rather than the label.
 
-Worth saying plainly: both failures were the test rig, not the app. Neither run
+A third followed on the reconnect test: five seconds is not long enough for
+IndexedDB, a file read and a workbook parse when twelve workers share the
+machine, so that poll now has twenty. After it, the suite ran clean in one go —
+588 across both browsers, nothing failed.
+
+Worth saying plainly: all three failures were the test rig, not the app. No run
 ever wrote a file it should not have.
 
 ## Known gaps and deviations
