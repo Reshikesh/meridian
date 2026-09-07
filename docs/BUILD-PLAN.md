@@ -212,7 +212,7 @@ Phase 8. Read CLAUDE.md and docs/BUILD-PLAN.md § Phase 8, spec §7 and §10, DE
 - `src/store.js`: mirror hook after each counted mutation via the existing export encoder; write queue; the decision-34 freshness check in front of every write; the file's own `lastModified` recorded after each success; counter reset on success; errors through `getError()` (185). Test asserting mirror bytes ≡ export bytes.
 - Data sheet: Link / Create / Unlink; shows file name and last-written time. Create opens at `startIn: 'documents'` (36).
 - Header data control: states per 33/34/35 inside the 232 px budget (63); hover, active, focus-visible, disabled from tokens.
-- Edited-outside and reconnect flows per 34, reusing the decision-15 prompt component.
+- The three collision moments per 37, reusing the decision-15 prompt component: the ask at link time, the silent adopt on reconnect when the counter is 0, and the mid-session edited-outside stop (34). An unreadable file is written over, with a line saying so.
 - e2e: stub `showOpenFilePicker`/`showSaveFilePicker` with an in-memory handle via `addInitScript` (the spike proved neither Playwright nor CDP can reach the real picker or the permission bubble); cover grant-on-first-submission, dismissed-then-Save, write-failure→retry with a synthetic failing handle, newer-file-before-write, reconnect-with-newer-file, unsupported-browser hiding. Both matrices; dist test.
 - Docs: version constant → 1.2.0 (28); CHANGELOG; public README "Saving" section in plain words (Chromium keeps saving; Firefox/Safari export as before; click Allow once a session; Enable Editing and Trusted Locations per 36); tester README; DECISION-LOG; `docs/PHASE-8-CHECKPOINT.md`.
 - Re-cut per the private procedure; tag v1.2.0; draft release. Delete the v1.1.0 draft release; keep the tag.
@@ -221,7 +221,9 @@ Phase 8. Read CLAUDE.md and docs/BUILD-PLAN.md § Phase 8, spec §7 and §10, DE
 - Linked workbook, no grant this session, log an entry → one browser prompt → file on disk changes within the same second; every later submission (entry add/edit/delete, category, goal, plan, lesson) changes the file with no prompt.
 - Dismiss the prompt → SAVE · 1 → click → written, counter 0, SAVED · AUTO.
 - App running, linked, SAVED · AUTO. Open the workbook in Excel, edit a cell, save. Log an entry in the app → header EDITED OUTSIDE, file on disk unchanged. Click → decision-15 prompt. Keep local → file rewritten, SAVED · AUTO. Repeat with Replace local → the Excel edit shows in the app.
-- Reload, reconnect after an Excel save → the same prompt.
+- Link a workbook that already holds a dataset → the prompt appears before anything is written (37 A).
+- Everything saved (SAVED · AUTO), close the app, edit a cell in Excel, reopen → the edit is simply there, no prompt (37 B). Repeat with SAVE · 1 pending → the prompt.
+- Reload, reconnect after an Excel save with changes pending → the same prompt.
 - Synthetic lock in e2e → WORKBOOK LOCKED, the counter counts, the next write succeeds, the state clears.
 - Firefox: no Link controls; export unchanged. Unit and e2e suites green on the first run.
 
