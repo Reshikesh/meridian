@@ -332,9 +332,12 @@ test('reconnect with nothing pending simply opens what the workbook holds', asyn
   await page.reload();
   await expect(page.locator('.header')).toBeVisible();
 
+  /* Reconnect reads the handle out of IndexedDB, reads the file and parses a
+     workbook before anything lands, which is more than the default five
+     seconds allows when twelve workers are sharing the machine. */
   await expect.poll(() => page.evaluate(() =>
-    window.Meridian.store.getState().entries.map((e) => e.activity)))
-    .toContain('Edited between sessions');
+    window.Meridian.store.getState().entries.map((e) => e.activity)),
+  { timeout: 20000 }).toContain('Edited between sessions');
   // No prompt: with nothing local at stake there is only one sensible answer.
   await expect(page.locator('.sheet__card')).toHaveCount(0);
 });
