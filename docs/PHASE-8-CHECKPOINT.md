@@ -24,7 +24,7 @@ it changed decisions 34 and 35 before a line of it was written.
 
 **`src/core/link.js`** — six states (`unsupported`, `unlinked`, `needs-grant`,
 `auto`, `edited-outside`, `locked`), a reducer, one label and one action. No DOM,
-no File System Access API: 36 unit tests cover every transition, the label's
+no File System Access API: 39 unit tests cover every transition, the label's
 order of precedence and the rule that a control reading SAVED · AUTO opens the
 Data sheet rather than raising a prompt.
 
@@ -85,12 +85,56 @@ line is a choice that can be overruled:
 - **Unit: 585 pass** (`node --test`), including 39 new for the state machine and
   the store's hook, and one asserting the mirror's bytes decode to exactly what
   Export's bytes decode to.
-- **e2e: PENDING_TOTAL** across chromium and msedge, including 14 new in
-  `link.spec.js`.
+- **e2e: 588 pass** across chromium and msedge, including 15 new in
+  `link.spec.js` — linking, the grant, a dismissal, the leave warning, a failing
+  write and its retry, an outside edit answered both ways, an unreadable file,
+  both reconnects, linking a workbook that already holds data, and a
+  Firefox-shaped browser seeing none of it.
 - **Responsive matrix: 39 pass** · **zoom matrix: 45 pass**, both with five new
   states — the linked Data sheet, SAVE · n, WORKBOOK LOCKED, EDITED OUTSIDE and
   the conflict sheet — at every width, zoom and theme.
 - **`dist.spec.js`** against the re-cut `meridian-1.2.0.zip` (0.57 MB, 63 files).
+
+## What the review shots changed
+
+Looking at them found two defects, both fixed:
+
+- **The import report's heading has read "106 rows read.Nothing rejected." since
+  Phase 1** — htm drops the whitespace between two expressions. It has been
+  wrong on every import this app has ever done; the conflict prompt reuses the
+  component, which is how it surfaced.
+- **Focus never moved to the decision.** The Data sheet's report, adopted and
+  conflict views all arrive after the busy state, and the sheet focuses its
+  default only when it opens — so Enter on a two-way destructive choice hit the
+  close button. The Data sheet now focuses `[data-autofocus]` whenever the view
+  changes, which fixes the import report along with the new prompt.
+
+And one thing worth the owner's eye:
+
+- **`SAVE · n` is in `--navink`, not `--brand`.** Decision 33 says brand;
+  `--brand` on the paper header is 1.98:1 (DECISION-LOG 7), which is the
+  measurement that made every header accent `--navink` in the first place. So
+  SAVE · n uses the live colour the unexported counter has always used, and the
+  two warn states keep `--warn`, which reads clearly on the header. Easy to
+  change if you want it louder.
+- **The Data sheet's top line reads "Exported just now" while linked**, because
+  a successful write counts as an export (decision 32). True, and the WORKBOOK
+  block under it says what actually happened — but it is the export flow's
+  vocabulary describing something else.
+
+## A flake, and what it was
+
+`header-save-n` — the matrix state that shows SAVE · n — failed twice under
+twelve workers and passed every time it was run alone. It reached the state by
+reloading and letting the app reconnect into a session with no grant, which is a
+race: under load the app came back up granted, wrote, and the state under test
+never appeared. The rig now reaches the same state without a reload, by asking
+once and being refused, and waits on the adapter's own state rather than on a
+label that two different states can show. The reload path stays covered in
+`link.spec.js`, which also now waits on the state rather than the label.
+
+Worth saying plainly: both failures were the test rig, not the app. Neither run
+ever wrote a file it should not have.
 
 ## Known gaps and deviations
 

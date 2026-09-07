@@ -551,16 +551,19 @@ function transientStates(page) {
       id: 'header-save-n',
       open: async () => {
         await linkAWorkbook();
+        // The browser refuses from here on, as a fresh session's would.
         await page.evaluate(() => {
           window.__link.permission = 'prompt';
           window.__link.request = 'prompt';
         });
-        await page.reload();
-        await openWent();
-        /* The adapter reconnects asynchronously. Logging before it has read the
-           handle back would mirror nothing and leave the export label showing,
-           which is how this state flaked in one zoom cell. */
-        await page.locator('.datactl__state:has-text("SAVED · AUTO")').waitFor();
+        /* Ask once and be refused — the same transition a new session makes on
+           its first mutation, but without a reload to race against. Reaching it
+           by reloading flaked twice under twelve workers: the app came back up
+           granted and wrote, and the state under test never appeared. The
+           reload path itself is covered by link.spec.js. */
+        await page.evaluate(() => window.Meridian.linkedWorkbook.grantAndFlush());
+        await page.waitForFunction(
+          () => window.Meridian.linkedWorkbook.state() === 'needs-grant');
         await logSomething();
       },
       ready: '.datactl__state--live:has-text("SAVE · 1")',

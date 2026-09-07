@@ -172,8 +172,10 @@ test('a dismissed prompt becomes SAVE · n, and the click grants and writes', as
     window.__link.request = 'prompt';        // dismissed
   });
   await page.reload();
-  // The adapter reconnects asynchronously; nothing is mirrored until it has.
-  await expect(page.locator('.datactl__state')).toHaveText('SAVED · AUTO');
+  /* The adapter reconnects asynchronously, and nothing is mirrored until it
+     has. Waiting on the label alone is not enough: SAVED · AUTO is also what a
+     granted session shows, so wait for the state itself. */
+  await page.waitForFunction(() => window.Meridian.linkedWorkbook.state() === 'needs-grant');
 
   await logAnEntry(page, 'While dismissed');
   await expect(page.locator('.datactl__state')).toHaveText('SAVE · 1');
@@ -200,7 +202,7 @@ test('closing the tab with SAVE · n pending still warns (spec §10)', async ({ 
   await linkWorkbook(page);
   await page.evaluate(() => { window.__link.permission = 'prompt'; window.__link.request = 'prompt'; });
   await page.reload();
-  await expect(page.locator('.datactl__state')).toHaveText('SAVED · AUTO');
+  await page.waitForFunction(() => window.Meridian.linkedWorkbook.state() === 'needs-grant');
   await logAnEntry(page, 'Unsaved');
   await expect(page.locator('.datactl__state')).toHaveText('SAVE · 1');
 
