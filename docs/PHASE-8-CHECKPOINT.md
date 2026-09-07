@@ -166,6 +166,15 @@ ever wrote a file it should not have.
 - **The 23 pre-Phase-7 commits still carry `[redacted]`.** Untouched,
   as before; it blocks going public, not this phase.
 
+## Where the tag sits
+
+`v1.2.0` marks `8798722`, and `main` has two commits after it: this checkpoint,
+and one test-rig fix. Nothing the zip ships differs —
+`git diff v1.2.0 HEAD -- index.html src styles seed vendor` is empty — so the
+release artefact is reproducible from the tag, and from main. The tag has been
+left where it is rather than moved: it is already pushed, and a published ref
+does not get rewritten to tidy an ordering.
+
 ## For the owner, at the device
 
 Chrome and Edge, one run each:
