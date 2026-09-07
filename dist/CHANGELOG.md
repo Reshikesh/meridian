@@ -1,5 +1,38 @@
 # Meridian — changelog
 
+## v1.2.0 — 7 September 2026
+
+A spreadsheet on your computer that keeps itself up to date.
+
+### New
+
+- **Link workbook** — point Meridian at an `.xlsx` file once, and every entry,
+  category, goal and lesson is written into that same file as you go. No Export
+  button, no pile of `meridian-data-…(3).xlsx` in Downloads. The header reads
+  **SAVED · AUTO** and the count stays at nought.
+- **Create workbook** — or let Meridian make the file for you, in Documents,
+  named `meridian.xlsx`.
+- **One click a session.** Chrome and Edge forget file permission when they
+  close, so the first change you make after opening Meridian asks once: *Allow
+  this site to edit meridian.xlsx?* Click **Allow** — not Enter, which lands on
+  Don't Allow — and that covers everything until you close the browser. Dismiss
+  it and the header reads **SAVE · 3** until you click it.
+- **It notices when you edit the workbook yourself.** If the file has changed
+  since Meridian last wrote it, nothing is written over: the header says
+  **EDITED OUTSIDE**, and clicking it asks whether to keep what is in Meridian
+  or take what is in the file. If everything Meridian has was already saved,
+  it simply opens what the file holds and says nothing.
+- **WORKBOOK LOCKED** — when a save does not reach the file, the count keeps
+  counting and the next change tries again. Nothing is lost either way: this
+  browser still holds everything.
+
+### Changed
+
+- Firefox and Safari have no file picker, so none of this appears there and
+  Export works exactly as before.
+- Excel opens a workbook the browser wrote behind its yellow **PROTECTED VIEW**
+  bar. Enable Editing is harmless; the README says how to stop it asking.
+
 ## v1.1.0 — 4 September 2026
 
 Five screens, all of them real.

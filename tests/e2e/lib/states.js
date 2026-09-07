@@ -12,6 +12,8 @@
 const { DATA_KEY, demoState, emptyState } = require('./seed-state');
 const { gappedState, stressState, earlyState, progressState, manyLessonsState,
   twoDayState } = require('./datasets');
+const { installLinkStub } = require('./link-stub');
+const { validBook } = require('./make-workbook');
 
 function transientStates(page) {
   const esc = async () => page.keyboard.press('Escape');
@@ -56,6 +58,54 @@ function transientStates(page) {
     if (loaded !== state.entries.length) {
       throw new Error(`loadState: the store holds ${loaded} entries, expected ${state.entries.length}`);
     }
+  };
+
+  /* The linked workbook's states (Phase 8). The stub goes in through an init
+     script and needs the reload to take effect, exactly like a dataset swap. */
+  const linkAWorkbook = async () => {
+    await installLinkStub(page, {});
+    await page.reload();
+    await openWent();
+    await page.click('[data-data-open]');
+    await page.click('[data-link-existing]');
+    await page.locator('[data-link-file]').waitFor();
+    await esc();
+  };
+
+  const unlinkWorkbook = async () => {
+    await page.evaluate(() => {
+      try {
+        ['__mf:knobs', '__mf:bytes', '__mf:lastModified'].forEach((k) => localStorage.removeItem(k));
+      } catch (e) { /* private mode */ }
+      return window.Meridian.linkedWorkbook.unlink();
+    });
+    await loadState(demoState());
+  };
+
+  const logSomething = async () => {
+    await page.evaluate(() => window.Meridian.store.addEntry({
+      date: window.Meridian.store.getState().entries[0].date,
+      duration_min: 30,
+      activity: 'Logged by the matrix',
+      category_id: 'cat_learn',
+    }));
+  };
+
+  /* Someone else's save: a valid workbook, one entry longer, written straight
+     into the file so its `lastModified` moves past the app's last write. */
+  const editOutside = async () => {
+    const state = demoState();
+    state.entries = state.entries.concat([{
+      id: 'e_9001',
+      date: state.entries[0].date,
+      duration_min: 45,
+      activity: 'Typed in Excel',
+      category_id: 'cat_learn',
+      goal_id: '',
+      value: '',
+      created_at: '2026-06-07T09:00:00',
+    }]);
+    await page.evaluate((arr) => window.__file.put(arr), Array.from(validBook(state)));
   };
 
   return [
@@ -481,6 +531,66 @@ function transientStates(page) {
       open: async () => { await loadState(emptyState()); await openLessons(); },
       ready: '.lessons__none',
       close: async () => { await loadState(demoState()); },
+    },
+
+    // ---------- the linked workbook (Phase 8) ----------
+    //
+    // Four header labels and one wide sheet the app did not have before. The
+    // stub is installed and the page reloaded, the same way a dataset is
+    // swapped above; `unlink` puts the header back where the matrix found it.
+    {
+      // The Data sheet with a workbook linked: the file, when it was written,
+      // and the way to unlink it.
+      id: 'sheet-data-linked',
+      open: async () => { await linkAWorkbook(); await page.click('[data-data-open]'); },
+      ready: '[data-link-file]',
+      close: async () => { await esc(); await unlinkWorkbook(); },
+    },
+    {
+      // Decision 33: a session that has not been granted, with something waiting.
+      id: 'header-save-n',
+      open: async () => {
+        await linkAWorkbook();
+        await page.evaluate(() => {
+          window.__link.permission = 'prompt';
+          window.__link.request = 'prompt';
+        });
+        await page.reload();
+        await openWent();
+        await logSomething();
+      },
+      ready: '.datactl__state--live:has-text("SAVE · 1")',
+      close: unlinkWorkbook,
+    },
+    {
+      // Decision 35: the write did not land.
+      id: 'header-locked',
+      open: async () => {
+        await linkAWorkbook();
+        await page.evaluate(() => { window.__link.failWrite = 'InvalidStateError'; });
+        await logSomething();
+      },
+      ready: '.datactl__state--warn:has-text("WORKBOOK LOCKED")',
+      close: unlinkWorkbook,
+    },
+    {
+      // Decision 34: the file moved under us, so nothing was written.
+      id: 'header-edited-outside',
+      open: async () => { await linkAWorkbook(); await editOutside(); await logSomething(); },
+      ready: '.datactl__state--warn:has-text("EDITED OUTSIDE")',
+      close: unlinkWorkbook,
+    },
+    {
+      // Decision 37 C: the choice that follows it — the widest of the new UI.
+      id: 'sheet-conflict',
+      open: async () => {
+        await linkAWorkbook();
+        await editOutside();
+        await logSomething();
+        await page.click('[data-data-open]');
+      },
+      ready: '[data-keep-local]',
+      close: async () => { await esc(); await unlinkWorkbook(); },
     },
   ];
 }

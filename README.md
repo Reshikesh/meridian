@@ -47,18 +47,58 @@ anywhere, and there is no copy of it but yours. That cuts both ways:
 - **Export to `.xlsx` from the Data sheet, regularly.** That file is the only backup that exists. It is an ordinary spreadsheet: open it, read it, edit it, import it back.
 - **On `file://`, storage is shared by origin.** Every local HTML page opened in the same browser shares one storage area with Meridian, so another local page could in principle read or overwrite what Meridian has saved. Nothing on the internet can reach it. Be deliberate about what other HTML files you open from disk in the same browser.
 
+## Saving
+
+Two ways, and the second one is new in v1.2.0.
+
+**Export.** The Data sheet writes an `.xlsx` and your browser downloads it.
+Works everywhere. The header counts what you have changed since the last one.
+
+**A linked workbook — Chrome and Edge only.** In the Data sheet, *Link
+workbook* points Meridian at a spreadsheet you already have, and *Create
+workbook* makes one for you in Documents. From then on every entry, category,
+goal and lesson you add is written straight into that file, within about a
+tenth of a second. The header reads **SAVED · AUTO** and the count stays at
+nought; there is nothing to remember to press.
+
+Three things worth knowing:
+
+- **Your browser asks once each session.** Chrome and Edge forget file
+  permission when they close, so the first change you make after opening
+  Meridian raises *Allow this site to edit meridian.xlsx?* — **click Allow**,
+  rather than pressing Enter, which lands on Don't Allow. That one click covers
+  everything until you close the browser. Dismiss it and the header reads
+  **SAVE · 3** in red until you click it, which asks again and saves. Nothing is
+  lost while it waits: this browser still holds every change.
+- **Excel opens the file in Protected View.** A file a browser wrote is marked
+  as coming from the internet, so Excel shows its yellow *Enable Editing* bar.
+  It is harmless. To stop it for good, add the folder to Excel's trusted list:
+  **File → Options → Trust Center → Trust Center Settings → Trusted Locations →
+  Add new location**.
+- **Edit the workbook yourself and Meridian notices.** If the file has changed
+  since it last wrote, nothing is written over: the header says **EDITED
+  OUTSIDE** and clicking it asks whether to keep what is in Meridian or take
+  what is in the file. If everything Meridian had was already saved, it just
+  opens what the file holds — your edit is simply there.
+
+Firefox and Safari have no file picker, so none of this appears there, and
+Export works exactly as it always has.
+
 ## Browsers
 
-Meridian is machine-tested in **Chromium** — that is where the automated suite
-runs, and it is the browser the app is verified against. **Edge** passed the
-suite on v1.0.0. **Firefox and Safari have not been tested**; they may work,
-but nobody has checked, and no claim is made here that they do.
+Meridian is machine-tested in **Chromium** and **Edge** — both run the full
+automated suite, including the linked workbook. **Chrome 152** was checked by
+hand for v1.2.0: the file picker, the permission prompt and the writes behave
+exactly as Edge's do. **Firefox and Safari have not been tested**; they may
+work, but nobody has checked, and no claim is made here that they do. What is
+certain is that neither has the file picker, so neither offers a linked
+workbook — in those browsers Export is the save path, as before.
 
 ## Version
 
 The version is in three places: the footer of the **Data** sheet, the bottom of
 the first-run screen, and the tooltip on the wordmark. All three read
-`MERIDIAN 1.1.0` from one constant.
+`MERIDIAN 1.2.0` from one constant.
 
 Every workbook you export carries that same version in its **Meta** sheet, so a
 file always says which build wrote it.

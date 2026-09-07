@@ -138,6 +138,33 @@ and even edit it. If you change something there, use **Import** to bring it
 back; every row is checked and anything that will not load is listed with the
 reason rather than quietly dropped.
 
+### Or let it save itself (Chrome and Edge)
+
+New in this build, and the thing I would most like you to try. In **DATA**,
+under **WORKBOOK**, click **Create workbook** and save it in your Documents as
+`meridian.xlsx`. From then on Meridian writes into that file every time you log
+anything — no button to press, no pile of downloads. The header stops counting
+and reads **SAVED · AUTO**.
+
+Three things you will meet, all of them normal:
+
+- **Once each time you open Meridian**, the first thing you log makes the
+  browser ask *"Allow this site to edit meridian.xlsx?"* — **click Allow**.
+  Don't press Enter: the highlighted button is *Don't Allow*. That one click
+  lasts until you close the browser. If you dismiss it by accident the header
+  turns red and reads **SAVE · 2** — click it and it asks again. Nothing is lost
+  in the meantime.
+- **Excel will show a yellow bar** saying Protected View when you open the file,
+  because a browser wrote it. Click Enable Editing; it is harmless. If it
+  annoys you: File → Options → Trust Center → Trust Center Settings → Trusted
+  Locations → Add new location, and add the folder the file is in.
+- **If you edit the workbook yourself** while Meridian is open, it will not
+  write over you. The header says **EDITED OUTSIDE**; click it and choose which
+  version to keep. If Meridian had already saved everything, it just picks up
+  your edit next time you open it, without asking.
+
+If any of that feels awkward, say so — it is the newest thing here.
+
 ---
 
 ## Starting for real
