@@ -33,7 +33,8 @@
     data: 'meridian:data',
     theme: 'meridian:theme',      // its own raw string: the pre-paint script in
     range: 'meridian:range',      // index.html must never JSON.parse
-    lessons: 'meridian:lessons'   // the wall's visit count (decision 25)
+    lessons: 'meridian:lessons',  // the wall's visit count (decision 25)
+    link: 'meridian:link'         // the linked workbook's name and last mirror
   };
 
   /* localStorage has three distinct ways of not being there, and two of them
@@ -89,6 +90,10 @@
     var error = null;
     var listeners = [];
 
+    /* Set by `onCounted`. One hook, not a list: there is exactly one linked
+       workbook, and a second subscriber would mean a second writer. */
+    var counted = null;
+
     function notify() {
       for (var i = 0; i < listeners.length; i++) listeners[i](state);
     }
@@ -126,6 +131,15 @@
       }
       persist();
       notify();
+      /* Decision 32: the linked workbook is written after every mutation that
+         moves the counter, and after nothing else — a theme change or the demo
+         dataset must not rewrite the friend's file. Called last, and only when
+         localStorage took the change, so the live copy is safe before anything
+         touches the disk. Synchronous, inside the same click or Enter, because
+         the permission prompt decision 33 raises needs that user gesture. */
+      if (counted && changes && !error) {
+        try { counted(state); } catch (e) { /* a mirror must never lose an entry */ }
+      }
       return { ok: !error, error: error };
     }
 
@@ -221,6 +235,15 @@
           var i = listeners.indexOf(fn);
           if (i !== -1) listeners.splice(i, 1);
         };
+      },
+
+      /* The linked workbook's hook (decision 32). `subscribe` fires for every
+         notify, including theme changes and the demo dataset; this fires only
+         for the mutations that move the unexported counter, which is exactly
+         the set the workbook has to carry. */
+      onCounted: function (fn) {
+        counted = fn || null;
+        return function () { counted = null; };
       },
 
       /* First run and import both land here. `source` drives the demo badge and
@@ -514,6 +537,37 @@
       writeRange: function (stored) {
         if (!stored) return storage.removeItem(KEYS.range);
         return storage.setItem(KEYS.range, JSON.stringify(stored));
+      },
+
+      /* ---------- the linked workbook (decisions 32-37) ----------
+         The handle itself cannot live here: it is not JSON, and localStorage
+         only holds strings — `src/ui/link.js` keeps it in IndexedDB. What
+         belongs here is what a reload and a second window both need to know:
+         which file, and the `lastModified` the file had after our last write.
+
+         That figure is the file's own, read back from the file after the write
+         closed, never our clock: the spike measured our clock landing 3 ms
+         early on one run and 94 ms late on another, and either would make the
+         app mistake its own write for someone else's edit (DECISION-LOG 259). */
+
+      readLink: function () {
+        var raw = storage.getItem(KEYS.link);
+        if (!raw) return null;
+        try {
+          var o = JSON.parse(raw);
+          return o && typeof o === 'object' && o.name ? o : null;
+        } catch (e) {
+          return null;
+        }
+      },
+
+      writeLink: function (rec) {
+        if (!rec) return storage.removeItem(KEYS.link);
+        return storage.setItem(KEYS.link, JSON.stringify({
+          name: String(rec.name || ''),
+          lastModified: Number(rec.lastModified) || 0,
+          written_at: rec.written_at || null
+        }));
       },
 
       /* ---------- the lessons wall's visit count (decision 25) ----------

@@ -358,6 +358,98 @@ test('the localStorage keys are the mandated ones', () => {
     theme: 'meridian:theme',
     range: 'meridian:range',      // renamed from the mockup's meridian.range
     lessons: 'meridian:lessons',  // the wall's visit count (decision 25)
+    link: 'meridian:link',        // the linked workbook (decision 32)
+  });
+});
+
+/* ---------- the linked workbook's hook (decisions 32-37) ---------- */
+
+test('the mirror hook fires for the mutations the workbook has to carry', async (t) => {
+  function watched() {
+    const storage = fakeStorage();
+    const s = loaded(storage);
+    const seen = [];
+    s.onCounted(() => seen.push(s.getState().exportInfo.unexported));
+    return { s, storage, seen };
+  }
+
+  await t.test('every counted mutation, once each', () => {
+    const { s, seen } = watched();
+    s.addEntry({ date: '2026-06-07', duration_min: 30, category_id: 'cat_learn' });
+    s.addCategory({ name: 'Spike', colour: '#2b4a7d', direction: 'more' });
+    s.addGoal({ short_name: 'Ship it', category_id: 'cat_learn', target_amount: 10, by_date: '2026-12-01' });
+    s.addLesson({ text: 'before eight' });
+    assert.deepEqual(seen, [1, 2, 3, 4]);
+  });
+
+  await t.test('an edit and a delete carry too', () => {
+    const { s, seen } = watched();
+    const id = s.addEntry({ date: '2026-06-07', duration_min: 30, category_id: 'cat_learn' }).entry.id;
+    s.updateEntry(id, { duration_min: 45 });
+    s.deleteEntry(id);
+    assert.equal(seen.length, 3);
+  });
+
+  await t.test('nothing that leaves the counter alone reaches the workbook', () => {
+    const { s, seen } = watched();
+    s.setSettings({ theme: 'graphite' }, { silent: true });   // a display preference (58)
+    s.writeRange({ start: '2026-06-01', end: '2026-06-07' }); // a view preference
+    s.writeLessonsVisit(2);
+    s.markExported(NOW);
+    s.replaceAll(seed.buildDemo(NOW), 'demo');               // regenerable (59)
+    assert.deepEqual(seen, [], 'the friend’s file is not rewritten by a theme');
+  });
+
+  await t.test('a mutation localStorage refused does not reach the workbook', () => {
+    /* The live copy comes first: if the change did not land in this browser,
+       writing it to the file would put the file ahead of the app. */
+    const { s, storage, seen } = watched();
+    storage.failWith = 'quota';
+    s.addEntry({ date: '2026-06-07', duration_min: 30, category_id: 'cat_learn' });
+    assert.deepEqual(seen, []);
+    assert.ok(s.getError(), 'and the failure is still surfaced');
+  });
+
+  await t.test('a hook that throws loses nothing', () => {
+    const storage = fakeStorage();
+    const s = loaded(storage);
+    s.onCounted(() => { throw new Error('the disk caught fire'); });
+    s.addEntry({ date: '2026-06-07', duration_min: 30, activity: 'kept', category_id: 'cat_learn' });
+    assert.equal(saved(storage).entries.some((e) => e.activity === 'kept'), true);
+  });
+
+  await t.test('unhooking stops it', () => {
+    const { s, seen } = watched();
+    s.onCounted(null);
+    s.addEntry({ date: '2026-06-07', duration_min: 30, category_id: 'cat_learn' });
+    assert.deepEqual(seen, []);
+  });
+});
+
+test('the linked workbook record has its own key, outside the dataset', async (t) => {
+  await t.test('what is written is what is read back', () => {
+    const storage = fakeStorage();
+    const s = loaded(storage);
+    assert.equal(s.readLink(), null);
+    s.writeLink({ name: 'meridian.xlsx', lastModified: 1788618067641, written_at: '2026-09-06T14:21:07' });
+    assert.deepEqual(s.readLink(), {
+      name: 'meridian.xlsx',
+      lastModified: 1788618067641,
+      written_at: '2026-09-06T14:21:07',
+    });
+    assert.equal(s.getState().exportInfo.unexported, 0, 'linking is not an edit');
+  });
+
+  await t.test('unlinking clears it, and nonsense reads as unlinked', () => {
+    const storage = fakeStorage();
+    const s = loaded(storage);
+    s.writeLink({ name: 'meridian.xlsx', lastModified: 1 });
+    s.writeLink(null);
+    assert.equal(storage.getItem('meridian:link'), null);
+    storage.map.set('meridian:link', '{oh dear');
+    assert.equal(s.readLink(), null);
+    storage.map.set('meridian:link', '{"lastModified":12}');
+    assert.equal(s.readLink(), null, 'a record with no file name names no file');
   });
 });
 
