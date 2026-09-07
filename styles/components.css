@@ -541,6 +541,18 @@
   color: var(--navink);
 }
 
+/* The linked workbook's two warn states (decisions 34, 35). Same treatment as
+   NOT SAVING above, and for the same reason: they replace the label rather than
+   sitting beside it, because "3 unexported changes" is not the news when the
+   news is that the file did not take them. */
+.datactl__state--warn {
+  color: var(--warn);
+}
+
+.datactl[data-tone="warn"] .datactl__label {
+  color: var(--warn);
+}
+
 /* ---------- Busy ----------
    QUALITY-BAR §3: a busy state inside the same UI within 100 ms. Animated in
    CSS, never through Element.animate with an infinite iteration count — such an
@@ -662,6 +674,38 @@
 .data__replace {
   color: var(--ink);
   font-weight: 500;
+}
+
+/* The linked workbook (decision 32). Sits between the export actions and Start
+   fresh, separated the same way Start fresh is: a rule, not a panel. */
+.data__wb {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  align-items: flex-start;
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--line);
+}
+
+.data__wbhead {
+  color: var(--ink2);
+}
+
+.data__wbfile {
+  font: 500 14px/1.4 var(--font);
+  overflow-wrap: anywhere;
+}
+
+.data__wbnote {
+  font: 400 12.5px/1.5 var(--font);
+  color: var(--ink2);
+  max-width: 58ch;
+}
+
+.data__conflict {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
 }
 
 .data__fresh {

@@ -132,12 +132,15 @@
       persist();
       notify();
       /* Decision 32: the linked workbook is written after every mutation that
-         moves the counter, and after nothing else — a theme change or the demo
-         dataset must not rewrite the friend's file. Called last, and only when
-         localStorage took the change, so the live copy is safe before anything
-         touches the disk. Synchronous, inside the same click or Enter, because
-         the permission prompt decision 33 raises needs that user gesture. */
-      if (counted && changes && !error) {
+         leaves something unexported, and after nothing else — a theme change or
+         the demo dataset must not rewrite the friend's file. It keys on the
+         counter rather than on `changes` so that a completed import, which sets
+         the counter to 1 without incrementing it (59), reaches the file too.
+         Called last, and only when localStorage took the change, so the live
+         copy is safe before anything touches the disk. Synchronous, inside the
+         same click or Enter, because the permission prompt decision 33 raises
+         needs that user gesture. */
+      if (counted && !error && state && state.exportInfo && state.exportInfo.unexported > 0) {
         try { counted(state); } catch (e) { /* a mirror must never lose an entry */ }
       }
       return { ok: !error, error: error };
@@ -566,7 +569,7 @@
         return storage.setItem(KEYS.link, JSON.stringify({
           name: String(rec.name || ''),
           lastModified: Number(rec.lastModified) || 0,
-          written_at: rec.written_at || null
+          written_at: Number(rec.written_at) || 0
         }));
       },
 

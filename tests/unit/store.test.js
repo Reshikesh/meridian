@@ -400,6 +400,14 @@ test('the mirror hook fires for the mutations the workbook has to carry', async 
     assert.deepEqual(seen, [], 'the friend’s file is not rewritten by a theme');
   });
 
+  await t.test('a completed import reaches the workbook, though it increments nothing', () => {
+    /* replaceAll sets the counter to 1 rather than adding to it (59), so the
+       hook keys on what the counter ends up at. */
+    const { s, seen } = watched();
+    s.replaceAll(seed.buildDemo(NOW), 'import');
+    assert.deepEqual(seen, [1]);
+  });
+
   await t.test('a mutation localStorage refused does not reach the workbook', () => {
     /* The live copy comes first: if the change did not land in this browser,
        writing it to the file would put the file ahead of the app. */
@@ -431,11 +439,11 @@ test('the linked workbook record has its own key, outside the dataset', async (t
     const storage = fakeStorage();
     const s = loaded(storage);
     assert.equal(s.readLink(), null);
-    s.writeLink({ name: 'meridian.xlsx', lastModified: 1788618067641, written_at: '2026-09-06T14:21:07' });
+    s.writeLink({ name: 'meridian.xlsx', lastModified: 1788618067641, written_at: 1788618067700 });
     assert.deepEqual(s.readLink(), {
       name: 'meridian.xlsx',
       lastModified: 1788618067641,
-      written_at: '2026-09-06T14:21:07',
+      written_at: 1788618067700,
     });
     assert.equal(s.getState().exportInfo.unexported, 0, 'linking is not an edit');
   });

@@ -35,9 +35,19 @@
     return 'Nothing exported yet';
   }
 
+  /* The linked workbook, as the Data sheet names it: which file, and when the
+     app last wrote it (decision 32). The header says something shorter — see
+     core/link.js label(). */
+  function linkLabel(info, now) {
+    if (!info || !info.name) return '';
+    if (!info.written_at) return info.name + ' · not written yet';
+    return info.name + ' · written ' + ago(new Date(info.written_at), now || new Date());
+  }
+
   ui.format = {
     parseLocal: parseLocal,
     ago: ago,
-    exportLabel: exportLabel
+    exportLabel: exportLabel,
+    linkLabel: linkLabel
   };
 })();

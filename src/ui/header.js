@@ -65,17 +65,18 @@
           <${Themes} theme=${props.theme} onTheme=${props.onTheme} />
           ${compact ? null : html`
             <button type="button" class="datactl" data-data-open data-demo=${props.demo ? '1' : '0'}
-              data-error=${props.error ? '1' : '0'}
-              aria-label=${props.error ? props.error.message : 'Data — ' + props.dataLabel}
+              data-error=${props.data.tone === 'error' ? '1' : '0'}
+              data-tone=${props.data.tone || 'calm'}
+              aria-label=${props.error ? props.error.message : 'Data — ' + props.data.text}
               onClick=${props.onOpenData}>
               <span class="datactl__label">${props.demo ? 'DEMO' : 'DATA'}</span>
               <span class="datactl__sep" aria-hidden="true">·</span>
-              ${props.error ? html`
-                <span class="datactl__state datactl__state--error">NOT SAVING</span>`
-              : html`
-                <span class=${'datactl__state' + (props.unexported ? ' datactl__state--live' : '')}>
-                  ${props.dataLabel}
-                </span>`}
+              ${/* One line, whatever it is saying: the export label this app has
+                    always shown, or one of the linked workbook's states. Which
+                    one is core/link.js's decision, not the header's. */ ''}
+              <span class=${'datactl__state datactl__state--' + (props.data.tone || 'calm')}>
+                ${props.data.text}
+              </span>
             </button>`}
           <span class="stamp">${props.stamp}</span>
         </div>

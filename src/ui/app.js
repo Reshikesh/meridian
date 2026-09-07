@@ -57,6 +57,19 @@
   window.Meridian.installUnloadGuard(store, window);
   window.Meridian.installStorageWatch(store, window);
 
+  /* The linked workbook (decision 32). Created beside the store and for the
+     same reason: the header has to know on its first paint whether this browser
+     is saving to a file. The encoder is the export encoder, so the workbook on
+     disk is byte-for-byte what Export would have downloaded. */
+  var linkCore = window.Meridian.link;
+  var link = ui.link.createLink(store, {
+    encode: function () {
+      return workbook.encode(window.XLSX, store.getState(), { now: new Date() });
+    }
+  });
+  window.Meridian.linkedWorkbook = link;
+  store.onCounted(function () { link.mirror(); });
+
   function App() {
     var stateHolder = useState(store.getState());
     var screenState = useState(DEFAULT_SCREEN);
@@ -65,6 +78,12 @@
     var stampState = useState(currentStamp);
     var tickState = useState(function () { return new Date(); });
     var dataState = useState({ open: false, view: 'idle', pending: null, message: null });
+    /* The linked workbook's state, mirrored out of the adapter so the header
+       and the Data sheet re-render when a write lands or fails. */
+    var linkState = useState(function () { return link.state(); });
+    /* A handle that has been picked but not yet adopted, while the friend
+       answers decision 37 A's prompt about the file's contents. */
+    var pickedHandle = useRef(null);
     /* The Log screen's day. Spec §1: the analysis range is the only persisted
        state, so this resets to today on every open — which is where the friend
        wants to be when they sit down to log. */
@@ -110,11 +129,16 @@
     var quick = quickState[0], setQuick = quickState[1];
     var went = wentState[0], setWent = wentState[1];
     var leavingWent = leavingWentState[0], setLeavingWent = leavingWentState[1];
+    var linked = linkState[0], setLinked = linkState[1];
 
     var firstRun = data === null;
 
     useEffect(function () {
       return store.subscribe(function (next) { setData(next); });
+    }, []);
+
+    useEffect(function () {
+      return link.subscribe(function (next) { setLinked(next); });
     }, []);
 
     /* Persist in the click, not in an effect. QUALITY-BAR §6 requires every
@@ -265,7 +289,163 @@
     }
 
     function closeSheet() {
+      pickedHandle.current = null;
       setSheet({ open: false, view: 'idle', pending: null, message: null });
+    }
+
+    /* ---------- the linked workbook (decisions 32-37) ---------- */
+
+    var UNREADABLE = 'Your workbook could not be read, so Meridian has written it fresh.';
+
+    function decodeBytes(buffer) {
+      return workbook.decode(window.XLSX, buffer, { now: new Date() });
+    }
+
+    function hasContent(state) {
+      if (!state) return false;
+      return !!((state.entries && state.entries.length) ||
+        (state.goals && state.goals.length) ||
+        (state.lessons && state.lessons.length));
+    }
+
+    /* Reconnect, once, on load. Decision 37 B: if everything this browser holds
+       is already in the file, then a file that has changed since holds all of
+       it plus somebody's edit — so it is simply opened, because asking would be
+       a question with one sensible answer. With unexported changes as well,
+       both sides have moved and only the friend can say which wins. */
+    useEffect(function () {
+      var cancelled = false;
+      link.start().then(function (state) {
+        if (cancelled || !linkCore.isLinked(state)) return null;
+        return link.fileIsNewer().then(function (newer) {
+          if (cancelled || !newer) return null;
+          var info = store.getState() && store.getState().exportInfo;
+          return (info && info.unexported > 0) ? openConflict() : adoptFile();
+        });
+      }).catch(function () { /* a file that will not answer is the next write's problem */ });
+      return function () { cancelled = true; };
+    }, []);
+
+    /* The file, read in, when nothing local is at stake. The import report
+       still appears if rows were rejected: decision 5 does not bend just
+       because nobody clicked anything. */
+    function adoptFile() {
+      return link.readBytes().then(function (buffer) {
+        var result = decodeBytes(buffer);
+        if (!result.state || result.report.fatal) return null;   // the next write asks
+        return link.adoptedFile().then(function () {
+          store.replaceAll(result.state, 'import');
+          if (result.report.rejects.length) {
+            patchSheet({ open: true, view: 'adopted', pending: result, message: null });
+          }
+          return null;
+        });
+      }).catch(function () { return null; });
+    }
+
+    /* Decision 37 C: the file changed under a write. If it can be read the
+       friend chooses; if it cannot, there is nothing to preserve, so it is
+       written over and told about. */
+    function openConflict() {
+      patchSheet({ open: true, view: 'busy', message: null });
+      return new Promise(function (resolve) {
+        ui.io.afterPaint(function () {
+          link.readBytes().then(function (buffer) {
+            var result = decodeBytes(buffer);
+            if (!result.state || result.report.fatal) return overwriteUnreadable();
+            patchSheet({ open: true, view: 'conflict', pending: result, message: null });
+            return null;
+          }).catch(overwriteUnreadable).then(resolve);
+        });
+      });
+    }
+
+    function overwriteUnreadable() {
+      return link.keepLocal().then(function () {
+        patchSheet({ open: true, view: 'idle', pending: null, message: UNREADABLE });
+      });
+    }
+
+    /* Link workbook. Decision 37 A: a file that already holds a dataset is not
+       written over on the strength of one click — the same two-way prompt as an
+       import, before anything reaches the disk. */
+    function linkWorkbook() {
+      link.pickExisting().then(function (handle) {
+        if (!handle) return null;
+        return handle.getFile()
+          .then(function (file) { return ui.io.readFile(file); })
+          .then(function (buffer) {
+            var result = decodeBytes(buffer);
+            if (result.state && !result.report.fatal && hasContent(result.state)) {
+              pickedHandle.current = handle;
+              patchSheet({ open: true, view: 'conflict', pending: result, message: null });
+              return null;
+            }
+            return link.adopt(handle);          // empty, or not a workbook we can read
+          });
+      }).catch(function (e) {
+        /* The friend closing the picker is not an error. */
+        if (e && e.name === 'AbortError') return;
+        patchSheet({ open: true, view: 'idle', message: 'That workbook could not be opened.' });
+      });
+    }
+
+    function createWorkbook() {
+      link.pickNew().then(function (handle) {
+        if (handle) return link.adopt(handle);
+        return null;
+      }).catch(function (e) {
+        if (e && e.name === 'AbortError') return;
+        patchSheet({ open: true, view: 'idle', message: 'That workbook could not be created.' });
+      });
+    }
+
+    function unlinkWorkbook() {
+      link.unlink();
+      patchSheet({ open: true, view: 'idle', pending: null, message: null });
+    }
+
+    /* Keep local: overwrite the file with what is in Meridian, now. It answers
+       both prompts — the one a link raised and the one a write raised. */
+    function keepLocal() {
+      var handle = pickedHandle.current;
+      pickedHandle.current = null;
+      var done = handle ? link.adopt(handle) : link.keepLocal();
+      done.then(function () {
+        patchSheet({ open: true, view: 'idle', pending: null, message: null });
+      });
+    }
+
+    /* Replace local: the file wins. Its `lastModified` is recorded before the
+       data lands, so the write that follows sees a file it agrees with rather
+       than one that has moved. */
+    function replaceWithFile() {
+      var pending = sheet.pending;
+      if (!pending || !pending.state) return;
+      var handle = pickedHandle.current;
+      pickedHandle.current = null;
+      var ready = handle ? link.adopt(handle, { write: false }) : link.adoptedFile();
+      ready.then(function () {
+        store.replaceAll(pending.state, 'import');
+        var imported = pending.state.settings && pending.state.settings.theme;
+        if (THEME_IDS.indexOf(imported) !== -1 && imported !== theme) {
+          writeTheme(imported);
+          document.documentElement.setAttribute('data-theme', imported);
+          setTheme(imported);
+        }
+        patchSheet({ open: true, view: 'imported', pending: null, message: null });
+      });
+    }
+
+    /* The header control's click means something different in each state
+       (decisions 33, 34, 35). The grant has to happen here, in the click
+       itself, or the browser will not raise its prompt at all. */
+    function handleDataControl() {
+      var act = linkCore.action(linked);
+      if (act === 'grant') { link.grantAndFlush(); return; }
+      if (act === 'retry') { link.retry(); return; }
+      if (act === 'resolve') { openConflict(); return; }
+      patchSheet({ open: true, view: 'idle', message: null });
     }
 
     /* ---------- the Log screen ---------- */
@@ -477,6 +657,15 @@
        friend must not have to go looking for (QUALITY-BAR §5, and CLAUDE.md's
        "nothing may be lost"). */
     var storageError = store.getError();
+    /* One label for the header, whatever is going on: the export bookkeeping
+       this app has always shown, or one of the linked workbook's states. The
+       order of precedence lives in core/link.js, not here. */
+    var dataState2 = linkCore.label(linked, {
+      error: storageError,
+      unexported: (exportInfo && exportInfo.unexported) || 0,
+      exportLabel: dataLabel
+    });
+    var linkView = { state: linked, info: link.info() };
 
     /* Every screen is real now; Log and Where it went fall back to the
        designed empty state with nothing logged, and all take the same
@@ -572,8 +761,12 @@
         firstRun=${firstRun}
         exportInfo=${exportInfo} now=${tick} source=${data ? data.source : null}
         storageError=${storageError}
+        link=${firstRun ? null : linkView}
         onExport=${handleExport} onFile=${handleFile}
-        onApplyImport=${applyImport} onDismissReport=${firstRun ? closeSheet : closeSheet}
+        onApplyImport=${sheet.view === 'conflict' ? replaceWithFile : applyImport}
+        onKeepLocal=${keepLocal}
+        onLink=${linkWorkbook} onCreate=${createWorkbook} onUnlink=${unlinkWorkbook}
+        onDismissReport=${closeSheet}
         onStartFresh=${startFresh} onClose=${closeSheet} />` : null;
 
     if (firstRun) {
@@ -598,10 +791,10 @@
           <${ui.Header}
             screen=${screen} theme=${theme} stamp=${stamp}
             demo=${data.source === 'demo'}
-            dataLabel=${dataLabel} unexported=${!!(exportInfo && exportInfo.unexported)}
+            data=${dataState2}
             error=${storageError}
             onScreen=${goToScreen} onTheme=${chooseTheme}
-            onOpenData=${function () { patchSheet({ open: true, view: 'idle', message: null }); }} />
+            onOpenData=${handleDataControl} />
           <div class="screens">
             ${outgoing === null ? null : renderScreen(outgoing, 'leaving')}
             ${renderScreen(screen, outgoing === null ? null : 'entering')}
