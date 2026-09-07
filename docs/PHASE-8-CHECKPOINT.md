@@ -94,6 +94,17 @@ line is a choice that can be overruled:
   states — the linked Data sheet, SAVE · n, WORKBOOK LOCKED, EDITED OUTSIDE and
   the conflict sheet — at every width, zoom and theme.
 - **`dist.spec.js`** against the re-cut `meridian-1.2.0.zip` (0.57 MB, 63 files).
+- **Timed project: 4 pass.** First render with 2,000 entries reads 191 ms
+  against its 200 ms budget — thin enough to be worth explaining. It is not this
+  phase: the commit before Phase 8, run through the same harness on the same
+  afternoon, reads **187 ms**, and an A/B alternating both builds run-for-run in
+  one browser puts Phase 8 **4 ms faster** than the baseline. Two more script
+  tags cost nothing measurable. What has changed is the machine — Phase 7
+  recorded 171-185 ms — and both builds now produce individual runs above 200,
+  so this test will flake for anyone until there is more headroom. The backlog
+  already names the fix: load SheetJS on demand (DECISION-LOG 189), worth about
+  50 ms. The budget has not been touched; raising it would hide the next real
+  regression.
 
 ## What the review shots changed
 
