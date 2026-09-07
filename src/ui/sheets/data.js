@@ -11,6 +11,7 @@
   var ui = (window.Meridian = window.Meridian || {}).ui = window.Meridian.ui || {};
   var version = window.Meridian.version;
   var useState = preactHooks.useState;
+  var useEffect = preactHooks.useEffect;
 
   function Busy() {
     return html`
@@ -122,8 +123,18 @@
   }
 
   function DataSheet(props) {
-    var view = props.view;                       // idle | busy | report | imported
+    var view = props.view;      // idle | busy | report | adopted | conflict | imported
     var pending = props.pending;
+
+    /* The sheet focuses its default when it opens (sheets/sheet.js), but every
+       view that carries a decision arrives later — after the busy state — and
+       nothing has moved focus since. A choice this consequential should own the
+       keyboard rather than leave Enter on the close button. */
+    useEffect(function () {
+      if (view === 'idle' || view === 'busy') return;
+      var el = document.querySelector('.sheet__card [data-autofocus]');
+      if (el && el.focus) el.focus();
+    }, [view]);
 
     var body, footer;
 

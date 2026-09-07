@@ -189,11 +189,35 @@ test('label: one line, in one order of precedence', async (t) => {
 
 /* ---------- what the control's click does ---------- */
 
-test('action: the click means something different in each state', () => {
-  assert.equal(link.action(NEEDS_GRANT), 'grant');
-  assert.equal(link.action(EDITED_OUTSIDE), 'resolve');
-  assert.equal(link.action(LOCKED), 'retry');
-  assert.equal(link.action(AUTO), 'open-data');
-  assert.equal(link.action(UNLINKED), 'open-data');
-  assert.equal(link.action(UNSUPPORTED), 'open-data');
+test('action: the click means something different in each state', async (t) => {
+  await t.test('the two warn states act, and everything else opens the sheet', () => {
+    assert.equal(link.action(EDITED_OUTSIDE, { unexported: 1 }), 'resolve');
+    assert.equal(link.action(LOCKED, { unexported: 1 }), 'retry');
+    assert.equal(link.action(AUTO, {}), 'open-data');
+    assert.equal(link.action(UNLINKED, { unexported: 3 }), 'open-data');
+    assert.equal(link.action(UNSUPPORTED, {}), 'open-data');
+  });
+
+  await t.test('a pending grant asks — but only with something waiting', () => {
+    assert.equal(link.action(NEEDS_GRANT, { unexported: 1 }), 'grant');
+    /* The label reads SAVED · AUTO here, and a permission prompt raised from a
+       control that says everything is saved is a question with no context. */
+    assert.equal(link.action(NEEDS_GRANT, { unexported: 0 }), 'open-data');
+    assert.equal(link.action(NEEDS_GRANT), 'open-data');
+  });
+
+  await t.test('the action follows the label, in every state', () => {
+    link.STATES.forEach((state) => {
+      [0, 2].forEach((unexported) => {
+        var says = link.label(state, { unexported: unexported, exportLabel: 'Exported 2 min ago' });
+        var does = link.action(state, { unexported: unexported });
+        if (says.text === 'SAVED · AUTO' || says.tone === null || says.tone === 'live') {
+          if (says.text.indexOf('SAVE · ') !== 0) {
+            assert.equal(does, 'open-data',
+              state + ' says "' + says.text + '" and should open the sheet');
+          }
+        }
+      });
+    });
+  });
 });

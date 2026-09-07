@@ -47,8 +47,11 @@
 
     return html`
       <div class="report">
+        ${/* The space is written, not left to the template: htm drops the
+              whitespace between two expressions, and without it the heading
+              reads "106 rows read.Nothing rejected." */ ''}
         <h2 class="report__head">
-          ${plural(accepted, 'row read', 'rows read')}.
+          ${plural(accepted, 'row read', 'rows read') + '. '}
           ${rejected ? plural(rejected, 'rejected', 'rejected') + '.' : 'Nothing rejected.'}
         </h2>
         <${Summary} report=${r} />

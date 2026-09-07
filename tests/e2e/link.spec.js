@@ -107,6 +107,44 @@ test('the file the app writes is the file Export would have downloaded', async (
   expect(decode(onDisk)).toEqual(decode(exported));
 });
 
+test('every kind of submission reaches the file, not just entries', async ({ page }) => {
+  await open(page);
+  await linkWorkbook(page);
+
+  const counts = await page.evaluate(() => {
+    const s = window.Meridian.store;
+    const id = s.getState().entries[0].id;
+    s.updateEntry(id, { duration_min: 90 });
+    s.addCategory({ name: 'Spike', colour: '#2b4a7d', direction: 'more' });
+    s.addGoal({
+      short_name: 'Ship it', category_id: 'cat_learn', target_amount: 20, by_date: '2026-12-01',
+    });
+    s.addLesson({ text: 'The file keeps up.' });
+    s.deleteEntry(s.getState().entries[1].id);
+    return { entries: s.getState().entries.length };
+  });
+
+  await expect.poll(async () => {
+    const wb = await workbookFromDisk(page);
+    const rows = (name) => XLSX.utils.sheet_to_json(wb.Sheets[name]);
+    return {
+      entries: rows('Entries').length,
+      category: rows('Categories').some((c) => c.name === 'Spike'),
+      goal: rows('Goals').some((g) => g.short_name === 'Ship it'),
+      lesson: rows('Lessons').some((l) => String(l.text).indexOf('The file keeps up') === 0),
+      edited: rows('Entries').some((e) => Number(e.duration_min) === 90),
+    };
+  }).toEqual({ entries: counts.entries, category: true, goal: true, lesson: true, edited: true });
+
+  /* Five mutations in one tick coalesce into fewer writes than five, and the
+     counter only reaches nought once the last of them has landed. */
+  await expect.poll(() => page.evaluate(() =>
+    window.Meridian.store.getState().exportInfo.unexported)).toBe(0);
+
+  // One grant, at the link; none of the five asked again.
+  expect(await page.evaluate(() => window.__link.asks)).toBe(0);
+});
+
 /* ---------- decision 33: the grant, and dismissing it ---------- */
 
 test('a session that has not been granted asks once, on the mutation that needs it', async ({ page }) => {
@@ -134,6 +172,8 @@ test('a dismissed prompt becomes SAVE · n, and the click grants and writes', as
     window.__link.request = 'prompt';        // dismissed
   });
   await page.reload();
+  // The adapter reconnects asynchronously; nothing is mirrored until it has.
+  await expect(page.locator('.datactl__state')).toHaveText('SAVED · AUTO');
 
   await logAnEntry(page, 'While dismissed');
   await expect(page.locator('.datactl__state')).toHaveText('SAVE · 1');
@@ -160,6 +200,7 @@ test('closing the tab with SAVE · n pending still warns (spec §10)', async ({ 
   await linkWorkbook(page);
   await page.evaluate(() => { window.__link.permission = 'prompt'; window.__link.request = 'prompt'; });
   await page.reload();
+  await expect(page.locator('.datactl__state')).toHaveText('SAVED · AUTO');
   await logAnEntry(page, 'Unsaved');
   await expect(page.locator('.datactl__state')).toHaveText('SAVE · 1');
 

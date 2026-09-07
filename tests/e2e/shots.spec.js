@@ -3,6 +3,20 @@ const { test } = require('@playwright/test');
 const { APP_URL } = require('./lib/app-url');
 const { demoState, emptyState, DATA_KEY } = require('./lib/seed-state');
 const { earlyState, progressState, manyLessonsState, twoDayState } = require('./lib/datasets');
+const { installLinkStub } = require('./lib/link-stub');
+const { validBook } = require('./lib/make-workbook');
+
+/* Someone else's save: the demo, one entry longer, so the file is a workbook
+   the app can read and is newer than anything it wrote. */
+function outsideEdit() {
+  const state = demoState();
+  state.entries = state.entries.concat([{
+    id: 'e_9001', date: state.entries[0].date, duration_min: 45,
+    activity: 'Typed in Excel', category_id: 'cat_learn', goal_id: '', value: '',
+    created_at: '2026-06-07T09:00:00',
+  }]);
+  return validBook(state);
+}
 
 /* Screenshots for a human to look at, on demand: `npx playwright test shots
    --project=chromium`. Not an assertion suite — responsive.spec.js owns the
@@ -175,4 +189,90 @@ test('the README screenshot', async ({ page }) => {
     fullPage: false,
     animations: 'disabled',
   });
+});
+
+/* The linked workbook (Phase 8). Nothing here comes from the mockup — every
+   state is new — so these are the shots the fidelity check actually turns on:
+   the Data sheet's WORKBOOK block, the header's four labels, and the sheet the
+   conflict opens. The stub is lib/link-stub.js, the same double the matrices
+   use; it goes in before the state so both are in place before the first
+   paint. */
+test('the linked workbook, every state', async ({ page }) => {
+  const link = async (p) => {
+    await p.click('[data-data-open]');
+    await p.click('[data-link-existing]');
+    await p.locator('[data-link-file]').waitFor();
+  };
+  const log = async (p) => p.evaluate(() => window.Meridian.store.addEntry({
+    date: window.Meridian.store.getState().entries[0].date,
+    duration_min: 30, activity: 'Logged for the shot', category_id: 'cat_learn',
+  }));
+  /* Between shots, not before every navigation: some of these link a workbook
+     and then reload on purpose, and a clear-on-load would wipe the very state
+     the shot is of. */
+  const reset = async (p) => p.evaluate(() => {
+    try {
+      ['meridian:link', '__mf:knobs', '__mf:bytes', '__mf:lastModified']
+        .forEach((k) => localStorage.removeItem(k));
+    } catch (e) { /* private mode */ }
+    indexedDB.deleteDatabase('meridian');
+  });
+
+  for (const theme of ['paper', 'graphite', 'blueprint']) {
+    await installLinkStub(page, {});
+    await shoot(page, demoState(), theme, 1280, 'log', `link-data-unlinked-${theme}.png`,
+      async (p) => { await p.click('[data-data-open]'); await p.locator('.data__wb').waitFor(); });
+    await reset(page);
+  }
+
+  await installLinkStub(page, {});
+  await shoot(page, demoState(), 'paper', 1280, 'log', 'link-data-linked.png', link);
+  await reset(page);
+
+  await installLinkStub(page, {});
+  await shoot(page, demoState(), 'paper', 1280, 'log', 'link-header-saved.png', async (p) => {
+    await link(p);
+    await p.keyboard.press('Escape');
+    await log(p);
+    await p.waitForTimeout(200);
+  });
+  await reset(page);
+
+  await installLinkStub(page, {});
+  await shoot(page, demoState(), 'paper', 1280, 'log', 'link-header-save-n.png', async (p) => {
+    await link(p);
+    await p.keyboard.press('Escape');
+    await p.evaluate(() => { window.__link.permission = 'prompt'; window.__link.request = 'prompt'; });
+    await p.reload();
+    await p.locator('.datactl__state:has-text("SAVED · AUTO")').waitFor();
+    await log(p);
+    await p.locator('.datactl__state--live').waitFor();
+  });
+  await reset(page);
+
+  await installLinkStub(page, {});
+  await shoot(page, demoState(), 'paper', 1280, 'log', 'link-header-locked.png', async (p) => {
+    await link(p);
+    await p.keyboard.press('Escape');
+    await p.evaluate(() => { window.__link.failWrite = 'InvalidStateError'; });
+    await log(p);
+    await p.locator('.datactl__state--warn').waitFor();
+  });
+  await reset(page);
+
+  /* Edited outside, and the choice it opens — in two themes, because the
+     conflict sheet is the widest new surface in the app. */
+  for (const theme of ['paper', 'graphite']) {
+    await installLinkStub(page, {});
+    await shoot(page, demoState(), theme, 1280, 'log', `link-conflict-${theme}.png`, async (p) => {
+      await link(p);
+      await p.keyboard.press('Escape');
+      await p.evaluate((arr) => window.__file.put(arr), Array.from(outsideEdit()));
+      await log(p);
+      await p.locator('.datactl__state--warn').waitFor();
+      await p.click('[data-data-open]');
+      await p.locator('[data-keep-local]').waitFor();
+    });
+    await reset(page);
+  }
 });

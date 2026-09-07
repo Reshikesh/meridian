@@ -126,10 +126,14 @@
     }
   }
 
-  /* What a click on that control does. Everything else opens the Data sheet,
-     which is what it has always done. */
-  function action(state) {
-    if (state === NEEDS_GRANT) return 'grant';
+  /* What a click on that control does. It follows the label: a control reading
+     SAVED · AUTO opens the Data sheet, even in a session that has not been
+     granted anything, because a permission prompt raised out of nowhere — with
+     nothing waiting to be saved — is a question the friend cannot place.
+     Everything else opens the Data sheet, which is what it has always done. */
+  function action(state, opts) {
+    var unexported = (opts && opts.unexported) || 0;
+    if (state === NEEDS_GRANT) return unexported > 0 ? 'grant' : 'open-data';
     if (state === EDITED_OUTSIDE) return 'resolve';
     if (state === LOCKED) return 'retry';
     return 'open-data';

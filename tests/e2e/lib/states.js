@@ -557,6 +557,10 @@ function transientStates(page) {
         });
         await page.reload();
         await openWent();
+        /* The adapter reconnects asynchronously. Logging before it has read the
+           handle back would mirror nothing and leave the export label showing,
+           which is how this state flaked in one zoom cell. */
+        await page.locator('.datactl__state:has-text("SAVED · AUTO")').waitFor();
         await logSomething();
       },
       ready: '.datactl__state--live:has-text("SAVE · 1")',

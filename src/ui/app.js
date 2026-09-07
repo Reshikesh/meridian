@@ -441,7 +441,9 @@
        (decisions 33, 34, 35). The grant has to happen here, in the click
        itself, or the browser will not raise its prompt at all. */
     function handleDataControl() {
-      var act = linkCore.action(linked);
+      var act = linkCore.action(linked, {
+        unexported: (data && data.exportInfo && data.exportInfo.unexported) || 0
+      });
       if (act === 'grant') { link.grantAndFlush(); return; }
       if (act === 'retry') { link.retry(); return; }
       if (act === 'resolve') { openConflict(); return; }
