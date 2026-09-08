@@ -196,6 +196,10 @@ Phase 7 — publication. Read CLAUDE.md, docs/QUALITY-BAR.md §8, docs/DECISIONS
 
 ## Phase 8 — Linked workbook (v1.2.0)
 
+Shipped 7 September 2026 and verified at the device on the 8th:
+`docs/PHASE-8-CHECKPOINT.md` carries the result, what was not exercised by
+hand, and what the next session should pick up.
+
 **Prompt**
 ```
 Phase 8. Read CLAUDE.md and docs/BUILD-PLAN.md § Phase 8, spec §7 and §10, DECISIONS 5, 6, 15, 28, 29, 32–36, docs/PHASE-8A-SPIKE.md and DECISION-LOG 57–63, 185, 190, 250–263. Plan first, wait for approval. 8a is a spike — stop and report before 8b.

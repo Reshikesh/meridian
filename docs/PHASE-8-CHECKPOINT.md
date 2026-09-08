@@ -197,6 +197,49 @@ Chrome and Edge, one run each:
 6. Read the Protected View paragraph in the README against what Excel actually
    shows you.
 
+## Owner verification — 8 September 2026
+
+Run at the device, from the first-run screen on a browser that had never seen a
+linked workbook:
+
+1. Start with demo data → DATA → **Create workbook** → `Documents\meridian.xlsx`.
+2. Logged an entry; the file on disk moved, with no prompt — a file chosen
+   through the save picker is already granted.
+3. Quit the browser entirely, reopened, logged an entry → **one prompt** →
+   Allow → everything after it saved silently.
+4. Dismissed the prompt on purpose → **SAVE · 1** → clicked the header control →
+   granted, written, back to nought.
+
+**Result: all good.** No defects reported.
+
+Two things were deliberately not exercised by hand, and are worth knowing:
+
+- **The Excel-edit path** — EDITED OUTSIDE, and Keep local / Replace local. The
+  owner set it aside as their least concern. It is covered by `link.spec.js` in
+  both browsers and by the unit suite, but no human has watched it happen.
+- **The second browser.** The sequence was run once. The checkpoint asks for
+  Chrome and Edge; one of them still has no hand pass. Everything automated runs
+  in both.
+
+## Where to pick up
+
+Read `CLAUDE.md`, then this file. The build is at v1.2.0, tagged, with a draft
+release carrying the zip. Nothing is half-finished. What is waiting:
+
+1. **The commit re-author.** 23 pre-Phase-7 commits still carry a personal email
+   address. This is the one thing that blocks making the repository public; the
+   command is in `docs/PHASE-7-CHECKPOINT.md` §4, and history is not rewritten
+   without the owner saying so.
+2. **Three copy calls, unanswered** — `SAVE · n` in `--navink` rather than
+   `--brand`; the Data sheet reading "Exported just now" while a workbook is
+   linked; and the new WORKBOOK strings listed above. All are one-line changes.
+3. **The second browser's hand pass**, and the Excel-edit path if wanted.
+4. **First-render headroom.** The 200 ms budget is thin on this machine for
+   every build, this one and the one before it alike. The backlog's SheetJS
+   deferral (DECISION-LOG 189) is the fix, worth about 50 ms.
+5. **The friend.** The zip is built and attached to a *draft* release. Publishing
+   it, or handing the file over directly, is the owner's move.
+
 ## Commit log
 
 ```
@@ -210,4 +253,10 @@ d6e3855 docs: decision 37, the three moments the app and the file disagree
 284865b phase 8: the linked workbook — adapter, header states, Data sheet block
 683c0b0 phase 8: e2e for the linked workbook, both browsers green
 82c9fbc phase 8: version 1.2.0, the Saving sections, matrix states and the log
+9a3141b phase 8: the decision owns the keyboard, and the report heading gets its space back
+ef1f26e phase 8: the SAVE-n matrix state stops racing a reload
+8798722 docs: the first-render measurement, baseline and all
+026399d phase 8: the reconnect poll gets room for a loaded machine
+c580cbb docs: the phase 8 checkpoint, with a clean suite behind it
+2168453 docs: say where the tag sits, and why it stays there
 ```
