@@ -49,7 +49,7 @@ anywhere, and there is no copy of it but yours. That cuts both ways:
 
 ## Saving
 
-Two ways, and the second one is new in v1.2.0.
+Two ways, and the second one arrived in v1.2.0.
 
 **Export.** The Data sheet writes an `.xlsx` and your browser downloads it.
 Works everywhere. The header counts what you have changed since the last one.
@@ -98,7 +98,7 @@ workbook — in those browsers Export is the save path, as before.
 
 The version is in three places: the footer of the **Data** sheet, the bottom of
 the first-run screen, and the tooltip on the wordmark. All three read
-`MERIDIAN 1.2.0` from one constant.
+`MERIDIAN 1.3.0` from one constant.
 
 Every workbook you export carries that same version in its **Meta** sheet, so a
 file always says which build wrote it.

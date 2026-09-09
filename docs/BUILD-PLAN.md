@@ -225,13 +225,29 @@ Phase 8. Read CLAUDE.md and docs/BUILD-PLAN.md § Phase 8, spec §7 and §10, DE
 - Linked workbook, no grant this session, log an entry → one browser prompt → file on disk changes within the same second; every later submission (entry add/edit/delete, category, goal, plan, lesson) changes the file with no prompt.
 - Dismiss the prompt → SAVE · 1 → click → written, counter 0, SAVED · AUTO.
 - App running, linked, SAVED · AUTO. Open the workbook in Excel, edit a cell, save. Log an entry in the app → header EDITED OUTSIDE, file on disk unchanged. Click → decision-15 prompt. Keep local → file rewritten, SAVED · AUTO. Repeat with Replace local → the Excel edit shows in the app.
-- Link a workbook that already holds a dataset → the prompt appears before anything is written (37 A).
+- Link a workbook that already holds a dataset, **with a dataset in the app too** → the prompt appears before anything is written (37 A). With nothing in the app, the workbook is opened and no prompt appears (37 A as amended 9 Sep 2026).
 - Everything saved (SAVED · AUTO), close the app, edit a cell in Excel, reopen → the edit is simply there, no prompt (37 B). Repeat with SAVE · 1 pending → the prompt.
 - Reload, reconnect after an Excel save with changes pending → the same prompt.
 - Synthetic lock in e2e → WORKBOOK LOCKED, the counter counts, the next write succeeds, the state clears.
 - Firefox: no Link controls; export unchanged. Unit and e2e suites green on the first run.
 
 **Checkpoint (owner)**: Edge and Chrome at the device, the acceptance sequence, plus close the tab with SAVE · n showing and confirm the browser warns. Then open the linked workbook in Excel once and read the Protected View line in the README against what Excel actually shows (36).
+
+## Phase 8c — the browser that clears site data (v1.3.0, 9 Sep 2026)
+
+Not planned here. It came from the owner running the app for real: Edge was set
+to clear cookies and site data on close, Meridian started at first run every
+session, and getting back cost ten clicks — one of which was a button that
+would have written an empty dataset over the workbook.
+
+Built: 37 A qualified so the prompt is asked only when there is something to
+lose; the two conflict moments given opposite defaults; a mirror write recorded
+as a save rather than an export; "Open a workbook" leading the first-run screen;
+and the wipe named at the moment it is recovered from. Full report and the
+things still waiting in `docs/PHASE-8C-CHECKPOINT.md`.
+
+The lesson worth keeping: every defect this phase fixed was found by a person
+using the app, and none of them by a suite that was green throughout.
 
 ## Backlog (after the friend's feedback)
 
