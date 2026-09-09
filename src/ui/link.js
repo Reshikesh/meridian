@@ -29,19 +29,21 @@
   var DB_STORE = 'handles';
   var HANDLE_KEY = 'workbook';
 
-  /* Both pickers share one id, so the browser reopens them where the workbook
-     was last chosen rather than at Documents. That memory lives in the browser
-     profile, not in site data — which is the only reason it is worth having: a
-     browser set to clear site data on close wipes the handle and the whole
-     dataset, and this is the one crumb that survives to make recovery a click
-     rather than a hunt through folders.
+  /* The id that was supposed to make the picker reopen where the workbook lives
+     rather than at Documents. **It does nothing here.** Tried twice at the
+     device — once with `startIn` beside it, once without — and Edge opened at
+     Documents both times: Chromium keys the remembered directory to the origin,
+     and a `file://` page has nowhere to keep it (DECISION-LOG 286, 287).
 
-     `startIn` is NOT set alongside it on the open picker. A well-known
-     directory beats the id's remembered path, so the two together are just
-     `startIn` with extra steps — measured at the device, where the picker kept
-     opening at Documents (DECISION-LOG 286). Create workbook keeps it, because
-     opening at Documents is what that one is documented to do and a file is
-     created once. */
+     Kept, with `startIn` back beside it, because the id is free and correct and
+     would work the day this runs over http, and because a comment is the only
+     thing that stops the next reader running the same experiment a third time.
+     `startIn` is what actually decides the folder, so the picker opens
+     somewhere predictable rather than wherever the browser last happened to be.
+
+     Reconnecting after a browser has cleared its site data therefore costs a
+     few folder clicks. Nothing else was on the table: the handle that would
+     have made it one click is in the storage being cleared. */
   var PICKER_ID = 'meridianWorkbook';
 
   /* Decision 32: the controls are hidden where the picker is absent. The check
