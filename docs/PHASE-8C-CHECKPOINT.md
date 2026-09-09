@@ -49,11 +49,10 @@ beside `exported_at`, and the Data sheet names whichever is newer. Decision 32
 is untouched: the write still clears the counter. With no workbook linked
 `saved_at` is never set and the line reads exactly as it always has.
 
-**Both pickers share an `id`** — the browser reopens them where the workbook was
-last chosen rather than at Documents. That memory lives in the browser profile,
-not in site data, which is the whole point of it: it is the one crumb that
-survives the clearing that loses everything else. `startIn` stays as the
-fallback for the first ever pick.
+**Both pickers share an `id`** — intended to make the browser reopen them where
+the workbook was last chosen rather than at Documents. **It does not work, and
+the attempt is recorded rather than the intention**: see the known gaps below.
+The picker still opens at Documents.
 
 **"Open a workbook" leads the first-run screen** where `showOpenFilePicker`
 exists — its own row above the three original choices, both loading the data and
@@ -182,16 +181,20 @@ than pulled. Nothing else depends on the old hashes.
 
 ## Known gaps
 
-- **The picker's folder memory was wrong on the first cut, and is still
-  unverified on the second.** `id` and `startIn: 'documents'` were set together
-  on the open picker; a well-known directory beats the id's remembered path, so
-  the picker kept opening at Documents. The owner found it at the device
-  — nothing here is testable, because the real picker cannot be driven (262) and
-  the e2e double ignores its options. `startIn` is gone from the open picker
-  (DECISION-LOG 286). **Whether the memory now works, and whether it survives
-  site-data clearing, still needs two picks by hand**: the first populates the
-  id, only the second can prove it. If it does not work, the cost is a few
-  folder clicks and nothing else.
+- ~~**The picker's folder memory.**~~ **Closed, as a failure, 9 Sep 2026.** It
+  does not work on `file://` and it is not going to. Tried twice at the device:
+  with `startIn: 'documents'` beside the `id`, and without it. Edge opened at
+  Documents both times. Chromium keys the remembered directory to the origin,
+  and a `file://` page has nowhere to keep it — the same wall decision 32 works
+  around, and the reason the handle lives in IndexedDB in the first place. The
+  `id` is kept because it is free and correct the day this runs over http;
+  `startIn` is back because something has to choose and predictable beats
+  arbitrary (DECISION-LOG 286, 287). **Reconnecting after a site-data clear
+  costs a few folder clicks.** Nothing else was ever on the table: the handle
+  that would have made it one click is in the storage being cleared. None of
+  this was testable — the real picker cannot be driven (262) and the e2e double
+  ignores its options — so it was found the only way it could be, by the owner
+  clicking it.
 - **The second browser still has no hand pass**, carried over from Phase 8.
   Everything automated runs in both.
 - **The Excel-edit path** — EDITED OUTSIDE, Keep local / Replace local — is
@@ -208,13 +211,23 @@ What is waiting:
    repository going public, and it now clears two problems rather than one.
 2. **The friend.** The zip is built, validated and attached to a draft release.
    Publishing it, or handing the file over directly, is the owner's move.
-3. **Two hand checks at the device** — the picker's folder memory across a
-   browser restart, and the second browser's pass.
-4. ~~**The Edge setting.**~~ **Turned off by the owner, 9 Sep 2026.** Their
+3. **The second browser's hand pass**, carried over from Phase 8 and still not
+   done. Everything automated runs in both.
+4. **A decision on the version number in the header.** The owner asked for it
+   under the wordmark; measured, it costs about 7px of header height at 1280
+   (6px of headroom against a line needing 13) and about 13px at 360, on every
+   screen. Not taken, pending the owner: the version is already on the first-run
+   screen, in the Data sheet footer and in the wordmark's tooltip, and what is
+   actually missing is that `dist/README-for-tester.md` never asks for it.
+5. **A zip re-cut.** `dist/meridian-1.3.0.zip` is attached to the draft release
+   and is functionally the shipped behaviour, but source has moved since: the
+   picker comments, this checkpoint, and the changelog correction above. Cut
+   1.3.1 once the header question is settled rather than three times.
+6. ~~**The Edge setting.**~~ **Turned off by the owner, 9 Sep 2026.** Their
    machine keeps Meridian's data across a browser close again. Everything built
    this phase stands regardless: the friend may have the same setting, and the
    overwrite trap was never conditional on it.
-5. **First-render headroom**, unchanged from Phase 8: the 200 ms budget is thin
+7. **First-render headroom**, unchanged from Phase 8: the 200 ms budget is thin
    on this machine for every build. DECISION-LOG 189 is the fix.
 
 ## Commit log

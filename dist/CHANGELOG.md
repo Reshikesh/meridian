@@ -25,9 +25,10 @@ Coming back to a browser that cleared everything.
 
 ### Changed
 
-- **The file picker opens where your workbook is**, not in Documents, once you
-  have chosen it once. Browsers remember that separately from site data, so it
-  survives the clearing that loses everything else.
+- **The file picker still opens at Documents.** It was meant to reopen where
+  your workbook lives; browsers only remember that for pages served from a
+  website, and Meridian is a file on your computer. So if you keep your
+  workbook somewhere else, linking it again means a few clicks through folders.
 - **"Saved" and "Exported" are now different words.** The Data sheet says
   *Saved just now* when a change reached your linked workbook, and keeps
   *Exported* for a file you downloaded. It used to say "Exported" for both.
