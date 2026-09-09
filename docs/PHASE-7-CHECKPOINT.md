@@ -266,7 +266,7 @@ The phase deliberately stops short of all four:
 
 ## Known gaps
 
-- **The pre-Phase-7 commits still carry `[redacted]`.** The rewrite command is in the report and in §4. This is the one item that blocks going public. **Corrected 4 Sep 2026:** this report said "five" throughout; `git log --author` counts **23** of the 30 commits, the other 7 being Phase 7's own. The rewrite has to cover all 23.
+- **Resolved 9 Sep 2026 by the rewrite recorded in `PHASE-8C-CHECKPOINT.md`.** ~~The pre-Phase-7 commits still carry `[redacted]`. The rewrite command is in the report and in §4. This is the one item that blocks going public.~~ **Corrected 4 Sep 2026:** this report said "five" throughout; `git log --author` counts **23** of the 30 commits, the other 7 being Phase 7's own. The rewrite covered all 23.
 - **Edge is untested on v1.1.0.** It failed with exit 4 on the Phase 6 run and was not re-attempted here. It passed on v1.0.0, which is what the README says.
 - **Firefox is untested and deferred**, by instruction. Its Playwright project remains gated behind `MERIDIAN_FIREFOX` and was not touched.
 - **Safari is untested.** No WebKit project exists in the config.
@@ -457,8 +457,9 @@ before anything was deleted.
 
 ## Known gaps
 
-- **The 23 pre-Phase-7 commits still carry `[redacted]`.** Unchanged by
-  this work, and still the one item that blocks going public.
+- **Resolved 9 Sep 2026 by the rewrite recorded in `PHASE-8C-CHECKPOINT.md`.**
+  ~~The 23 pre-Phase-7 commits still carry `[redacted]`. Unchanged by
+  this work, and still the one item that blocks going public.~~
 - **Edge is untested on v1.1.0 as a suite.** It was driven by hand during the
   investigation, where it reproduced the defect and then the fix, but the
   `msedge` project was not run.
@@ -633,8 +634,9 @@ cannot be picked, and flash red if you try.
 
 ## Known gaps
 
-- **The 23 pre-Phase-7 commits still carry `[redacted]`.** Untouched by
-  this work, and still the one item that blocks going public.
+- **Resolved 9 Sep 2026 by the rewrite recorded in `PHASE-8C-CHECKPOINT.md`.**
+  ~~The 23 pre-Phase-7 commits still carry `[redacted]`. Untouched by
+  this work, and still the one item that blocks going public.~~
 - **The resting unavailable cell is still 1.11-1.22:1 against `--bg`, and still
   the same hex as `--pale` in two themes.** That is the owner's decision, taken
   with the rendered alternative in front of them, not an oversight: it is pinned

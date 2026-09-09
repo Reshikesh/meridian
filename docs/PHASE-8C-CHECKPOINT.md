@@ -133,7 +133,22 @@ Untracked here (`git rm --cached`, the file itself untouched on disk) and
 the repository is private, so it is not public, but removing it is a rewrite and
 belongs in the same pass as the commit re-author rather than a second one.
 
+> **9 Sep 2026: gone from local history**, blob and all, in the rewrite below.
+> **Still on the remote** until that is force-pushed, and see the note there
+> about what a force-push does and does not reach on GitHub.
+
 ## The rewrite, written down at last
+
+> **Run on 9 Sep 2026, on the owner's instruction, and it covered three jobs
+> rather than two.** The owner also asked for their email out of the documents,
+> and redacting it only in the working tree would have left it one `git log -p`
+> away — so `--replace-text` went into the same pass. Verified afterwards: 59
+> commits, all on the noreply address; `meridian.xlsx` in no revision and its
+> blob gone from the object store; no hit for the address in any blob at any
+> revision. The one commit that only did the redaction went empty, because its
+> parent had been redacted too, and was pruned — 60 commits became 59. **Local
+> only. Nothing has been force-pushed, and the repository is still private.**
+> The command below is what ran, plus `--replace-text` and `--force`.
 
 Phase 7 §4 says the command "is handed to the owner" but no command was ever
 written into any document. Here it is, now covering both jobs. **Run this from
@@ -179,6 +194,21 @@ tags whose SHAs move, so check they still resolve and re-attach the zips if they
 do not. Any other clone of this repository must be deleted and re-cloned rather
 than pulled. Nothing else depends on the old hashes.
 
+**What a force-push does not reach.** A force-push replaces the branch, but the
+old commits stay in GitHub's object store, fetchable by anyone who knows a SHA,
+until GitHub garbage-collects — which it does on its own schedule, not on ours.
+While the repository is private nobody outside can learn a SHA, so this is not a
+live exposure; the moment it goes public, it could be. The order that matters:
+force-push first, then ask GitHub Support to run a GC on the repository, and
+only flip Visibility → Public once that is confirmed. The alternative, which
+needs no waiting on anyone, is to push the rewritten history to a brand-new
+repository and delete this one — nothing carries over but the name, and the
+private repo's stars and watchers are nought. Either is the owner's call.
+
+Same reasoning for the draft releases: `meridian-1.3.0.zip` and its predecessor
+were built from a tree that never contained the workbook, so the artefacts
+themselves are clean. It is only the git objects that need the GC.
+
 ## Known gaps
 
 - ~~**The picker's folder memory.**~~ **Closed, as a failure, 9 Sep 2026.** It
@@ -199,16 +229,19 @@ than pulled. Nothing else depends on the old hashes.
   Everything automated runs in both.
 - **The Excel-edit path** — EDITED OUTSIDE, Keep local / Replace local — is
   still covered only by tests, by the owner's own choice.
-- **The 23 pre-Phase-7 commits and `meridian.xlsx`** are both still in history.
-  One rewrite, above, clears both.
+- ~~**The 23 pre-Phase-7 commits and `meridian.xlsx`** are both still in
+  history.~~ **Cleared from local history 9 Sep 2026**, along with the owner's
+  email in the documents — one rewrite, three jobs. Still on the remote until
+  it is force-pushed.
 
 ## Where to pick up
 
 v1.3.0 is tagged and pushed; a draft release carries the zip. `main` is clean.
 What is waiting:
 
-1. **The rewrite.** The command is above. It is the only thing blocking the
-   repository going public, and it now clears two problems rather than one.
+1. ~~**The rewrite.**~~ **Run 9 Sep 2026; see the note in the section above.**
+   All three problems are cleared in local history. What is left is the owner's:
+   a force-push over the remote, and the visibility flip.
 2. **The friend.** The zip is built, validated and attached to a draft release.
    Publishing it, or handing the file over directly, is the owner's move.
 3. **The second browser's hand pass**, carried over from Phase 8 and still not

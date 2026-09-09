@@ -163,8 +163,9 @@ ever wrote a file it should not have.
   the write path would mean a synchronous parse inside logging an entry.
 - **Protected View** is accepted (decision 36) and explained in both READMEs.
   Nothing in the page can prevent it.
-- **The 23 pre-Phase-7 commits still carry `[redacted]`.** Untouched,
-  as before; it blocks going public, not this phase.
+- **Resolved 9 Sep 2026 by the rewrite recorded in `PHASE-8C-CHECKPOINT.md`.**
+  ~~The 23 pre-Phase-7 commits still carry `[redacted]`. Untouched,
+  as before; it blocks going public, not this phase.~~
 
 ## Where the tag sits
 
