@@ -182,12 +182,16 @@ than pulled. Nothing else depends on the old hashes.
 
 ## Known gaps
 
-- **The picker's folder memory is unverified.** The `id` should make Chromium
-  reopen the picker where the workbook was last chosen, and that memory should
-  survive site-data clearing because it lives in the browser profile. Neither
-  half is provable from a test — the real picker cannot be driven (262) — and
-  neither has been checked by hand. If it turns out not to survive, the cost is
-  a few folder clicks and nothing else.
+- **The picker's folder memory was wrong on the first cut, and is still
+  unverified on the second.** `id` and `startIn: 'documents'` were set together
+  on the open picker; a well-known directory beats the id's remembered path, so
+  the picker kept opening at Documents. The owner found it at the device
+  — nothing here is testable, because the real picker cannot be driven (262) and
+  the e2e double ignores its options. `startIn` is gone from the open picker
+  (DECISION-LOG 286). **Whether the memory now works, and whether it survives
+  site-data clearing, still needs two picks by hand**: the first populates the
+  id, only the second can prove it. If it does not work, the cost is a few
+  folder clicks and nothing else.
 - **The second browser still has no hand pass**, carried over from Phase 8.
   Everything automated runs in both.
 - **The Excel-edit path** — EDITED OUTSIDE, Keep local / Replace local — is
@@ -206,9 +210,10 @@ What is waiting:
    Publishing it, or handing the file over directly, is the owner's move.
 3. **Two hand checks at the device** — the picker's folder memory across a
    browser restart, and the second browser's pass.
-4. **The Edge setting**, if the owner wants their own machine to stop doing
-   this: Settings → Privacy, search, and services → Clear browsing data on close
-   → turn off Cookies and other site data. The other four toggles can stay on.
+4. ~~**The Edge setting.**~~ **Turned off by the owner, 9 Sep 2026.** Their
+   machine keeps Meridian's data across a browser close again. Everything built
+   this phase stands regardless: the friend may have the same setting, and the
+   overwrite trap was never conditional on it.
 5. **First-render headroom**, unchanged from Phase 8: the 200 ms budget is thin
    on this machine for every build. DECISION-LOG 189 is the fix.
 

@@ -34,8 +34,14 @@
      profile, not in site data — which is the only reason it is worth having: a
      browser set to clear site data on close wipes the handle and the whole
      dataset, and this is the one crumb that survives to make recovery a click
-     rather than a hunt through folders. `startIn` stays as the fallback for the
-     first ever pick, when there is no remembered directory. */
+     rather than a hunt through folders.
+
+     `startIn` is NOT set alongside it on the open picker. A well-known
+     directory beats the id's remembered path, so the two together are just
+     `startIn` with extra steps — measured at the device, where the picker kept
+     opening at Documents (DECISION-LOG 286). Create workbook keeps it, because
+     opening at Documents is what that one is documented to do and a file is
+     created once. */
   var PICKER_ID = 'meridianWorkbook';
 
   /* Decision 32: the controls are hidden where the picker is absent. The check
@@ -256,8 +262,7 @@
             accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] }
           }],
           multiple: false,
-          id: PICKER_ID,
-          startIn: 'documents'
+          id: PICKER_ID
         }).then(function (list) { return list[0]; });
       },
 
