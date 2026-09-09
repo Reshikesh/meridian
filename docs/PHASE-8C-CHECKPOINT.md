@@ -213,16 +213,18 @@ What is waiting:
    Publishing it, or handing the file over directly, is the owner's move.
 3. **The second browser's hand pass**, carried over from Phase 8 and still not
    done. Everything automated runs in both.
-4. **A decision on the version number in the header.** The owner asked for it
-   under the wordmark; measured, it costs about 7px of header height at 1280
-   (6px of headroom against a line needing 13) and about 13px at 360, on every
-   screen. Not taken, pending the owner: the version is already on the first-run
-   screen, in the Data sheet footer and in the wordmark's tooltip, and what is
-   actually missing is that `dist/README-for-tester.md` never asks for it.
-5. **A zip re-cut.** `dist/meridian-1.3.0.zip` is attached to the draft release
-   and is functionally the shipped behaviour, but source has moved since: the
-   picker comments, this checkpoint, and the changelog correction above. Cut
-   1.3.1 once the header question is settled rather than three times.
+4. ~~**A decision on the version number in the header.**~~ **Taken by the owner,
+   9 Sep 2026; shipped in v1.3.1.** The number sits under the wordmark in 9.5px
+   dim type. The 7px estimated here was wrong: measured on the built thing, a
+   tight two-line brand is 24.5px against the theme toggle's 29.8px, so at 1280
+   the header does not grow at all. It costs 12.5px at 360, where the header
+   wraps and the brand takes a row of its own. Still open from this item, and
+   untouched: `dist/README-for-tester.md` never asks the friend to quote the
+   version when something goes wrong.
+5. ~~**A zip re-cut.**~~ **Cut, 9 Sep 2026: `dist/meridian-1.3.1.zip`.** One cut
+   rather than three, as planned — the picker comments, this checkpoint, the
+   changelog correction and the header line. Not tagged and not pushed: v1.3.1
+   and what becomes of the draft release are the owner's move.
 6. ~~**The Edge setting.**~~ **Turned off by the owner, 9 Sep 2026.** Their
    machine keeps Meridian's data across a browser close again. Everything built
    this phase stands regardless: the friend may have the same setting, and the

@@ -1,6 +1,9 @@
 const { test, expect } = require('@playwright/test');
 const { APP_URL } = require('./lib/app-url');
 const { installState } = require('./lib/seed-state');
+/* Decision 28: read from the one constant, so a bump cannot leave the header
+   asserting a build that is no longer shipping. */
+const { VERSION } = require('../../src/core/version.js');
 
 const SCREENS = ['log', 'went', 'progress', 'goals', 'lessons'];
 const THEMES = ['paper', 'graphite', 'blueprint'];
@@ -53,6 +56,8 @@ test('opens from file://, walks every screen and theme, stays silent and offline
   await expect(page.locator('.root')).toHaveAttribute('data-screen', 'went');
   await expect(page.locator('main.screen[data-s="went"]')).toBeVisible();
   await expect(page.locator('.wordmark')).toHaveText('MERIDIAN');
+  // The build under it, bare — decision 28's fourth surface.
+  await expect(page.locator('.brand__version')).toHaveText(VERSION);
   await expect(page.locator('.stamp')).not.toBeEmpty();
 
   for (const theme of THEMES) {

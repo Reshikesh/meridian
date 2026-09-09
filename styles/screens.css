@@ -82,7 +82,10 @@
     display: contents;
   }
 
-  .wordmark {
+  /* The brand, not the wordmark inside it: `display: contents` above lifts out
+     whatever the wrapper's own children are, and since decision 28's amendment
+     that is the two-line brand block. */
+  .brand {
     order: 1;
   }
 

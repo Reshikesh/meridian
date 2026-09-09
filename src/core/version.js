@@ -21,7 +21,9 @@
 
    `DISPLAY` is the caps-label form the screens show — the wordmark is set in
    caps everywhere in this app, so `MERIDIAN 1.1.0` is the string, not a
-   sentence-case one that CSS would have to shout.
+   sentence-case one that CSS would have to shout. The header takes the bare
+   `VERSION` instead, because the wordmark sitting above it has already said
+   the name.
 
    Classic <script src> -> window.Meridian.version ; CommonJS -> module.exports */
 (function (root, factory) {
@@ -31,7 +33,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  var VERSION = '1.3.0';
+  var VERSION = '1.3.1';
 
   return {
     VERSION: VERSION,

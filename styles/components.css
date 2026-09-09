@@ -29,10 +29,32 @@
   gap: var(--sp-5);
 }
 
+/* Two lines where the mockup has one (decision 28, amended): the wordmark and
+   the build under it. It costs the header nothing, because the brand is not
+   what sets the header's height — 12 + 3 + 9.5 = 24.5px of stacked type
+   against the theme toggle's 30.5px — so every screen below stays where the
+   reference capture has it. */
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: none;
+}
+
 .wordmark {
   font: 700 12px/1 var(--font);
   letter-spacing: .2em;
   flex: none;
+}
+
+/* The header's dim vocabulary, one step down from the stamp on the other side
+   of it. Tabular because it is a number and the header's other number, the
+   date, is tabular too. */
+.brand__version {
+  font: 500 9.5px/1 var(--font);
+  letter-spacing: .14em;
+  color: var(--navdim);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---------- Nav ---------- */

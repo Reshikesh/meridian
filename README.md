@@ -96,9 +96,10 @@ workbook — in those browsers Export is the save path, as before.
 
 ## Version
 
-The version is in three places: the footer of the **Data** sheet, the bottom of
-the first-run screen, and the tooltip on the wordmark. All three read
-`MERIDIAN 1.3.0` from one constant.
+The version is in four places: under the **MERIDIAN** wordmark in the header,
+the footer of the **Data** sheet, the bottom of the first-run screen, and the
+tooltip on the wordmark. The header shows the bare `1.3.1`; the rest read
+`MERIDIAN 1.3.1`. All four come from one constant.
 
 Every workbook you export carries that same version in its **Meta** sheet, so a
 file always says which build wrote it.

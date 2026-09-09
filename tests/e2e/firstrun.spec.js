@@ -4,6 +4,7 @@ const { APP_URL } = require('./lib/app-url');
 const { auditInPage, formatAudit } = require('./lib/audit');
 const { installState, demoState, DATA_KEY } = require('./lib/seed-state');
 const { validBook, notAWorkbook, asUpload } = require('./lib/make-workbook');
+const { VERSION } = require('../../src/core/version.js');
 
 /* Spec §10: "First-run flow ... must exist before anything renders."
    The three paths, the reload after each, and the two ways a workbook gets in. */
@@ -58,6 +59,9 @@ test.describe('first run', () => {
     await expect(page.locator('[data-option="demo"]')).toBeVisible();
     await expect(page.locator('[data-option="empty"]')).toBeVisible();
     await expect(page.locator('.wordmark')).toHaveText('MERIDIAN');
+    // The cut-back header keeps the build too (decision 28), which is the one
+    // screen where it also appears in full below the choices.
+    await expect(page.locator('.brand__version')).toHaveText(VERSION);
     await expect(page.locator('.stamp')).not.toBeEmpty();
     await expect(page.locator('.themes__btn')).toHaveCount(3);
 

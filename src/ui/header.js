@@ -1,5 +1,9 @@
-/* Meridian UI — header bar: wordmark, nav, theme toggle, data control, stamp.
+/* Meridian UI — header bar: brand, nav, theme toggle, data control, stamp.
    Geometry and copy are the mockup's, verbatim (spec §6).
+
+   The brand is the wordmark with the build under it (decision 28, amended 9
+   Sep 2026). The mockup has one line there; this is the second of the two
+   places the header carries something the mockup had no data to show.
 
    Two things the mockup has no room for, because it has no data behind it:
    the unexported-changes indicator (QUALITY-BAR §5) and a way in to import and
@@ -44,10 +48,18 @@
     return html`
       <header class=${'header' + (compact ? ' header--compact' : '')}>
         <div class="header__left">
-          <span class="wordmark"
+          <div class="brand"
             title=${/* Decision 28: the build, on hover and to a screen reader.
-                       Nothing visible changes in the header. */ version.TITLE}
-          >MERIDIAN</span>
+                       The number is on the screen now; the tooltip keeps the
+                       sentence-case full name, which is the form a tooltip and
+                       a screen reader are read in. */ version.TITLE}
+          >
+            <span class="wordmark">MERIDIAN</span>
+            ${/* Decision 28 as amended: the version under the wordmark. The
+                  bare number, because the line above it has already said the
+                  name — `MERIDIAN 1.3.1` here would say it twice. */ ''}
+            <span class="brand__version">${version.VERSION}</span>
+          </div>
           ${compact ? null : html`
             <nav class="nav" aria-label="Screens">
               ${ui.SCREEN_ORDER.map(function (id) {

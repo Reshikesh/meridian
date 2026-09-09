@@ -1,5 +1,17 @@
 # Meridian — changelog
 
+## v1.3.1 — 9 September 2026
+
+Which build you are looking at, without hovering anything.
+
+### Changed
+
+- **The version is on the screen**, under the MERIDIAN wordmark in the top-left
+  corner, in small dim type. It was already on the opening screen, in the Data
+  sheet footer and in the tooltip on the wordmark — none of which help when
+  what you are looking at is a screenshot of something going wrong. The header
+  is the height it always was.
+
 ## v1.3.0 — 9 September 2026
 
 Coming back to a browser that cleared everything.
