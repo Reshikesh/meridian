@@ -210,6 +210,11 @@ If something looks broken, telling me **which screen, what you did, what you
 saw, and what you expected** is worth more than anything else. A screenshot is
 ideal.
 
+**Tell me the version too** — the small grey number under **MERIDIAN** in the
+top-left corner. A screenshot of the whole window has it already. Without it I
+cannot tell whether you have hit something I have already fixed, and we lose a
+round of messages working out which build you are on.
+
 **Send back the `.xlsx` from your `data` folder along with your notes.** It lets
 me see exactly what you saw. It contains only what you typed — your categories,
 your entries, your goals. If any of it is private, delete those rows in Excel
