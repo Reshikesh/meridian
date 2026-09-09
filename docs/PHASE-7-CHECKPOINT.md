@@ -121,6 +121,12 @@ filter-branch` and `git rebase --root --exec` are refused by the environment's
 command classifier as history rewrites. That rewrite is handed to the owner as a
 single command and **must be run before the repository is made public**.
 
+**9 Sep 2026:** that command was never actually written into any document — this
+section described it and stopped. It is now in `docs/PHASE-8C-CHECKPOINT.md`
+under "The rewrite, written down at last", and covers a second problem found the
+same day: `meridian.xlsx`, the owner's own workbook, reached history in
+`662d71d`. One pass clears both.
+
 Nothing was rewritten or filtered without instruction.
 
 ## 5. `.gitignore`
