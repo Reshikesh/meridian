@@ -15,6 +15,10 @@ category in a flow chart, each band coloured by whether you wanted more of that
 category, less of it, or neither, beside a calendar of logged
 days.](docs/readme/went.png)
 
+![Meridian's Progress screen: four goals projected as percentages of their
+target on one chart, with a sidebar giving each one its landing date and how
+many days early or late it is running.](docs/readme/progress.png)
+
 ## Get it
 
 **[Download the latest release](../../releases/latest)**, unzip it, and

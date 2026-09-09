@@ -162,7 +162,7 @@ test('the early label on goals, the goal sheet and the entry sheet', async ({ pa
   });
 });
 
-/* The two screenshots that are committed. Everything else in this file lands
+/* The three screenshots that are committed. Everything else in this file lands
    in the gitignored shots folder for the owner to look at and then forget;
    these are in the README a stranger reads before they download anything, so
    they are generated the same way as the rest rather than cropped by hand, and
@@ -215,6 +215,33 @@ test('the README screenshot, Where it went', async ({ page }) => {
   await page.waitForFunction(() => document.getAnimations().every((a) => a.playState === 'finished'));
   await page.screenshot({
     path: path.join(__dirname, '..', '..', 'docs', 'readme', 'went.png'),
+    fullPage: false,
+    animations: 'disabled',
+  });
+});
+
+/* The third committed screenshot: Progress, which is the screen that answers
+   the question the other two only gather data for — when does this land?
+
+   `progressState()` rather than the plain demo: it is the same demo with two
+   more goals, and those two are what make the sidebar show all four readings
+   at once — slipping, ahead, Reached, and one with a single logged day that
+   cannot be projected from yet. The demo alone has two goals and shows two of
+   the four.
+
+   660 tall: measured, the chart panel ends at ~635. */
+test('the README screenshot, Progress', async ({ page }) => {
+  await page.addInitScript(([k, v, t]) => {
+    try { localStorage.setItem(k, v); localStorage.setItem('meridian:theme', t); } catch (e) { /* */ }
+  }, [DATA_KEY, JSON.stringify(progressState()), 'paper']);
+  await page.setViewportSize({ width: 1280, height: 660 });
+  await page.clock.setFixedTime(FROZEN);
+  await page.goto(APP_URL);
+  await page.click('[data-nav="progress"]');
+  await page.locator('main.screen[data-s="progress"]').waitFor();
+  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState === 'finished'));
+  await page.screenshot({
+    path: path.join(__dirname, '..', '..', 'docs', 'readme', 'progress.png'),
     fullPage: false,
     animations: 'disabled',
   });
