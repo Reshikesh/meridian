@@ -33,7 +33,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  var VERSION = '1.3.1';
+  var VERSION = '1.3.2';
 
   return {
     VERSION: VERSION,

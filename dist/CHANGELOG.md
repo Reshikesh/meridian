@@ -1,5 +1,16 @@
 # Meridian — changelog
 
+## v1.3.2 — 9 September 2026
+
+Nothing in the app itself changed. The notes that come with it did.
+
+### Changed
+
+- **These notes now ask you for the version** when you report something that
+  went wrong — the small grey number under MERIDIAN in the top-left corner, and
+  already in any screenshot of the whole window. Without it there is no telling
+  a fresh problem from one that is already fixed.
+
 ## v1.3.1 — 9 September 2026
 
 Which build you are looking at, without hovering anything.
