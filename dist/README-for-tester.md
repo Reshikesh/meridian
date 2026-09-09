@@ -222,8 +222,17 @@ first, or just send the notes.
 - **A blank page.** Make sure you opened `index.html` from the unzipped folder,
   not from inside the zip itself. Windows will happily preview a zip and the
   page will not work from there.
-- **Nothing saves between visits.** Private or incognito windows throw data away
-  when they close. Use an ordinary window.
+- **Nothing saves between visits — Meridian is empty every time you open it.**
+  Two causes. Private or incognito windows throw data away when they close, so
+  use an ordinary one. Otherwise your browser is set to clear site data when it
+  closes, which erases Meridian along with everything else. In Edge: Settings →
+  Privacy, search, and services → Clear browsing data on close → turn off
+  **Cookies and other site data**. In Chrome: Settings → Privacy and security →
+  Third-party cookies → Delete cookies and site data when you close all windows.
+
+  If you would rather leave that setting alone, link a workbook and use **Open a
+  workbook** on the opening screen each time — one click, and everything comes
+  back out of the file.
 - **You want to start over.** DATA → Start fresh. Export first if you want to
   keep what is there.
 

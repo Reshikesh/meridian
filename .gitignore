@@ -8,7 +8,6 @@ playwright-report/
 
 # The owner's own logged life. Only the placeholder README is tracked.
 data/*
-!data/README.md
 data/*.xlsx
 
 # Release artefacts. The zip is attached to a GitHub Release, never committed
@@ -27,3 +26,6 @@ CLAUDE.local.md
 .idea/
 Thumbs.db
 .DS_Store
+
+# The owner's own workbook, wherever it is kept (phase 8c)
+*.xlsx

@@ -1,5 +1,37 @@
 # Meridian — changelog
 
+## v1.3.0 — 9 September 2026
+
+Coming back to a browser that cleared everything.
+
+### Fixed
+
+- **Linking a workbook can no longer overwrite it by accident.** Meridian used
+  to ask "keep what is here, or take what is in the file?" whenever the file
+  had data in it — including when Meridian itself was empty, where the
+  highlighted button, the one Enter lands on, would write that emptiness over
+  your workbook. It now simply opens the file when there is nothing to lose,
+  and where there genuinely is a choice, the option that keeps your workbook
+  is the highlighted one.
+
+### New
+
+- **Open a workbook**, first thing on the opening screen. If your browser
+  clears its data when it closes, Meridian starts empty every time — and this
+  is the one click that brings everything back and reconnects the file.
+- **Meridian tells you when that is happening**, and where the setting is. In
+  Edge: Settings → Privacy, search, and services → Clear browsing data on
+  close → turn off "Cookies and other site data".
+
+### Changed
+
+- **The file picker opens where your workbook is**, not in Documents, once you
+  have chosen it once. Browsers remember that separately from site data, so it
+  survives the clearing that loses everything else.
+- **"Saved" and "Exported" are now different words.** The Data sheet says
+  *Saved just now* when a change reached your linked workbook, and keeps
+  *Exported* for a file you downloaded. It used to say "Exported" for both.
+
 ## v1.2.0 — 7 September 2026
 
 A spreadsheet on your computer that keeps itself up to date.
