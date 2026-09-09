@@ -194,6 +194,19 @@
   border-color: var(--ink2);
 }
 
+/* The workbook leads: its own row above the three original choices, so a
+   browser that arrives here every start finds the way back first rather than
+   fourth. Below the collapse it is simply the first card in the stack. */
+.option[data-lead] {
+  width: 100%;
+  margin-bottom: var(--sp-4);
+  border-color: var(--ink);
+}
+
+.option[data-lead]:hover {
+  border-color: var(--brand);
+}
+
 .option:disabled {
   opacity: .45;
   cursor: default;

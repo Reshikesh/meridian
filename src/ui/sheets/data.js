@@ -171,23 +171,57 @@
        report — but the brand button is Keep local here, because nobody asked
        for this and what is in Meridian is what they were typing a moment ago. */
     } else if (view === 'conflict' && pending) {
+      /* Two moments, one decision, opposite defaults. An outside edit interrupts
+         work that is still in the app, so Keep local leads. Linking a workbook
+         is a file the friend went and chose, holding data they can see counted
+         in the report below — so Replace local leads there, and the button that
+         overwrites it is the quiet one. */
+      var fromLink = props.reason === 'link';
+      var keepBtn = html`
+        <button type="button" class="btn${fromLink ? '' : ' btn--brand'}" data-keep-local
+          data-autofocus=${fromLink ? null : ''} onClick=${props.onKeepLocal}>
+          Keep local, overwrite the workbook
+        </button>`;
+      var replaceBtn = html`
+        <button type="button" class="btn${fromLink ? ' btn--brand' : ''}" data-replace-local
+          data-autofocus=${fromLink ? '' : null} onClick=${props.onApplyImport}>
+          Replace local data
+        </button>`;
+
       body = html`
         <div class="data__conflict">
-          <p class="data__replace">Your workbook changed outside Meridian.</p>
+          <p class="data__replace">
+            ${fromLink ? 'This workbook already has data in it.' : 'Your workbook changed outside Meridian.'}
+          </p>
           <p class="data__wbnote">
             Keep local rewrites the workbook now, with what is in Meridian.
             Replace local loads the workbook and drops what is in this browser.
           </p>
           <${ui.ImportReport} report=${pending.report} />
         </div>`;
+      footer = fromLink
+        ? html`${keepBtn}${replaceBtn}`
+        : html`${replaceBtn}${keepBtn}`;
+
+    /* Nothing local was at stake, so the workbook was simply opened. Meridian
+       starting empty while the file holds a fortnight is usually a browser
+       clearing site data on close, and the friend cannot be expected to guess
+       that — so the way to stop it is named here, at the moment it bites. */
+    } else if (view === 'opened' && pending) {
+      body = html`
+        <div class="data__conflict">
+          <p class="data__replace">Your workbook is open.</p>
+          <p class="data__wbnote">
+            Meridian had nothing in it, so everything here came from the file.
+            If Meridian is empty every time you start, your browser is clearing
+            its data when it closes. In Edge: Settings → Privacy, search, and
+            services → Clear browsing data on close → turn off
+            “Cookies and other site data”.
+          </p>
+          <${ui.ImportReport} report=${pending.report} />
+        </div>`;
       footer = html`
-        <button type="button" class="btn" data-replace-local onClick=${props.onApplyImport}>
-          Replace local data
-        </button>
-        <button type="button" class="btn btn--brand" data-keep-local data-autofocus
-          onClick=${props.onKeepLocal}>
-          Keep local, overwrite the workbook
-        </button>`;
+        <button type="button" class="btn btn--brand" onClick=${props.onClose} data-autofocus>Done</button>`;
 
     } else if (view === 'imported') {
       body = html`<${Imported} />`;
@@ -210,7 +244,7 @@
 
     return html`
       <${ui.Sheet} title="DATA" onClose=${props.onClose} footer=${footer}
-        wide=${view === 'report' || view === 'conflict' || view === 'adopted'}>
+        wide=${view === 'report' || view === 'conflict' || view === 'adopted' || view === 'opened'}>
         ${view === 'report' && pending && !pending.report.fatal && !props.firstRun ? html`
           <p class="data__replace">You already have data in Meridian. Importing replaces it.</p>` : null}
         ${body}

@@ -26,12 +26,22 @@
     return days + (days === 1 ? ' day ago' : ' days ago');
   }
 
+  /* The last thing that happened to the data, in its own words: a download is
+     `Exported 5 hours ago`, a write to the linked workbook is `Saved just now`.
+     Both clear the counter, so whichever is newer is the one to name — and with
+     no workbook linked `saved_at` is never set and this reads as it always has. */
   function exportLabel(exportInfo, now) {
     var info = exportInfo || {};
     var n = info.unexported || 0;
     if (n > 0) return n + (n === 1 ? ' unexported change' : ' unexported changes');
-    var at = parseLocal(info.exported_at);
-    if (at) return 'Exported ' + ago(at, now || new Date());
+
+    var exported = parseLocal(info.exported_at);
+    var saved = parseLocal(info.saved_at);
+    var latest = !saved || (exported && exported >= saved)
+      ? { at: exported, verb: 'Exported ' }
+      : { at: saved, verb: 'Saved ' };
+
+    if (latest.at) return latest.verb + ago(latest.at, now || new Date());
     return 'Nothing exported yet';
   }
 

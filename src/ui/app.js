@@ -353,7 +353,7 @@
           link.readBytes().then(function (buffer) {
             var result = decodeBytes(buffer);
             if (!result.state || result.report.fatal) return overwriteUnreadable();
-            patchSheet({ open: true, view: 'conflict', pending: result, message: null });
+            patchSheet({ open: true, view: 'conflict', reason: 'outside', pending: result, message: null });
             return null;
           }).catch(overwriteUnreadable).then(resolve);
         });
@@ -368,7 +368,15 @@
 
     /* Link workbook. Decision 37 A: a file that already holds a dataset is not
        written over on the strength of one click — the same two-way prompt as an
-       import, before anything reaches the disk. */
+       import, before anything reaches the disk.
+
+       The prompt is a question about what to *lose*, so it is asked only when
+       there is something to lose. Linking a workbook into an app that holds
+       nothing has one sensible answer — open it — which is the reasoning 37 B
+       already applies on reconnect. Gating this on the file alone put a brand
+       button reading "Keep local, overwrite the workbook" under Enter on the
+       first-run screen, where taking it wrote an empty dataset over the
+       friend's only copy. */
     function linkWorkbook() {
       link.pickExisting().then(function (handle) {
         if (!handle) return null;
@@ -376,17 +384,53 @@
           .then(function (file) { return ui.io.readFile(file); })
           .then(function (buffer) {
             var result = decodeBytes(buffer);
-            if (result.state && !result.report.fatal && hasContent(result.state)) {
+            var fileHasData = !!(result.state && !result.report.fatal && hasContent(result.state));
+            if (!fileHasData) {
+              /* Adopting writes the app's dataset into the file, and on first
+                 run there is no dataset to encode. A blank workbook picked from
+                 the first-run screen means starting empty, in that file. */
+              if (!store.getState()) startEmpty();
+              return link.adopt(handle);   // empty, or not a workbook we can read
+            }
+
+            if (hasContent(store.getState())) {
               pickedHandle.current = handle;
-              patchSheet({ open: true, view: 'conflict', pending: result, message: null });
+              patchSheet({ open: true, view: 'conflict', reason: 'link', pending: result, message: null });
               return null;
             }
-            return link.adopt(handle);          // empty, or not a workbook we can read
+            return openIntoEmpty(handle, result);
           });
       }).catch(function (e) {
         /* The friend closing the picker is not an error. */
         if (e && e.name === 'AbortError') return;
-        patchSheet({ open: true, view: 'idle', message: 'That workbook could not be opened.' });
+        /* On first run the message belongs on the first-run screen, for the
+           same reason an unreadable import does: the idle Data sheet offers to
+           export a dataset that does not exist yet. */
+        patchSheet({ open: !firstRun, view: 'idle', message: 'That workbook could not be opened.' });
+      });
+    }
+
+    /* A workbook with data, linked into an app with none: open it, write
+       nothing. `write: false` matters — the default adopt would put our empty
+       dataset on the disk before the file had been read in.
+
+       Meridian holding nothing while the workbook holds a fortnight means one
+       of two things: a browser that threw the dataset away when it closed, or a
+       machine meeting this workbook for the first time. The notice names the
+       first, because it is the one that will happen again tomorrow, and there is
+       no way to tell them apart from inside the page — everything that would
+       have been evidence lives in the storage that was cleared. */
+    function openIntoEmpty(handle, result) {
+      return link.adopt(handle, { write: false }).then(function () {
+        store.replaceAll(result.state, 'import');
+        var imported = result.state.settings && result.state.settings.theme;
+        if (THEME_IDS.indexOf(imported) !== -1 && imported !== theme) {
+          writeTheme(imported);
+          document.documentElement.setAttribute('data-theme', imported);
+          setTheme(imported);
+        }
+        patchSheet({ open: true, view: 'opened', pending: result, message: null });
+        return null;
       });
     }
 
@@ -760,7 +804,7 @@
     var sheetNode = sheet.open ? html`
       <${ui.DataSheet}
         view=${sheet.view} pending=${sheet.pending} message=${sheet.message}
-        firstRun=${firstRun}
+        reason=${sheet.reason} firstRun=${firstRun}
         exportInfo=${exportInfo} now=${tick} source=${data ? data.source : null}
         storageError=${storageError}
         link=${firstRun ? null : linkView}
@@ -780,6 +824,7 @@
               <${ui.FirstRun}
                 busy=${sheet.view === 'busy'} message=${sheet.open ? null : sheet.message}
                 error=${storageError}
+                canLink=${link.supported()} onOpenWorkbook=${linkWorkbook}
                 onFile=${handleFile} onDemo=${startDemo} onEmpty=${startEmpty} />
             </div>
           </div>

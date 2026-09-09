@@ -126,7 +126,7 @@
     function commit(next, changes) {
       state = next;
       if (state && changes) {
-        state.exportInfo = state.exportInfo || { unexported: 0, exported_at: null };
+        state.exportInfo = state.exportInfo || { unexported: 0, exported_at: null, saved_at: null };
         state.exportInfo.unexported += changes;
       }
       persist();
@@ -160,7 +160,7 @@
         parsed.entries = parsed.entries || [];
         parsed.plan = parsed.plan || [];
         parsed.lessons = parsed.lessons || [];
-        parsed.exportInfo = parsed.exportInfo || { unexported: 0, exported_at: null };
+        parsed.exportInfo = parsed.exportInfo || { unexported: 0, exported_at: null, saved_at: null };
         state = parsed;
         lastSeen = raw;
         return state;
@@ -255,7 +255,7 @@
       replaceAll: function (nextState, source) {
         var s = workbook.canonical(clone(nextState));
         s.source = source || nextState.source || 'import';
-        s.exportInfo = { unexported: source === 'import' ? 1 : 0, exported_at: null };
+        s.exportInfo = { unexported: source === 'import' ? 1 : 0, exported_at: null, saved_at: null };
         return commit(s, 0);
       },
 
@@ -263,10 +263,32 @@
         return commit(null, 0);
       },
 
+      /* Export and mirror write both clear the counter, but they are not the
+         same event and the Data sheet names them differently: `Exported 5 hours
+         ago` is the download, `Saved just now` is the linked workbook. Two
+         timestamps rather than one plus a kind, so the label can simply take
+         whichever is newer (ui/format.js exportLabel). */
       markExported: function (at) {
         if (!state) return { ok: false };
         var s = next();
-        s.exportInfo = { unexported: 0, exported_at: dates.isoDateTime(at || clock()) };
+        var info = s.exportInfo || {};
+        s.exportInfo = {
+          unexported: 0,
+          exported_at: dates.isoDateTime(at || clock()),
+          saved_at: info.saved_at || null
+        };
+        return commit(s, 0);
+      },
+
+      markSaved: function (at) {
+        if (!state) return { ok: false };
+        var s = next();
+        var info = s.exportInfo || {};
+        s.exportInfo = {
+          unexported: 0,
+          exported_at: info.exported_at || null,
+          saved_at: dates.isoDateTime(at || clock())
+        };
         return commit(s, 0);
       },
 

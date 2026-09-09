@@ -599,6 +599,21 @@ function transientStates(page) {
       ready: '[data-keep-local]',
       close: async () => { await esc(); await unlinkWorkbook(); },
     },
+    {
+      /* Phase 8c: the workbook opened into an app that held nothing. The
+         longest prose in the new UI — it names a browser setting — and the
+         state a browser that clears site data on close meets every start. */
+      id: 'sheet-opened',
+      open: async () => {
+        await installLinkStub(page, {});
+        await loadState(emptyState());
+        await page.evaluate((arr) => window.__file.put(arr), Array.from(validBook(demoState())));
+        await page.click('[data-data-open]');
+        await page.click('[data-link-existing]');
+      },
+      ready: '.data__wbnote',
+      close: async () => { await esc(); await unlinkWorkbook(); },
+    },
   ];
 }
 

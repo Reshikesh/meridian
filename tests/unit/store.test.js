@@ -136,6 +136,28 @@ test('the unexported counter tells the truth', async (t) => {
     assert.equal(saved(storage).exportInfo.unexported, 0, 'and it survives a reload');
   });
 
+  await t.test('a mirror write clears it and stamps a save, not an export', () => {
+    const storage = fakeStorage();
+    const s = loaded(storage);
+    s.addEntry({ date: '2026-06-07', duration_min: 30, category_id: 'cat_learn' });
+    s.markSaved(NOW);
+    assert.equal(s.getState().exportInfo.unexported, 0);
+    assert.equal(s.getState().exportInfo.saved_at, '2026-06-07T12:00:00');
+    assert.equal(s.getState().exportInfo.exported_at, null, 'nothing was downloaded');
+    assert.equal(saved(storage).exportInfo.saved_at, '2026-06-07T12:00:00', 'and it survives a reload');
+  });
+
+  await t.test('the two timestamps do not overwrite each other', () => {
+    const s = loaded();
+    const later = new Date(2026, 5, 7, 15, 0, 0);
+    s.addEntry({ date: '2026-06-07', duration_min: 30, category_id: 'cat_learn' });
+    s.markExported(NOW);
+    s.addEntry({ date: '2026-06-07', duration_min: 30, category_id: 'cat_learn' });
+    s.markSaved(later);
+    assert.equal(s.getState().exportInfo.exported_at, '2026-06-07T12:00:00');
+    assert.equal(s.getState().exportInfo.saved_at, '2026-06-07T15:00:00');
+  });
+
   await t.test('choosing a theme is a preference, not an edit', () => {
     const s = loaded();
     s.setSettings({ theme: 'graphite' }, { silent: true });

@@ -15,10 +15,12 @@ const SHOT_WIDTHS = new Set([360, 1280]);
 const SHOTS = path.join(__dirname, 'shots');
 
 // The first-run header carries no nav, so it is a lighter page than the shell:
-// wordmark + 3 theme buttons + stamp = 5, plus eyebrow, heading, note, 3 option
-// cards of 2 leaves each, and the drop line = 12. Its own floor, deliberately
-// not the shell's 14 (see DECISION-LOG, phase 0 #27 — the point of the floor is
-// that it fails loudly when the audit stops seeing the body).
+// wordmark + 3 theme buttons + stamp = 5, plus eyebrow, heading, note, the
+// option cards at 2 leaves each, and the drop line. Three cards where the
+// browser has no file picker (15), four where it has one and "Open a workbook"
+// leads (17) — so the floor is the smaller. Its own floor, deliberately not the
+// shell's 14 (see DECISION-LOG, phase 0 #27 — the point of the floor is that it
+// fails loudly when the audit stops seeing the body).
 const MIN_LEAVES = 15;
 
 async function readState(page) {

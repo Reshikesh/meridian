@@ -15,6 +15,17 @@
   var version = window.Meridian.version;
   var useState = preactHooks.useState;
 
+  /* `open` leads where the browser has a file picker, because it is the only
+     one of these that both loads the data and keeps the file up to date from
+     then on. It also carries the recovery: a browser set to clear site data on
+     close arrives here every time it starts, and the way back is the workbook,
+     not the three choices that were written for somebody with nothing yet. */
+  var OPEN_OPTION = {
+    id: 'open',
+    title: 'Open a workbook',
+    sub: 'Pick the .xlsx Meridian keeps up to date. Everything in it comes back, and logging saves straight to it.'
+  };
+
   var OPTIONS = [
     {
       id: 'import',
@@ -61,9 +72,21 @@
 
     function choose(id) {
       if (props.busy) return;
+      if (id === 'open') props.onOpenWorkbook();
       if (id === 'import') ui.io.pickFile(props.onFile);
       if (id === 'demo') props.onDemo();
       if (id === 'empty') props.onEmpty();
+    }
+
+    function card(o, lead) {
+      return html`
+        <button type="button" class="option" key=${o.id} data-option=${o.id}
+          data-lead=${lead ? '' : null}
+          disabled=${!!props.busy}
+          onClick=${function () { choose(o.id); }}>
+          <span class="option__title">${o.title}</span>
+          <span class="option__sub">${o.sub}</span>
+        </button>`;
     }
 
     return html`
@@ -91,16 +114,13 @@
             props.error ? html`
             <p class="field__error firstrun__error" role="alert">${props.error.message}</p>` : null}
 
+          ${/* Outside the grid, not spanning it: an item that spans every track
+                stops `auto-fit` collapsing the empty ones, and the three cards
+                below would stop filling the row they have always filled. */
+            props.canLink ? card(OPEN_OPTION, true) : null}
+
           <div class="firstrun__options">
-            ${OPTIONS.map(function (o) {
-              return html`
-                <button type="button" class="option" key=${o.id} data-option=${o.id}
-                  disabled=${!!props.busy}
-                  onClick=${function () { choose(o.id); }}>
-                  <span class="option__title">${o.title}</span>
-                  <span class="option__sub">${o.sub}</span>
-                </button>`;
-            })}
+            ${OPTIONS.map(function (o) { return card(o, false); })}
           </div>
 
           <p class="firstrun__drop">

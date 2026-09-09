@@ -1,6 +1,6 @@
 const { test, expect } = require('@playwright/test');
 const { APP_URL } = require('./lib/app-url');
-const { installState, demoState, DATA_KEY } = require('./lib/seed-state');
+const { installState, demoState, emptyState, DATA_KEY } = require('./lib/seed-state');
 const { XLSX, validBook } = require('./lib/make-workbook');
 const { installLinkStub } = require('./lib/link-stub');
 
@@ -379,13 +379,106 @@ test('linking a workbook with data in it asks before writing over it', async ({ 
 
   await openData(page);
   await page.click('[data-link-existing]');
-  await expect(page.locator('.data__replace')).toHaveText('Your workbook changed outside Meridian.');
+  await expect(page.locator('.data__replace')).toHaveText('This workbook already has data in it.');
   // Nothing has been written yet.
   const before = await stat(page);
   await page.click('[data-keep-local]');
   await expect(page.locator('.datactl__state')).toHaveText('SAVED · AUTO');
   expect((await stat(page)).lastModified).toBeGreaterThanOrEqual(before.lastModified);
   expect(await activitiesOnDisk(page)).toContain('Only in the browser');
+});
+
+/* The prompt is about what to lose, so the button that loses the workbook is
+   never the one Enter finds. Linking is the friend choosing a file they care
+   about; the outside edit interrupts work still in the app. Opposite defaults. */
+test('the link prompt leads with the choice that keeps the workbook', async ({ page }) => {
+  await open(page);
+  await page.evaluate((arr) => window.__file.put(arr), Array.from(validBook(demoState())));
+  await logAnEntry(page, 'Only in the browser');
+
+  await openData(page);
+  await page.click('[data-link-existing]');
+  await expect(page.locator('[data-replace-local]')).toHaveClass(/btn--brand/);
+  await expect(page.locator('[data-replace-local]')).toHaveAttribute('data-autofocus', '');
+  await expect(page.locator('[data-keep-local]')).not.toHaveClass(/btn--brand/);
+});
+
+test('an outside edit still leads with Keep local', async ({ page }) => {
+  await open(page);
+  await linkWorkbook(page);
+  await page.evaluate((arr) => window.__file.put(arr), Array.from(validBook(demoState())));
+  await logAnEntry(page, 'Typed a moment ago');
+  await expect(page.locator('.datactl__state')).toHaveText('EDITED OUTSIDE');
+  await page.click('[data-data-open]');
+  await expect(page.locator('.data__replace')).toHaveText('Your workbook changed outside Meridian.');
+  await expect(page.locator('[data-keep-local]')).toHaveClass(/btn--brand/);
+  await expect(page.locator('[data-keep-local]')).toHaveAttribute('data-autofocus', '');
+});
+
+/* The defect the owner's screenshots caught: with nothing in the app, linking a
+   workbook offered "Keep local, overwrite the workbook" as the brand button —
+   one Enter from writing an empty dataset over the only copy. */
+test('linking a workbook into an app with nothing simply opens it', async ({ page }) => {
+  await open(page, { state: emptyState() });
+  await page.evaluate((arr) => window.__file.put(arr), Array.from(validBook(demoState())));
+  const before = await activitiesOnDisk(page);
+  expect(before.length).toBeGreaterThan(0);
+
+  await openData(page);
+  await page.click('[data-link-existing]');
+
+  await expect(page.locator('.data__replace')).toHaveText('Your workbook is open.');
+  await expect(page.locator('[data-keep-local]')).toHaveCount(0);
+  await expect(page.locator('[data-replace-local]')).toHaveCount(0);
+  await expect(page.locator('.data__wbnote')).toContainText('Cookies and other site data');
+
+  // The workbook was read in, never written over. Adopting the file writes
+  // nothing; the mirror hook then puts the file's own rows straight back, which
+  // is the same path Replace local has always taken — so what is on disk after
+  // is what was on disk before, not the empty dataset that was in the browser.
+  expect(await activitiesOnDisk(page)).toEqual(before);
+  expect(await page.evaluate(() => window.Meridian.store.getState().entries.length))
+    .toBe(before.length);
+});
+
+/* Decision 32's own words, not Export's: a mirror write is a save. */
+test('a write to the linked workbook reads as Saved, not Exported', async ({ page }) => {
+  await open(page);
+  await linkWorkbook(page);
+  await logAnEntry(page, 'Says saved');
+  await expect.poll(() => activitiesOnDisk(page)).toContain('Says saved');
+
+  await openData(page);
+  await expect(page.locator('.data__status')).toHaveText('Saved just now');
+});
+
+/* A browser that clears site data on close arrives at first run every time it
+   starts, with the workbook still on disk. The way back is one click. */
+test('the first-run screen leads with the workbook, and opening one brings it back', async ({ page }) => {
+  await installLinkStub(page, {});
+  await page.clock.setFixedTime(FROZEN);
+  await page.goto(APP_URL);
+  await expect(page.locator('[data-s="firstrun"]')).toBeVisible();
+
+  // Everything the browser threw away is still in the file.
+  await page.evaluate((arr) => window.__file.put(arr), Array.from(validBook(demoState())));
+
+  await expect(page.locator('.option').first()).toHaveAttribute('data-option', 'open');
+  await page.click('[data-option="open"]');
+
+  await expect(page.locator('.data__replace')).toHaveText('Your workbook is open.');
+  await expect(page.locator('[data-s="firstrun"]')).toHaveCount(0);
+  expect(await page.evaluate(() => window.Meridian.store.getState().entries.length))
+    .toBeGreaterThan(0);
+});
+
+test('a browser without a picker keeps the three choices it always had', async ({ page }) => {
+  await installLinkStub(page, { supported: false });
+  await page.clock.setFixedTime(FROZEN);
+  await page.goto(APP_URL);
+  await expect(page.locator('[data-s="firstrun"]')).toBeVisible();
+  await expect(page.locator('.option')).toHaveCount(3);
+  await expect(page.locator('[data-option="open"]')).toHaveCount(0);
 });
 
 /* ---------- decision 32: browsers without a picker ---------- */

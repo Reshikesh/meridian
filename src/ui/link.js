@@ -29,6 +29,15 @@
   var DB_STORE = 'handles';
   var HANDLE_KEY = 'workbook';
 
+  /* Both pickers share one id, so the browser reopens them where the workbook
+     was last chosen rather than at Documents. That memory lives in the browser
+     profile, not in site data — which is the only reason it is worth having: a
+     browser set to clear site data on close wipes the handle and the whole
+     dataset, and this is the one crumb that survives to make recovery a click
+     rather than a hunt through folders. `startIn` stays as the fallback for the
+     first ever pick, when there is no remembered directory. */
+  var PICKER_ID = 'meridianWorkbook';
+
   /* Decision 32: the controls are hidden where the picker is absent. The check
      names the picker and not `FileSystemFileHandle`, which Firefox has for the
      origin-private file system and would answer yes to (DECISION-LOG 261). */
@@ -173,7 +182,10 @@
           .then(function (after) {
             remember(handle.name, after ? after.lastModified : 0);
             dispatch({ type: 'write-ok' });
-            store.markExported(new Date());
+            /* Decision 32 unchanged — the write clears the counter exactly as an
+               export does — but it is recorded as a save, so the Data sheet says
+               what actually happened rather than borrowing Export's word. */
+            store.markSaved(new Date());
             return { ok: true };
           })
           .catch(function (e) {
@@ -244,6 +256,7 @@
             accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] }
           }],
           multiple: false,
+          id: PICKER_ID,
           startIn: 'documents'
         }).then(function (list) { return list[0]; });
       },
@@ -253,6 +266,7 @@
       pickNew: function () {
         return win.showSaveFilePicker({
           suggestedName: 'meridian.xlsx',
+          id: PICKER_ID,
           startIn: 'documents',
           types: [{
             description: 'Meridian workbook',
