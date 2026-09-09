@@ -162,11 +162,11 @@ test('the early label on goals, the goal sheet and the entry sheet', async ({ pa
   });
 });
 
-/* The one screenshot that is committed. Everything else in this file lands in
-   the gitignored shots folder for the owner to look at and then forget; this
-   one is in the README a stranger reads before they download anything, so it
-   is generated the same way as the rest rather than cropped by hand, and it
-   goes to docs/readme/ where git can see it.
+/* The two screenshots that are committed. Everything else in this file lands
+   in the gitignored shots folder for the owner to look at and then forget;
+   these are in the README a stranger reads before they download anything, so
+   they are generated the same way as the rest rather than cropped by hand, and
+   they go to docs/readme/ where git can see them.
 
    Log, paper, 1280 — the reference width, the default theme, and the screen
    the app is actually used on. `fullPage: false`: the README wants the window
@@ -186,6 +186,35 @@ test('the README screenshot', async ({ page }) => {
   await page.waitForFunction(() => document.getAnimations().every((a) => a.playState === 'finished'));
   await page.screenshot({
     path: path.join(__dirname, '..', '..', 'docs', 'readme', 'log.png'),
+    fullPage: false,
+    animations: 'disabled',
+  });
+});
+
+/* The second committed screenshot: Where it went, which is the screen that
+   shows what the app is FOR — a fortnight of durations split by category,
+   every band coloured by its direction. The demo dataset is what it runs on,
+   the same one the Log shot uses, so the two screenshots are one continuous
+   sitting rather than two unrelated fictions.
+
+   The demo, not the QUALITY-BAR stress dataset: 20 categories called
+   `Category 01 abcdefgh…` fill more of the ribbon and tell a reader nothing.
+   Eight real names and a fortnight of hours is what the app is like.
+
+   800 tall: measured, the legend under the ribbon ends at ~775, and a taller
+   shot is dead space that reads as a layout bug rather than as a short day. */
+test('the README screenshot, Where it went', async ({ page }) => {
+  await page.addInitScript(([k, v, t]) => {
+    try { localStorage.setItem(k, v); localStorage.setItem('meridian:theme', t); } catch (e) { /* */ }
+  }, [DATA_KEY, JSON.stringify(demoState()), 'paper']);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.clock.setFixedTime(FROZEN);
+  await page.goto(APP_URL);
+  await page.click('[data-nav="went"]');
+  await page.locator('main.screen[data-s="went"]').waitFor();
+  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState === 'finished'));
+  await page.screenshot({
+    path: path.join(__dirname, '..', '..', 'docs', 'readme', 'went.png'),
     fullPage: false,
     animations: 'disabled',
   });
