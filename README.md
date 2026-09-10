@@ -1,10 +1,16 @@
-# Meridian
+# Meridian — a free, offline, value-based time tracker
 
-**A free, offline time tracker that shows where your hours actually went — and
-projects when your goals will land.**
+**Meridian shows where your hours actually went — and projects when your goals
+will land.**
 
 No account, no server, no network requests. Download, unzip, double-click
 `index.html`. Your data stays in your browser and in a spreadsheet you own.
+
+It is a **value-based time tracker**, not a stopwatch: you log durations after
+the fact, every category carries a direction you chose — **More**, **Less** or
+**Upkeep** — and every goal gets a landing date worked out from the pace you
+have actually kept. It is built for one person asking *where does my time go?*,
+not for teams, timesheets or invoicing.
 
 ![Meridian's Log screen: one day's time entries as durations, with a
 keyboard-first quick-add row at the top and a week of hours along the
@@ -43,6 +49,21 @@ keep.
 
 The day changes over at **04:00, not midnight**, so something logged at 1 a.m.
 counts as the previous day — the day you were actually still living.
+
+## Who it is for
+
+One person, tracking their own days rather than their billable hours. It suits
+a **time audit** — a fortnight of honest logging to find out where the time
+goes — and it suits long goals measured in hours: a language, an instrument, a
+thesis, a body of work. It is **free and open source**, and it runs from a
+folder on your own computer.
+
+It is deliberately not several things:
+
+- **Not a stopwatch.** There is no start/stop timer. You type what you did and how long it took.
+- **Not a team or billing tool.** No clients, no invoices, no timesheets, no sharing.
+- **Not a habit-streak app.** A category is a direction over weeks, not a chain of ticks to keep unbroken.
+- **Not a cloud service.** No account, no sync, no telemetry. Nothing leaves your computer unless you export it.
 
 ## The five screens
 
@@ -94,6 +115,27 @@ One constant, four places: under the header wordmark, in the **Data** sheet
 footer, on the first-run screen, and in the wordmark's tooltip. Every workbook
 you export carries the same version in its **Meta** sheet, so a file always says
 which build wrote it.
+
+## Common questions
+
+**Does it need an account or an internet connection?** No. There is no sign-up,
+no server and no network request. It runs from a folder with the machine
+offline.
+
+**Does it have a timer?** No. You log a duration after the fact — the date, how
+long, which category. A stopwatch measures the clock; Meridian is interested in
+the day.
+
+**Is it free?** Yes. MIT licence, open source, no paid tier.
+
+**Where is my data, and can I get it out?** In your browser's storage on your
+own machine, and in the `.xlsx` you export or link — an ordinary Excel
+spreadsheet you can open, edit and import back. No one else holds a copy, and
+there is no proprietary format to escape from.
+
+**Can it tell me when I will reach a goal?** Yes. Each goal has a landing date,
+projected in a straight line from the hours you have actually logged, and it
+moves as your pace does.
 
 ## A note for security scanners
 
